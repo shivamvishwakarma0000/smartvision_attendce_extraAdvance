@@ -19,11 +19,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "HF_TOKEN is missing in GitHub Secrets. Please add HF_TOKEN in GitHub Settings -> Secrets -> Actions."
-            exit 1
+            echo "::notice ::HF_TOKEN is not configured in GitHub Secrets. Skipping Hugging Face Space sync."
+            exit 0
           fi
           git config --global user.email "shivam@smartvision.com"
           git config --global user.name "shivam8858"
           git lfs install
-          git remote add hf https://shivam8858:${HF_TOKEN}@huggingface.co/spaces/shivam8858/smartVision_Attendance_Portal
+          git remote add hf https://shivam8858:${HF_TOKEN}@huggingface.co/spaces/shivam8858/smartVision_Attendance_Portal || true
           git push --force hf master:main

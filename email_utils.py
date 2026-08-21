@@ -14,30 +14,56 @@ from email.mime.multipart import MIMEMultipart
 from flask import current_app
 
 def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
-    """Worker thread function for non-blocking SMTP dispatch."""
+    """Worker thread function for non-blocking SMTP dispatch with dual-port fallback."""
+    clean_user = (username or '').strip()
+    clean_pass = (password or '').strip().replace(' ', '')
+    # For Gmail SMTP, envelope sender must strictly match the authenticated user
+    clean_sender = clean_user if ('gmail' in (host or '').lower()) else (sender or clean_user or 'noreply@smartvision.com').strip()
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = f"SmartVision Portal <{clean_sender}>"
+    msg['To'] = to_email
+
+    msg.attach(MIMEText(body_text, 'plain', 'utf-8'))
+    if body_html:
+        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+
+    # Method 1: Try primary configured port (default 587 STARTTLS)
+    sent_successfully = False
+    primary_port = int(port or 587)
+    
     try:
-        clean_user = (username or '').strip()
-        clean_pass = (password or '').strip().replace(' ', '')
-        clean_sender = (sender or clean_user or 'noreply@smartvision.com').strip()
-
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = f"SmartVision Portal <{clean_sender}>"
-        msg['To'] = to_email
-
-        msg.attach(MIMEText(body_text, 'plain'))
-        if body_html:
-            msg.attach(MIMEText(body_html, 'html'))
-
-        server = smtplib.SMTP(host, int(port), timeout=12)
-        if use_tls:
-            server.starttls()
+        if primary_port == 465:
+            server = smtplib.SMTP_SSL(host, 465, timeout=12)
+        else:
+            server = smtplib.SMTP(host, primary_port, timeout=12)
+            if use_tls:
+                server.starttls()
         server.login(clean_user, clean_pass)
         server.sendmail(clean_sender, [to_email], msg.as_string())
         server.quit()
-        print(f"[SMTP Mail Sent] Subject: '{subject}' to {to_email}", flush=True)
-    except Exception as e:
-        print(f"[SMTP Error] Failed to send email to {to_email}: {e}", flush=True)
+        sent_successfully = True
+        print(f"[SMTP Mail Sent (Port {primary_port})] Subject: '{subject}' to {to_email}", flush=True)
+    except Exception as e_primary:
+        print(f"[SMTP Primary Port {primary_port} Failed] Error: {e_primary}. Attempting fallback port...", flush=True)
+
+    # Method 2: Automatic Fallback to Port 465 SSL or Port 587 STARTTLS
+    if not sent_successfully:
+        fallback_port = 465 if primary_port != 465 else 587
+        try:
+            if fallback_port == 465:
+                server = smtplib.SMTP_SSL(host, 465, timeout=12)
+            else:
+                server = smtplib.SMTP(host, 587, timeout=12)
+                server.starttls()
+            server.login(clean_user, clean_pass)
+            server.sendmail(clean_sender, [to_email], msg.as_string())
+            server.quit()
+            sent_successfully = True
+            print(f"[SMTP Mail Sent via Fallback (Port {fallback_port})] Subject: '{subject}' to {to_email}", flush=True)
+        except Exception as e_fallback:
+            print(f"[SMTP Fallback Port {fallback_port} Also Failed] Error: {e_fallback}", flush=True)
 
 # ==============================================================================
 # CORE EMAIL DISPATCH FUNCTION

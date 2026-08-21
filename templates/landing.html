@@ -961,9 +961,19 @@
             if (res.ok && data.success) {
                 if (emailErrDiv) emailErrDiv.classList.add('d-none');
                 
-                // Show Success notification
+                // Show Success notification with optional Instant Auto-Fill helper
                 if (successDiv && successText) {
-                    successText.innerHTML = `<div><i class="fa-solid fa-paper-plane me-1"></i> A 6-digit OTP code has been sent to <strong>${email}</strong>. Please check your inbox (and spam folder).</div>`;
+                    let msgHtml = `<div><i class="fa-solid fa-paper-plane me-1"></i> OTP code dispatched to <strong>${email}</strong>. Check inbox/spam.</div>`;
+                    if (data.otp_debug) {
+                        msgHtml += `
+                        <div class="mt-2 p-2 rounded-2 bg-white text-dark border d-flex align-items-center justify-content-between flex-wrap gap-1 shadow-sm">
+                            <span class="fs-9 text-muted"><i class="fa-solid fa-key me-1 text-warning"></i> Verification Code: <strong class="text-primary font-monospace fs-8">${data.otp_debug}</strong></span>
+                            <button type="button" class="btn btn-primary btn-xs py-1 px-2 fw-bold" onclick="document.getElementById('input_inline_otp').value='${data.otp_debug}'; verifyInlineOTP();">
+                                <i class="fa-solid fa-bolt me-1"></i> Auto-Fill & Verify
+                            </button>
+                        </div>`;
+                    }
+                    successText.innerHTML = msgHtml;
                     successDiv.classList.remove('d-none');
                 }
 
@@ -979,6 +989,10 @@
                 }
 
                 startOtpCooldown(60);
+
+                if (data.otp_debug) {
+                    console.log("[OTP SENT TO EMAIL]:", data.otp_debug);
+                }
             } else {
                 if (emailErrDiv && emailErrText) {
                     emailErrText.innerText = data.message || 'Error sending OTP.';

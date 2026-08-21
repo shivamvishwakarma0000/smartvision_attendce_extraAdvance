@@ -4,15 +4,36 @@ services:
     env: docker
     dockerfilePath: Dockerfile
     plan: free
-    
-    # Define environment variables
+    region: singapore
+    autoDeploy: true
+
+    # Production Environment Variables
     envVars:
-      - key: DATABASE_URL
-        value: sqlite:////app/instance/smartvision.db
       - key: SECRET_KEY
         generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: PORT
+        value: "8080"
+      - key: DATABASE_URL
+        value: sqlite:////app/instance/smartvision.db
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_SENDER_EMAIL
+        sync: false
+
 

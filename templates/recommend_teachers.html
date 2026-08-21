@@ -1,0 +1,111 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - RECOMMEND TEACHERS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Smart Teacher Recommender - SmartVision{% endblock %}
+{% block page_title %}Smart Faculty Recommendation Engine{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Column: Search & Parameter Config -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 p-4 bg-white h-100">
+            <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-wand-magic-sparkles me-2"></i> Teacher Recommender</h5>
+            <p class="text-muted fs-8 mb-4">Find optimal faculty matches for subjects and classes based on teaching expertise, workload balance, and timetable availability.</p>
+
+            <form method="GET" action="{{ url_for('main.recommend_teachers') }}">
+                <div class="mb-3">
+                    <label for="subject_name" class="form-label fw-semibold fs-8 text-dark">Target Subject Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="subject_name" name="subject_name" placeholder="e.g. Data Mining or AI" value="{{ target_subject_name }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label for="class_id" class="form-label fw-semibold fs-8 text-dark">Target Class Level <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" id="class_id" name="class_id" required>
+                        <option selected disabled value="">Choose Class...</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if target_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold shadow-sm">
+                    <i class="fa-solid fa-calculator me-1.5"></i> Compute Smart Recommendations
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Ranked Recommendation Output Cards -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 p-4 bg-white h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-ranking-star text-warning me-2"></i> Ranked Recommendations</h5>
+                {% if target_subject_name %}
+                <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">Subject: '{{ target_subject_name }}'</span>
+                {% endif %}
+            </div>
+
+            {% if recommendations %}
+            <div class="row g-3">
+                {% for item in recommendations %}
+                {% set t = item.teacher %}
+                <div class="col-12">
+                    <div class="p-3.5 rounded-4 border {% if loop.first %}border-primary border-2 bg-indigo-50 bg-opacity-20{% else %}bg-light{% endif %} shadow-sm">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle {% if loop.first %}bg-primary text-white{% else %}bg-secondary bg-opacity-10 text-secondary{% endif %} fw-bold fs-6 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                    #{{ loop.index }}
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 fs-7">{{ t.name }}</h6>
+                                    <span class="badge bg-light text-dark border px-2 py-0.5 font-monospace fs-9 me-2">{{ t.emp_id }}</span>
+                                    <span class="text-muted fs-8"><i class="fa-solid fa-book me-1"></i>Primary: <strong>{{ item.primary }}</strong></span>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <span class="badge {% if item.score >= 80 %}bg-success{% elif item.score >= 50 %}bg-primary{% else %}bg-secondary{% endif %} px-3 py-1.5 rounded-pill fs-7 fw-extrabold mb-1 d-block" style="width: fit-content; margin-left: auto;">
+                                    Match Score: {{ item.score }} pts
+                                </span>
+                                <span class="text-muted fs-9 d-block">Current Workload: {{ item.current_workload }} subject(s)</span>
+                            </div>
+                        </div>
+
+                        <!-- Reasons Breakdown Pills -->
+                        <div class="mb-3">
+                            <span class="text-muted fs-9 fw-semibold d-block mb-1">Recommendation Factors:</span>
+                            <div class="d-flex flex-wrap gap-1.5">
+                                {% for r in item.reasons %}
+                                <span class="badge bg-white text-dark border px-2 py-1 fs-9 fw-normal"><i class="fa-solid fa-check text-success me-1"></i>{{ r }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Admin Approval Action -->
+                        <form action="{{ url_for('main.recommend_teachers') }}" method="POST" class="d-flex justify-content-end">
+                            <input type="hidden" name="teacher_id" value="{{ t.id }}">
+                            <input type="hidden" name="subject_name" value="{{ target_subject_name }}">
+                            <input type="hidden" name="class_id" value="{{ target_class_id }}">
+                            <button type="submit" class="btn btn-sm {% if loop.first %}btn-success{% else %}btn-outline-primary{% endif %} px-3 py-1.5 rounded-3 fw-bold">
+                                <i class="fa-solid fa-circle-check me-1"></i> Approve & Assign Subject
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% elif target_subject_name %}
+            <div class="text-center py-5 text-muted">No faculty members found matching your search parameters.</div>
+            {% else %}
+            <div class="text-center py-5 text-muted fs-8">
+                <i class="fa-solid fa-robot fs-1 text-primary opacity-50 mb-2 d-block"></i>
+                Select a Target Subject Name and Class Level on the left to compute real-time faculty recommendations.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

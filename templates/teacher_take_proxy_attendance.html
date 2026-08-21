@@ -1,0 +1,630 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER TAKE PROXY ATTENDANCE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Teacher Portal | Take Proxy Class Attendance{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h3 class="fw-bold mb-0 text-dark"><i class="fas fa-camera text-primary me-2"></i>Proxy Class Attendance Scanner</h3>
+                            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fs-8 fw-bold">PROXY DUTY</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold">
+                                <i class="fa-solid fa-bolt me-1"></i>WebRTC Live AI Detection Active
+                            </span>
+                        </div>
+                        <p class="text-muted mb-0">Live AI face detection and roll number collector for {{ orig_teacher.name if orig_teacher else 'Original Faculty' }}'s class. Transfer roll numbers inside the app with one click.</p>
+                    </div>
+                    <a href="{{ url_for('teacher.proxy_classes') }}" class="btn btn-outline-secondary rounded-3">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Proxy Duties
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Proxy Duty Info Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-4 border-primary">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <span class="badge bg-primary text-white mb-1 fs-9">Substitute Lecture Duty</span>
+                <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-school text-primary me-2"></i>Subject: {{ slot.subject_assigned.name if slot.subject_assigned else 'Subject' }} (Class: {{ slot.class_assigned.name if slot.class_assigned else 'Class' }})</h5>
+                <span class="fs-8 text-muted">
+                    <i class="fa-solid fa-user-tie me-1 text-primary"></i>Original Absent Faculty: <strong>{{ orig_teacher.name if orig_teacher else 'Faculty' }}</strong> |
+                    <i class="fa-solid fa-clock me-1 text-secondary ms-2"></i>Slot: {{ slot.day_of_week }} ({{ slot.start_time }} - {{ slot.end_time }}) |
+                    <i class="fa-solid fa-calendar me-1 ms-2"></i>Date: {{ duty_date.strftime('%B %d, %Y') }}
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1.5 rounded-pill fs-8 fw-bold">
+                    Class ID: {{ slot.class_id }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Mode Toggle Switch Tabs (Full Width Bar) -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-3 mb-4">
+        <ul class="nav nav-pills nav-fill gap-2" id="proxyModeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold py-2.5 rounded-3 fs-8" id="camera-tab" data-bs-toggle="tab" data-bs-target="#camera-mode-pane" type="button" role="tab" aria-controls="camera-mode-pane" aria-selected="true" onclick="startProxyCamera()">
+                    <i class="fas fa-camera me-2"></i>📸 WebRTC Live AI Camera & Scanner
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold py-2.5 rounded-3 fs-8" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-mode-pane" type="button" role="tab" aria-controls="manual-mode-pane" aria-selected="false" onclick="stopProxyCamera()">
+                    <i class="fas fa-user-pen me-2"></i>✍️ Manual Attendance Mode (Roll Numbers & List)
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="proxyModeTabContent">
+
+        <!-- ═══════════════════════════════════════════
+             MODE 1: WEBRTC LIVE AI CAMERA SCAN MODE
+        ════════════════════════════════════════════ -->
+        <div class="tab-pane fade show active" id="camera-mode-pane" role="tabpanel" aria-labelledby="camera-tab">
+            <div class="row g-4 mb-4">
+                <!-- Left Column: WebRTC Live Camera Feed & Controls -->
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="fas fa-video text-primary me-2"></i>WebRTC Real-time Face Scanner
+                            </h5>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="proxy-ai-indicator" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold d-none">
+                                    <span class="spinner-grow spinner-grow-sm me-1" role="status" style="width: 8px; height: 8px;"></span>AI Scanning
+                                </span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5 fs-9" onclick="toggleProxyCameraDirection()">
+                                    <i class="fas fa-sync-alt me-1"></i>Flip Camera
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <!-- Live WebCam Stream with WebRTC AI Overlay Canvas -->
+                            <div class="position-relative bg-dark rounded-4 overflow-hidden d-flex align-items-center justify-content-center" style="min-height: 380px; max-height: 480px;">
+                                <video id="proxy-webcam" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+                                <canvas id="proxy-overlay-canvas" class="position-absolute top-0 start-0" style="width:100%; height:100%; pointer-events:none; z-index:5;"></canvas>
+
+                                <!-- Live Stream Top Badges -->
+                                <div id="cam-live-badge" class="position-absolute top-0 start-0 m-3 px-3 py-1.5 rounded-pill bg-dark bg-opacity-75 text-white border border-secondary fs-8 fw-bold d-none" style="z-index:10;">
+                                    <i class="fa-solid fa-circle text-success me-1 animate-pulse"></i>Live AI Stream • <span id="proxy-live-face-count" class="text-warning">0 Faces</span>
+                                </div>
+
+                                <!-- Placeholder when camera is off -->
+                                <div id="proxy-camera-placeholder" class="text-center text-white p-5">
+                                    <div class="rounded-circle bg-white bg-opacity-10 p-4 d-inline-flex mb-3">
+                                        <i class="fas fa-camera fs-1 text-white-50"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-1">WebRTC AI Live Detection</h6>
+                                    <p class="mb-3 fs-8 text-white-50">Real-time face tracking with bounding boxes and automatic roll number collection</p>
+                                    <button type="button" class="btn btn-primary rounded-pill px-4 py-2 fw-bold fs-8 shadow-sm" onclick="startProxyCamera()">
+                                        <i class="fas fa-video me-1.5"></i>Start WebRTC Camera
+                                    </button>
+                                </div>
+
+                                <!-- Live Detection Floating Chips -->
+                                <div id="proxy-recognized-popup" class="position-absolute bottom-0 start-0 end-0 p-3 bg-gradient bg-dark bg-opacity-75 d-none" style="z-index:10;">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-white fs-9 fw-bold"><i class="fa-solid fa-id-card-clip text-success me-1"></i>Recognized in Live View:</span>
+                                        <span class="badge bg-success text-white fs-9" id="proxy-recognized-count">0</span>
+                                    </div>
+                                    <div id="proxy-live-students-list" class="d-flex flex-wrap gap-1" style="max-height: 70px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Camera Control Buttons -->
+                            <div class="d-flex gap-2 mt-3 flex-wrap">
+                                <button type="button" id="start-proxy-cam-btn" class="btn btn-outline-primary btn-sm flex-fill rounded-3 py-2 fw-bold" onclick="startProxyCamera()">
+                                    <i class="fas fa-video me-1"></i>Start Camera
+                                </button>
+                                <button type="button" id="proxy-snap-btn" class="btn btn-success btn-sm flex-fill rounded-3 py-2 fw-bold" onclick="captureProxyFrame()" disabled>
+                                    <i class="fas fa-camera me-1"></i>Take High-Res Snap <span id="proxy-snap-count" class="badge bg-white text-success rounded-circle ms-1">0</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-3 py-2 px-3 fw-bold" onclick="stopProxyCamera()">
+                                    <i class="fas fa-stop me-1"></i>Stop
+                                </button>
+                            </div>
+
+                            <div id="proxy-captured-previews" class="d-flex flex-wrap gap-2 mt-3"></div>
+                            <div id="proxy-hidden-snaps-container"></div>
+
+                            <hr class="my-4">
+
+                            <!-- Optional: Upload Group Photo Form (Fallback) -->
+                            <form id="proxy-camera-form" method="POST" enctype="multipart/form-data" action="{{ url_for('teacher.take_proxy_attendance') }}">
+                                <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                                {% if leave %}<input type="hidden" name="leave_id" value="{{ leave.id }}">{% endif %}
+                                <input type="hidden" name="duty_date" value="{{ duty_date.strftime('%Y-%m-%d') }}">
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-dark fs-8"><i class="fas fa-upload me-1 text-primary"></i>Or Upload Classroom Photo(s)</label>
+                                    <div class="input-group">
+                                        <input type="file" name="group_photos" class="form-control rounded-start-3 fs-9" multiple accept="image/*">
+                                        <button type="submit" class="btn btn-primary rounded-end-3 px-3 fw-bold fs-9">
+                                            <i class="fas fa-bolt me-1"></i>Run Deep Scan
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Collected Rolls & Transfer Actions -->
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-clipboard-check text-success me-2"></i>Proxy Collected Rolls</h5>
+                            <div class="d-flex gap-1.5">
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-8" id="ui-present-count">
+                                    {{ present_count }} Present
+                                </span>
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-8" id="ui-absent-count">
+                                    {{ absent_count }} Absent
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <!-- Present Roll Numbers Live Container -->
+                                <div class="p-3 rounded-4 border bg-white mb-3 shadow-2xs border-start border-4 border-success">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted fs-9 fw-bold">
+                                            <i class="fa-solid fa-user-check me-1 text-success"></i>Live Present Rolls (<span id="count-present-span">{{ present_count }}</span>):
+                                        </span>
+                                        <button type="button" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-0.5 fs-9" onclick="clearCollectedRolls()">
+                                            Clear All
+                                        </button>
+                                    </div>
+                                    <div id="present-rolls-display" class="text-dark fw-bold font-monospace fs-7 p-2.5 rounded-3 bg-light border" style="word-break: break-all; min-height: 60px; max-height: 110px; overflow-y: auto;">
+                                        {% if present_rolls_str %}{{ present_rolls_str.replace(' ', '') }}{% else %}<span class="text-muted fs-8 fw-normal fst-italic" id="no-rolls-placeholder">No students recognized yet. Start WebRTC camera to auto-collect rolls.</span>{% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Quick Add Roll Form -->
+                                <div class="mb-3">
+                                    <label class="form-label text-muted fs-9 fw-bold mb-1"><i class="fa-solid fa-plus-circle text-primary me-1"></i>Manually Add Roll No:</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="quick_add_input" class="form-control font-monospace fw-bold rounded-start-pill" placeholder="e.g. 67, 12" onkeypress="if(event.key==='Enter'){event.preventDefault(); addRollNumberManually();}">
+                                        <button type="button" class="btn btn-primary rounded-end-pill px-3 fw-bold" onclick="addRollNumberManually()">
+                                            Add Roll
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Share to Original Faculty Form -->
+                                {% if orig_teacher %}
+                                <form id="share-proxy-rolls-form" method="POST" action="{{ url_for('teacher.share_proxy_rolls') }}" class="p-3.5 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-4 mt-3">
+                                    <input type="hidden" name="leave_id" value="{{ leave.id if leave else '' }}">
+                                    <input type="hidden" name="timetable_id" value="{{ slot.id }}">
+                                    <input type="hidden" name="class_id" value="{{ slot.class_id }}">
+                                    <input type="hidden" name="subject_id" value="{{ slot.subject_id }}">
+                                    <input type="hidden" name="original_teacher_id" value="{{ orig_teacher.id }}">
+                                    <input type="hidden" name="duty_date" value="{{ duty_date.strftime('%Y-%m-%d') }}">
+                                    <input type="hidden" name="time_slot" value="{{ slot.start_time }} - {{ slot.end_time }}">
+                                    <input type="hidden" id="share_present_rolls_input" name="present_rolls" value="{{ present_rolls_str.replace(' ', '') if present_rolls_str else '' }}">
+
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <div class="rounded-circle bg-primary text-white p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="fa-solid fa-paper-plane fs-8"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0 fs-8">Transfer to {{ orig_teacher.name }}</h6>
+                                            <span class="fs-9 text-muted">Original faculty will apply rolls to their attendance log</span>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-primary w-100 py-2.5 rounded-pill fw-bold shadow-sm fs-8" onclick="submitProxyShareForm()">
+                                        <i class="fa-solid fa-paper-plane me-1.5"></i>Send Roll Numbers to {{ orig_teacher.name }} Inside App
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex gap-2 pt-3">
+                                <button type="button" class="btn btn-outline-success flex-fill py-2 rounded-pill fw-bold fs-8" onclick="copyCollectedRolls()">
+                                    <i class="fa-solid fa-copy me-1"></i>Copy Rolls
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             MODE 2: MANUAL ROLL NUMBER LIST MODE
+        ════════════════════════════════════════════ -->
+        <div class="tab-pane fade" id="manual-mode-pane" role="tabpanel" aria-labelledby="manual-tab">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-user-pen text-success me-2"></i>Manual Roll Numbers Input</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form method="POST" action="{{ url_for('teacher.take_proxy_attendance') }}">
+                                <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                                {% if leave %}<input type="hidden" name="leave_id" value="{{ leave.id }}">{% endif %}
+                                <input type="hidden" name="duty_date" value="{{ duty_date.strftime('%Y-%m-%d') }}">
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-dark fs-8">
+                                        <i class="fa-solid fa-user-plus text-success me-1"></i>Present Roll Numbers (Comma / Space Separated):
+                                    </label>
+                                    <textarea name="quick_roll_no" id="manual_rolls_textarea" class="form-control fw-bold font-monospace fs-7 rounded-3 p-3" rows="5" placeholder="e.g. 1, 5, 12, 23, 67">{{ present_rolls_str.replace(' ', '') }}</textarea>
+                                    <span class="text-muted fs-9 mt-1 d-block">Enter all student roll numbers who are <strong>present</strong> in class today.</span>
+                                </div>
+
+                                <button type="submit" class="btn btn-success btn-lg w-100 rounded-3 py-3 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-check-circle me-2"></i>Update Collected Rolls
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-clipboard-check text-success me-2"></i>Collected Rolls Overview</h5>
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-8">
+                                {{ present_count }} Present
+                            </span>
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="p-3 bg-light rounded-4 border mb-3">
+                                    <h6 class="fw-bold text-primary mb-1 fs-7">{{ slot.subject_assigned.name if slot.subject_assigned else 'Subject' }} ({{ slot.class_assigned.name if slot.class_assigned else 'Class' }})</h6>
+                                    <span class="fs-8 text-muted fw-semibold d-block mb-1">
+                                        <i class="fa-solid fa-user-tie me-1 text-secondary"></i>Original Absent Faculty: <strong>{{ orig_teacher.name if orig_teacher else 'N/A' }}</strong>
+                                    </span>
+                                    <span class="fs-8 text-muted fw-semibold d-block">
+                                        <i class="fa-solid fa-clock me-1 text-secondary"></i>Time: {{ slot.start_time }} – {{ slot.end_time }} | Date: {{ duty_date.strftime('%B %d, %Y') }}
+                                    </span>
+                                </div>
+
+                                <div class="p-3 rounded-4 border bg-white mb-3 shadow-2xs">
+                                    <span class="text-muted d-block mb-1 fs-9 fw-semibold">
+                                        <i class="fa-solid fa-user-check me-1 text-success"></i>Present Roll Numbers:
+                                    </span>
+                                    <div class="text-dark fw-bold font-monospace fs-7 p-2 rounded-3 bg-light border" style="word-break: break-all; max-height: 100px; overflow-y: auto;">
+                                        {% if present_rolls_str %}{{ present_rolls_str.replace(' ', '') }}{% else %}<span class="text-muted fs-8 fw-normal">None</span>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const webcam = document.getElementById('proxy-webcam');
+    const overlayCanvas = document.getElementById('proxy-overlay-canvas');
+    const placeholder = document.getElementById('proxy-camera-placeholder');
+    const startBtn = document.getElementById('start-proxy-cam-btn');
+    const snapBtn = document.getElementById('proxy-snap-btn');
+    const snapCountBadge = document.getElementById('proxy-snap-count');
+    const previews = document.getElementById('proxy-captured-previews');
+    const hiddenContainer = document.getElementById('proxy-hidden-snaps-container');
+    const liveBadge = document.getElementById('cam-live-badge');
+    const aiIndicator = document.getElementById('proxy-ai-indicator');
+    const liveFaceCountEl = document.getElementById('proxy-live-face-count');
+    const recognizedPopup = document.getElementById('proxy-recognized-popup');
+    const liveStudentsList = document.getElementById('proxy-live-students-list');
+    const recognizedCountBadge = document.getElementById('proxy-recognized-count');
+    const presentRollsDisplay = document.getElementById('present-rolls-display');
+    const sharePresentRollsInput = document.getElementById('share_present_rolls_input');
+    const countPresentSpan = document.getElementById('count-present-span');
+    const uiPresentCount = document.getElementById('ui-present-count');
+
+    let stream = null;
+    let storedSnapCount = 0;
+    let facingMode = 'user';
+    let liveDetectInterval = null;
+    let isDetectingLive = false;
+    
+    // Set of collected present rolls
+    let collectedRollsSet = new Set();
+
+    // Initialize from existing rolls
+    {% if present_rolls_str %}
+    "{{ present_rolls_str }}".split(',').forEach(r => {
+        let clean = r.trim();
+        if (clean) collectedRollsSet.add(clean);
+    });
+    {% endif %}
+
+    function updateRollsUI() {
+        const sorted = Array.from(collectedRollsSet).sort((a, b) => {
+            let na = parseInt(a), nb = parseInt(b);
+            return (isNaN(na) || isNaN(nb)) ? a.localeCompare(b) : na - nb;
+        });
+        const rollsStr = sorted.join(',');
+
+        if (sorted.length > 0) {
+            presentRollsDisplay.innerHTML = sorted.map(r => `<span class="badge bg-success bg-opacity-75 text-white px-2 py-1 fs-8 me-1 mb-1 font-monospace">${r}</span>`).join('');
+        } else {
+            presentRollsDisplay.innerHTML = '<span class="text-muted fs-8 fw-normal fst-italic" id="no-rolls-placeholder">No students recognized yet. Start WebRTC camera to auto-collect rolls.</span>';
+        }
+
+        if (sharePresentRollsInput) sharePresentRollsInput.value = rollsStr;
+        if (countPresentSpan) countPresentSpan.innerText = sorted.length;
+        if (uiPresentCount) uiPresentCount.innerText = `${sorted.length} Present`;
+        
+        const manualTextarea = document.getElementById('manual_rolls_textarea');
+        if (manualTextarea) manualTextarea.value = rollsStr;
+    }
+
+    async function startProxyCamera() {
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+        } catch (e) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            } catch (err) {
+                alert('Could not access camera: ' + err.message);
+                return;
+            }
+        }
+        webcam.srcObject = stream;
+        webcam.muted = true;
+        webcam.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+        if (liveBadge) liveBadge.classList.remove('d-none');
+        if (aiIndicator) aiIndicator.classList.remove('d-none');
+        if (snapBtn) snapBtn.disabled = false;
+        if (startBtn) {
+            startBtn.innerHTML = '<i class="fas fa-video text-success me-1"></i>Camera Live';
+            startBtn.classList.remove('btn-outline-primary');
+            startBtn.classList.add('btn-outline-success');
+        }
+        try { await webcam.play(); } catch(e) {}
+
+        startLiveDetectionLoop();
+    }
+
+    function stopProxyCamera() {
+        if (liveDetectInterval) {
+            clearInterval(liveDetectInterval);
+            liveDetectInterval = null;
+        }
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+        if (overlayCanvas) {
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+        webcam.style.display = 'none';
+        if (placeholder) placeholder.style.display = '';
+        if (liveBadge) liveBadge.classList.add('d-none');
+        if (aiIndicator) aiIndicator.classList.add('d-none');
+        if (snapBtn) snapBtn.disabled = true;
+        if (startBtn) {
+            startBtn.innerHTML = '<i class="fas fa-video me-1"></i>Start Camera';
+            startBtn.classList.remove('btn-outline-success');
+            startBtn.classList.add('btn-outline-primary');
+        }
+    }
+
+    function toggleProxyCameraDirection() {
+        facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+        startProxyCamera();
+    }
+
+    function startLiveDetectionLoop() {
+        if (liveDetectInterval) clearInterval(liveDetectInterval);
+        liveDetectInterval = setInterval(async () => {
+            if (isDetectingLive || !stream) return;
+            if (!webcam || !webcam.videoWidth || webcam.paused || webcam.ended) return;
+
+            isDetectingLive = true;
+            try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = webcam.videoWidth;
+                tempCanvas.height = webcam.videoHeight;
+                const ctx = tempCanvas.getContext('2d');
+                ctx.drawImage(webcam, 0, 0, tempCanvas.width, tempCanvas.height);
+                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.6);
+
+                const res = await fetch('/api/live_detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: frameBase64,
+                        class_id: {{ slot.class_id if slot.class_id else 'null' }},
+                        subject_id: {{ slot.subject_id if slot.subject_id else 'null' }}
+                    })
+                });
+
+                const data = await res.json();
+                if (data && data.success) {
+                    renderLiveOverlay(data);
+                }
+            } catch (err) {
+                console.error("Proxy live detect error:", err);
+            } finally {
+                isDetectingLive = false;
+            }
+        }, 400);
+    }
+
+    function renderLiveOverlay(data) {
+        if (!webcam || !overlayCanvas) return;
+
+        overlayCanvas.width = webcam.clientWidth || webcam.videoWidth;
+        overlayCanvas.height = webcam.clientHeight || webcam.videoHeight;
+        const ctx = overlayCanvas.getContext('2d');
+        ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        if (liveFaceCountEl) {
+            liveFaceCountEl.textContent = `${data.total_faces || 0} Faces`;
+        }
+
+        if (!data.faces || data.faces.length === 0) {
+            if (recognizedPopup) recognizedPopup.classList.add('d-none');
+            return;
+        }
+
+        if (recognizedPopup) recognizedPopup.classList.remove('d-none');
+        if (liveStudentsList) liveStudentsList.innerHTML = '';
+
+        const scaleX = overlayCanvas.width / (data.img_width || webcam.videoWidth);
+        const scaleY = overlayCanvas.height / (data.img_height || webcam.videoHeight);
+
+        let matchedThisFrameCount = 0;
+
+        data.faces.forEach(face => {
+            const box = face.box;
+            const top = box.top * scaleY;
+            const right = box.right * scaleX;
+            const bottom = box.bottom * scaleY;
+            const left = box.left * scaleX;
+            const boxWidth = right - left;
+            const boxHeight = bottom - top;
+
+            // Draw bounding box
+            ctx.strokeStyle = face.matched ? '#10b981' : '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(left, top, boxWidth, boxHeight);
+
+            // Draw name tag
+            ctx.fillStyle = face.matched ? 'rgba(16, 185, 129, 0.9)' : 'rgba(245, 158, 11, 0.9)';
+            const labelText = face.matched ? `${face.name} (Roll: ${face.roll_no})` : 'Unknown Face';
+            ctx.font = 'bold 12px sans-serif';
+            const textWidth = ctx.measureText(labelText).width;
+            ctx.fillRect(left, Math.max(0, top - 22), textWidth + 12, 22);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(labelText, left + 6, Math.max(14, top - 6));
+
+            if (face.matched && face.roll_no) {
+                matchedThisFrameCount++;
+                // Add to collected rolls set
+                if (!collectedRollsSet.has(String(face.roll_no).trim())) {
+                    collectedRollsSet.add(String(face.roll_no).trim());
+                    updateRollsUI();
+                }
+
+                if (liveStudentsList) {
+                    const pill = document.createElement('span');
+                    pill.className = 'badge bg-success text-white px-2 py-1 fs-9 fw-bold';
+                    pill.innerHTML = `<i class="fa-solid fa-check me-1"></i>${face.name} (${face.roll_no})`;
+                    liveStudentsList.appendChild(pill);
+                }
+            } else if (liveStudentsList) {
+                const pill = document.createElement('span');
+                pill.className = 'badge bg-warning text-dark px-2 py-1 fs-9';
+                pill.innerHTML = `<i class="fa-solid fa-user-question me-1"></i>Unknown Face`;
+                liveStudentsList.appendChild(pill);
+            }
+        });
+
+        if (recognizedCountBadge) recognizedCountBadge.innerText = matchedThisFrameCount;
+    }
+
+    function addRollNumberManually() {
+        const input = document.getElementById('quick_add_input');
+        const val = input.value.trim();
+        if (!val) return;
+
+        val.split(/[,\s]+/).forEach(r => {
+            let clean = r.trim();
+            if (clean) collectedRollsSet.add(clean);
+        });
+        input.value = '';
+        updateRollsUI();
+    }
+
+    function clearCollectedRolls() {
+        if (confirm('Are you sure you want to clear all collected roll numbers?')) {
+            collectedRollsSet.clear();
+            updateRollsUI();
+        }
+    }
+
+    function copyCollectedRolls() {
+        const sorted = Array.from(collectedRollsSet).sort((a, b) => {
+            let na = parseInt(a), nb = parseInt(b);
+            return (isNaN(na) || isNaN(nb)) ? a.localeCompare(b) : na - nb;
+        });
+        const r = sorted.join(',');
+        if (!r) { alert('No roll numbers to copy yet.'); return; }
+        navigator.clipboard.writeText(r);
+        alert('✓ Copied present roll numbers: ' + r);
+    }
+
+    function submitProxyShareForm() {
+        const sorted = Array.from(collectedRollsSet).sort((a, b) => {
+            let na = parseInt(a), nb = parseInt(b);
+            return (isNaN(na) || isNaN(nb)) ? a.localeCompare(b) : na - nb;
+        });
+        const r = sorted.join(',');
+        if (!r) {
+            alert('⚠️ Please scan or enter at least one present roll number first before sending.');
+            return;
+        }
+        if (sharePresentRollsInput) sharePresentRollsInput.value = r;
+        document.getElementById('share-proxy-rolls-form').submit();
+    }
+
+    function captureProxyFrame() {
+        if (!stream || !webcam.videoWidth) { alert('Start the camera first!'); return; }
+        const canvas = document.createElement('canvas');
+        canvas.width = webcam.videoWidth || 640;
+        canvas.height = webcam.videoHeight || 480;
+        canvas.getContext('2d').drawImage(webcam, 0, 0, canvas.width, canvas.height);
+        const b64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'captured_base64';
+        inp.value = b64;
+        hiddenContainer.appendChild(inp);
+
+        const img = document.createElement('img');
+        img.src = b64;
+        img.style.cssText = 'width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #198754;';
+        previews.appendChild(img);
+
+        storedSnapCount++;
+        if (snapCountBadge) snapCountBadge.innerText = storedSnapCount;
+    }
+
+    // Auto-update UI on load
+    updateRollsUI();
+
+    window.toggleProxyCameraDirection = toggleProxyCameraDirection;
+    window.startProxyCamera = startProxyCamera;
+    window.stopProxyCamera = stopProxyCamera;
+    window.captureProxyFrame = captureProxyFrame;
+    window.addRollNumberManually = addRollNumberManually;
+    window.clearCollectedRolls = clearCollectedRolls;
+    window.copyCollectedRolls = copyCollectedRolls;
+    window.submitProxyShareForm = submitProxyShareForm;
+</script>
+{% endblock %}

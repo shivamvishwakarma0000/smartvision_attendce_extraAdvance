@@ -1,0 +1,162 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - STUDENT NOTICES VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Notice Board & Announcements - SmartVision{% endblock %}
+{% block page_title %}Official Notice Board{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="fa-solid fa-bullhorn fs-4 text-warning"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Institutional & Class Notice Board</h4>
+                <p class="text-muted fs-8 mb-0">Stay updated with official announcements, exam circulars, and class teacher notifications.</p>
+            </div>
+        </div>
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-pills mb-3 gap-2" id="studentNoticeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-3.5 py-1.5 fs-8 fw-bold" id="admin-tab" data-bs-toggle="pill" data-bs-target="#adminNotices" type="button" role="tab">
+                <i class="fa-solid fa-shield-halved me-1.5 text-danger"></i>Institute Circulars ({{ admin_notices|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-3.5 py-1.5 fs-8 fw-bold" id="faculty-tab" data-bs-toggle="pill" data-bs-target="#classNotices" type="button" role="tab">
+                <i class="fa-solid fa-chalkboard-user me-1.5 text-primary"></i>Class Teacher Notices ({{ class_notices|length }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="studentNoticeTabContent">
+        <!-- 1. Institute / Admin Notices -->
+        <div class="tab-pane fade show active" id="adminNotices" role="tabpanel">
+            <div class="d-flex flex-column gap-3">
+                {% if admin_notices %}
+                    {% for notice in admin_notices %}
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border-left: 5px solid {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}#f59e0b{% elif notice.notice_type == 'Urgent' %}#ef4444{% elif notice.notice_type == 'Circular' %}#8b5cf6{% else %}#3b82f6{% endif %} !important;">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}bg-warning text-dark{% elif notice.notice_type == 'Urgent' %}bg-danger text-white{% elif notice.notice_type == 'Circular' %}bg-purple text-white{% else %}bg-primary text-white{% endif %} px-3 py-1 rounded-pill fw-bold fs-9">
+                                    <i class="fa-solid {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}fa-triangle-exclamation{% elif notice.notice_type == 'Urgent' %}fa-bell{% elif notice.notice_type == 'Circular' %}fa-file-lines{% else %}fa-bullhorn{% endif %} me-1"></i>
+                                    {{ notice.notice_type }}
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0 ms-1">{{ notice.title }}</h5>
+                            </div>
+                            
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted fs-9 font-monospace d-flex align-items-center">
+                                    <i class="fa-regular fa-clock me-1 text-muted"></i>{{ notice.created_at.strftime('%d %b %Y, %I:%M %p') }}
+                                </span>
+                                <form method="POST" action="{{ url_for('student.dismiss_notice', notice_id=notice.id) }}" class="d-inline m-0 p-0" onsubmit="return confirm('Dismiss this notice from your dashboard?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1 shadow-none" title="Dismiss Notice">
+                                        <i class="fa-solid fa-trash-can fs-9"></i> <span class="d-none d-sm-inline">Dismiss</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <p class="text-secondary fs-7 mb-3" style="white-space: pre-line;">{{ notice.content }}</p>
+
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2.5 mt-1 fs-8 text-muted">
+                            <span><i class="fa-solid fa-shield-halved text-danger me-1"></i>Issued by: <strong>Administration</strong></span>
+                            <span class="badge bg-light text-dark border fs-9">Target: {{ notice.target_role }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                        <i class="fa-solid fa-bell-slash fa-3x text-muted opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark">No Administrative Circulars</h6>
+                        <p class="text-muted fs-8 mb-0">No active institutional announcements or warning circulars.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 2. Class Teacher Notices -->
+        <div class="tab-pane fade" id="classNotices" role="tabpanel">
+            <div class="d-flex flex-column gap-3">
+                {% if class_notices %}
+                    {% for notice in class_notices %}
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border-left: 5px solid {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}#f59e0b{% elif notice.notice_type == 'Urgent' %}#ef4444{% elif notice.notice_type == 'Circular' %}#8b5cf6{% else %}#3b82f6{% endif %} !important;">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}bg-warning text-dark{% elif notice.notice_type == 'Urgent' %}bg-danger text-white{% elif notice.notice_type == 'Circular' %}bg-purple text-white{% else %}bg-primary text-white{% endif %} px-3 py-1 rounded-pill fw-bold fs-9">
+                                    <i class="fa-solid {% if notice.notice_type in ['Warning', 'RetentionAlert'] %}fa-triangle-exclamation{% elif notice.notice_type == 'Urgent' %}fa-bell{% elif notice.notice_type == 'Circular' %}fa-file-lines{% else %}fa-bullhorn{% endif %} me-1"></i>
+                                    {{ notice.notice_type }}
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0 ms-1">{{ notice.title }}</h5>
+                            </div>
+                            
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted fs-9 font-monospace d-flex align-items-center">
+                                    <i class="fa-regular fa-clock me-1 text-muted"></i>{{ notice.created_at.strftime('%d %b %Y, %I:%M %p') }}
+                                </span>
+                                <form method="POST" action="{{ url_for('student.dismiss_notice', notice_id=notice.id) }}" class="d-inline m-0 p-0" onsubmit="return confirm('Dismiss this notice from your dashboard?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0 bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1 shadow-none" title="Dismiss Notice">
+                                        <i class="fa-solid fa-trash-can fs-9"></i> <span class="d-none d-sm-inline">Dismiss</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <p class="text-secondary fs-7 mb-3" style="white-space: pre-line;">{{ notice.content }}</p>
+
+                        <div class="d-flex align-items-center justify-content-between border-top pt-2.5 mt-1 fs-8 text-muted">
+                            <span><i class="fa-solid fa-chalkboard-user text-primary me-1"></i>Posted by Faculty: <strong>{{ notice.teacher.name if notice.teacher else 'Class Teacher' }}</strong></span>
+                            {% if notice.class_assigned %}
+                            <span class="badge bg-light text-dark border fs-9">Class: {{ notice.class_assigned.name }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                        <i class="fa-solid fa-chalkboard-user fa-3x text-muted opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark">No Class Teacher Notices</h6>
+                        <p class="text-muted fs-8 mb-0">Your class teacher has not published any class announcements.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const facultyTab = document.getElementById('faculty-tab');
+    if (facultyTab) {
+        facultyTab.addEventListener('shown.bs.tab', function() {
+            // When student opens class teacher tab, mark class notices as read
+            fetch('/student/notice/mark_read/class', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => res.json()).then(data => {
+                if (data.success) {
+                    // Update any notification badges on the page if present
+                    const badges = document.querySelectorAll('.notice-badge');
+                    badges.forEach(b => b.remove());
+                }
+            }).catch(err => console.error("Error marking notices read:", err));
+        });
+    }
+});
+</script>
+{% endblock %}

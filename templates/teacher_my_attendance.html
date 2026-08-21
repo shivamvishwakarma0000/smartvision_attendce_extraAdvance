@@ -1,0 +1,245 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER MY ATTENDANCE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}My Attendance History & Analytics - SmartVision{% endblock %}
+{% block page_title %}My Daily Attendance Record{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <!-- Header Section with Back Navigation & Quick Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="fa-solid fa-calendar-check fs-4"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Faculty Attendance Logs & History</h4>
+                <span class="text-muted fs-8 font-monospace">Faculty ID: <strong>{{ teacher.emp_id or teacher.employee_code or 'N/A' }}</strong> | {{ teacher.name }}</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+            <a href="{{ url_for('teacher.dashboard') }}#teacherDailyGeoCard" class="btn btn-primary btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-xs">
+                <i class="fas fa-camera-retro me-1"></i> Self Attendance
+            </a>
+        </div>
+    </div>
+
+    <!-- Analytics Stat Cards Row (Vibrant, Modern, Elevated UI) -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Overall Attendance -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #f5f7ff 100%); border: 1.5px solid rgba(79, 70, 229, 0.2) !important; border-top: 4px solid #4f46e5 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Overall Attendance</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(79, 70, 229, 0.12); color: #4f46e5;">
+                        <i class="fa-solid fa-calculator fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1" style="color: #3730a3;">{{ attendance_pct }}%</h3>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">Weighted Ratio</span>
+            </div>
+        </div>
+
+        <!-- 2. Present Days -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%); border: 1.5px solid rgba(16, 185, 129, 0.22) !important; border-top: 4px solid #10b981 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Present Days</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                        <i class="fa-solid fa-circle-check fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1" style="color: #065f46;">{{ present_days }}</h3>
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">Full Day Attended</span>
+            </div>
+        </div>
+
+        <!-- 3. Half Days -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%); border: 1.5px solid rgba(245, 158, 11, 0.25) !important; border-top: 4px solid #f59e0b !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Half Days</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+                        <i class="fa-solid fa-clock-half-to-four fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1" style="color: #92400e;">{{ half_days }}</h3>
+                <span class="badge bg-warning bg-opacity-10 text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">1 Session Marked</span>
+            </div>
+        </div>
+
+        <!-- 4. Absent Days -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #fef2f2 100%); border: 1.5px solid rgba(239, 68, 68, 0.22) !important; border-top: 4px solid #ef4444 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Absent Days</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(239, 68, 68, 0.12); color: #ef4444;">
+                        <i class="fa-solid fa-circle-xmark fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1" style="color: #991b1b;">{{ absent_days }}</h3>
+                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">No Check-In</span>
+            </div>
+        </div>
+
+        <!-- 5. Approved Leaves -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #ecfeff 100%); border: 1.5px solid rgba(6, 182, 212, 0.22) !important; border-top: 4px solid #06b6d4 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Approved Leaves</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                        <i class="fa-solid fa-umbrella-beach fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1" style="color: #0e7490;">{{ leave_days }}</h3>
+                <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">Sanctioned</span>
+            </div>
+        </div>
+
+        <!-- 6. Punctuality -->
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card p-3 h-100 shadow-sm rounded-4 position-relative overflow-hidden hover-card-lift" 
+                 style="background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%); border: 1.5px solid rgba(100, 116, 139, 0.22) !important; border-top: 4px solid #64748b !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold">Punctuality</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(100, 116, 139, 0.12); color: #475569;">
+                        <i class="fa-solid fa-stopwatch fs-8"></i>
+                    </span>
+                </div>
+                <h3 class="fw-extrabold my-1 text-dark">{{ on_time_count }}<small class="fs-8 text-muted fw-normal"> / {{ on_time_count + late_count }}</small></h3>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0.5 fs-9 fw-bold mt-auto align-self-start">On-Time Arrivals</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance History Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+        <div class="card-header bg-white p-3.5 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="fa-solid fa-list-check text-primary"></i> Daily Biometric & Geolocation Log
+            </h6>
+
+            <!-- Filter Controls -->
+            <form method="GET" action="{{ url_for('teacher.my_attendance') }}" class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm" style="max-width: 220px;">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-calendar"></i></span>
+                    <input type="month" class="form-control form-control-sm border-start-0" name="month" value="{{ month_filter }}" title="Select Month & Year">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                    Filter
+                </button>
+                {% if month_filter or date_filter %}
+                <a href="{{ url_for('teacher.my_attendance') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5">
+                    Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 fs-8">
+                <thead class="bg-light text-muted text-uppercase fs-9">
+                    <tr>
+                        <th class="px-3 py-3">Date & Day</th>
+                        <th class="px-3 py-3">Morning Check-In</th>
+                        <th class="px-3 py-3">Evening Check-Out</th>
+                        <th class="px-3 py-3">Punctuality</th>
+                        <th class="px-3 py-3 text-center">Daily Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if records %}
+                    {% for r in records %}
+                    <tr>
+                        <td class="px-3 py-3 fw-bold text-dark font-monospace">
+                            <div>{{ r.attendance_date.strftime('%d %b, %Y') }}</div>
+                            <span class="fs-9 text-muted fw-normal">{{ r.attendance_date.strftime('%A') }}</span>
+                        </td>
+                        <td class="px-3 py-3">
+                            {% if r.check_in_at %}
+                            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2.5 py-1 rounded-pill">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i>{{ r.check_in_at.strftime('%I:%M %p') }}
+                            </span>
+                            <div class="fs-9 text-muted mt-1 d-flex align-items-center gap-1.5">
+                                <span><i class="fa-solid fa-location-dot text-primary"></i> {{ r.check_in_distance|round(1) }}m</span>
+                                {% if r.check_in_face_verified %}
+                                <span class="badge bg-success bg-opacity-15 text-success fs-9 py-0 px-1.5 rounded-pill"><i class="fa-solid fa-face-smile me-0.5"></i>Face OK</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted fs-9"><i class="fa-solid fa-minus me-1"></i>Not Marked</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3">
+                            {% if r.check_out_at %}
+                            <span class="badge bg-info bg-opacity-10 text-info fw-bold px-2.5 py-1 rounded-pill">
+                                <i class="fa-solid fa-right-from-bracket me-1"></i>{{ r.check_out_at.strftime('%I:%M %p') }}
+                            </span>
+                            <div class="fs-9 text-muted mt-1 d-flex align-items-center gap-1.5">
+                                <span><i class="fa-solid fa-location-dot text-primary"></i> {{ r.check_out_distance|round(1) }}m</span>
+                                {% if r.check_out_face_verified %}
+                                <span class="badge bg-info bg-opacity-15 text-info fs-9 py-0 px-1.5 rounded-pill"><i class="fa-solid fa-face-smile me-0.5"></i>Face OK</span>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted fs-9"><i class="fa-solid fa-minus me-1"></i>Not Marked</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3">
+                            {% if r.late_status == 'Late' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger fw-bold px-2.5 py-1 rounded-pill">
+                                <i class="fa-solid fa-clock me-1"></i>Late (+{{ r.late_minutes }}m)
+                            </span>
+                            {% elif r.check_in_at %}
+                            <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2.5 py-1 rounded-pill">
+                                <i class="fa-solid fa-check me-1"></i>On Time
+                            </span>
+                            {% else %}
+                            <span class="text-muted fs-9">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            {% if r.status == 'Present' %}
+                            <span class="badge bg-success text-white px-3 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-circle-check me-1"></i>Present</span>
+                            {% elif r.status == 'Half Day' %}
+                            <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-clock-half-to-four me-1"></i>Half Day</span>
+                            {% elif r.status == 'Approved Leave' %}
+                            <span class="badge bg-info text-white px-3 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-umbrella-beach me-1"></i>Approved Leave</span>
+                            {% elif r.status == 'Absent' %}
+                            <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-circle-xmark me-1"></i>Absent</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white px-3 py-1.5 rounded-pill fs-8">{{ r.status or 'Pending' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fa-solid fa-calendar-xmark fa-3x opacity-50 mb-2"></i>
+                                <h6 class="fw-bold mb-1">No Attendance Records Found</h6>
+                                <p class="fs-9 mb-0">Your daily attendance check-ins will be logged here automatically.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

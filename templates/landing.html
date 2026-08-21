@@ -1,705 +1,1041 @@
-{% extends "base.html" %}
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - LANDING VIEW TEMPLATE #}
+{# ============================================================================== #}
 
-{% block title %}Welcome to SmartVision{% endblock %}
-
-{% block content %}
-<div class="container-fluid px-0 h-100 d-flex align-items-stretch login-layout-container">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartVision Attendance Portal</title>
+    <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Floating Theme Toggle (Landing Page) -->
-    <div class="position-absolute" style="top: 20px; right: 20px; z-index: 2000;">
-        <button id="themeToggleLanding" class="btn btn-sm btn-link text-decoration-none p-2 border-0 rounded-circle shadow-sm" style="color: var(--text-secondary); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Toggle Dark/Light Mode">
-            <i class="fa-solid fa-moon"></i>
+    <style>
+        /* Theme Tokens - Left Hero is Permanently Cosmic Dark, Right Auth Card Toggles Dark/Light */
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0c1021 0%, #181d36 100%);
+            --text-main: #ffffff;
+            --text-muted: #cbd5e1;
+            --card-bg: #1e293b;
+            --card-border: rgba(255, 255, 255, 0.15);
+            --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --input-bg: #0f172a;
+            --input-border: #475569;
+            --input-text: #ffffff;
+            --input-placeholder: #94a3b8;
+            --primary-blue: #6366f1;
+            --primary-hover: #4f46e5;
+            --globe-stroke: rgba(255, 255, 255, 0.15);
+            --divider-color: rgba(255, 255, 255, 0.15);
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #0c1021 0%, #f1f5f9 100%);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --input-bg: #f8fafc;
+            --input-border: #cbd5e1;
+            --input-text: #0f172a;
+            --input-placeholder: #64748b;
+            --primary-blue: #4f46e5;
+            --primary-hover: #4338ca;
+            --divider-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Left Hero Section (PERMANENT COSMIC DARK THEME) */
+        .hero-left-wrapper {
+            position: relative;
+            padding-right: 3rem;
+            background: transparent;
+        }
+
+        @media (min-width: 992px) {
+            .hero-left-wrapper::after {
+                content: '';
+                position: absolute;
+                right: 0;
+                top: 5%;
+                height: 90%;
+                width: 1px;
+                background: var(--divider-color);
+                transition: background 0.3s ease;
+            }
+        }
+
+        /* Permanent Dark Hero Typography */
+        .hero-main-title {
+            font-size: 3.25rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: #ffffff !important;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .hero-main-title span.highlight {
+            background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: #cbd5e1 !important;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            max-width: 520px;
+        }
+
+        .hero-check-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #ffffff !important;
+        }
+
+        .globe-bg-svg {
+            position: absolute;
+            bottom: -30px;
+            right: 20px;
+            width: 260px;
+            height: 260px;
+            opacity: 0.75;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Left Panel Dedicated High-Def Live Camera Display */
+        .left-camera-display {
+            background: #000;
+            border-radius: 1.25rem;
+            border: 2px solid var(--primary-blue);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        #webcam-stream-left {
+            width: 100%;
+            height: 340px;
+            object-fit: cover;
+            border-radius: 0.85rem;
+            background: #111;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Right Floating Auth Card Container */
+        .auth-card-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .auth-card-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .auth-card-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .auth-card-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 10px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            box-shadow: var(--card-shadow);
+            padding: 2.25rem;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Nav Pills */
+        .auth-nav-pills {
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 0.3rem;
+            display: flex;
+            gap: 0.3rem;
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .auth-nav-pills .nav-link {
+            flex: 1;
+            text-align: center;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            padding: 0.65rem 0.8rem;
+            color: var(--text-muted) !important;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .auth-nav-pills .nav-link.active {
+            background-color: var(--primary-blue) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .form-control, .form-select {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--input-text);
+            border-radius: 0.65rem;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.875rem;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        .form-control::placeholder {
+            color: var(--input-placeholder) !important;
+            opacity: 1;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: var(--input-bg);
+            border-color: var(--primary-blue);
+            color: var(--input-text);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .form-label {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--text-main);
+            margin-bottom: 0.4rem;
+            transition: color 0.3s ease;
+        }
+
+        .btn-primary-auth {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+            color: #ffffff;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary-auth:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }
+
+        .photo-preview-thumb {
+            width: 85px;
+            height: 85px;
+            border-radius: 0.65rem;
+            object-fit: cover;
+            border: 2px solid var(--primary-blue);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Single Top Navbar with Official Brand Logo Image -->
+<nav class="navbar px-4 py-3 border-bottom border-opacity-10 border-white">
+    <div class="container d-flex justify-content-between align-items-center">
+        <a class="d-flex align-items-center gap-2.5 text-decoration-none" href="#">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SmartVision Logo" class="rounded shadow-sm" style="width: 38px; height: 38px; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.2);" onerror="this.style.display='none'; document.getElementById('landing-logo-fallback').classList.remove('d-none');">
+            <span id="landing-logo-fallback" class="d-none rounded bg-primary d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                <i class="fa-solid fa-eye text-white fs-6"></i>
+            </span>
+            <span class="fs-4 fw-bold text-white" style="letter-spacing: -0.5px;">SmartVision</span>
+        </a>
+
+        <!-- Theme Toggle Button -->
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5" onclick="toggleTheme()">
+            <i class="fa-solid fa-moon text-warning" id="theme-icon"></i> <span id="theme-text" class="text-white fs-8">Dark</span>
         </button>
     </div>
-    
-    <!-- Left Side: Brand Visual Grid (Futuristic AI Scanner Showcase with Image) -->
-    <div class="col-lg-7 d-none d-lg-flex flex-column justify-content-between p-4 p-xl-5 text-white position-relative overflow-hidden" 
-         style="background: linear-gradient(135deg, #0b0f19 0%, #15192e 50%, #1e1b4b 100%);">
+</nav>
+
+<div class="container-fluid px-3 px-lg-5 py-4 my-auto">
+    <div class="row w-100 align-items-center g-4 mx-0">
         
-        <!-- Ambient Mesh Glow Backdrops -->
-        <div class="position-absolute" style="top: -100px; left: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(99,102,241,0.35) 0%, rgba(0,0,0,0) 70%); filter: blur(60px); pointer-events: none;"></div>
-        <div class="position-absolute" style="bottom: -100px; right: -100px; width: 450px; height: 450px; background: radial-gradient(circle, rgba(56,189,248,0.25) 0%, rgba(0,0,0,0) 70%); filter: blur(60px); pointer-events: none;"></div>
-
-        <!-- Top Header / Logo -->
-        <div class="d-flex align-items-center justify-content-between position-relative z-10">
-            <div class="d-flex align-items-center gap-3">
-                <div class="position-relative">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SmartVision Logo" class="rounded-3 border border-white-50 shadow-lg" style="width: 46px; height: 46px; object-fit: cover;" onerror="this.style.display='none'; document.getElementById('landing-logo-fallback').classList.remove('d-none');">
-                    <div id="landing-logo-fallback" class="d-none rounded-3 border border-white-50 shadow-lg d-flex align-items-center justify-content-center" style="width: 46px; height: 46px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                        <i class="fa-solid fa-eye text-white fs-4"></i>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="fw-extrabold m-0" style="letter-spacing: -0.5px; background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 1.45rem;">
-                        SmartVision
-                    </h4>
-                    <span class="fs-9 text-indigo-300 tracking-wider text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 1px;">Smart Attendance Portal</span>
-                </div>
-            </div>
-            <span class="badge bg-white bg-opacity-10 text-white px-3 py-1.5 rounded-pill border border-white-50 fs-8 fw-normal">
-                <i class="fa-solid fa-bolt text-warning me-1.5"></i> AI Facial Scanner v2.5
-            </span>
-        </div>
-
-        <!-- Center Showcase: Clean Text & Tech Badges (No Image) -->
-        <div class="my-auto position-relative py-4 text-start" style="z-index: 10; max-width: 580px; animation: slide-right 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
+        <!-- LEFT COLUMN: Permanent Cosmic Dark Hero Presentation -->
+        <div class="col-lg-6 hero-left-wrapper d-none d-lg-block" id="left-panel-container">
             
-            <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-primary bg-opacity-20 border border-primary border-opacity-30 mb-4">
-                <span class="spinner-grow spinner-grow-sm text-info" role="status"></span>
-                <span class="fs-8 fw-semibold text-indigo-200">AI-POWERED FACIAL RECOGNITION</span>
+            <!-- MODE A: EXACT REFERENCE SCREENSHOT HERO PRESENTATION -->
+            <div id="left-hero-default" style="position: relative; z-index: 1;">
+
+                <h1 class="hero-main-title">
+                    AI–Powered <span class="highlight">Facial Recognition</span> Attendance
+                </h1>
+                
+                <p class="hero-subtitle">
+                    Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure platform.
+                </p>
+
+
+
+                <!-- Geometric Globe Wireframe Graphic SVG Backdrop -->
+                <svg class="globe-bg-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="120" cy="120" r="110" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+                    <ellipse cx="120" cy="120" rx="110" ry="45" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+                    <ellipse cx="120" cy="120" rx="45" ry="110" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+                    <line x1="10" y1="120" x2="230" y2="120" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+                    <line x1="120" y1="10" x2="120" y2="230" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
+                </svg>
             </div>
 
-            <h1 class="fw-extrabold mb-3" style="font-weight: 800; letter-spacing: -1.2px; line-height: 1.15; font-size: 3rem;">
-                Smart Classroom <span style="background: linear-gradient(135deg, #a5b4fc 0%, #38bdf8 50%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Attendance System</span>
-            </h1>
-            
-            <p class="text-white-50 mb-4 fs-5" style="line-height: 1.6; font-weight: 400;">
-                Automate classroom check-ins, eliminate proxy attendance, run instant multi-face group scans, and access real-time analytics for students & faculty.
-            </p>
-
-            <!-- Clean Feature Grid Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-6">
-                    <div class="p-3 rounded-4 border border-white-50 bg-white bg-opacity-10 backdrop-blur d-flex align-items-center gap-3" style="backdrop-filter: blur(12px);">
-                        <div class="rounded-circle bg-success bg-opacity-20 text-success p-2.5 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
-                            <i class="fa-solid fa-shield-check"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-white mb-0 fs-7">99.8% Accuracy</h6>
-                            <span class="text-white-50 fs-8">Facial Landmark Mapping</span>
-                        </div>
-                    </div>
+            <!-- MODE B: LEFT PANEL DEDICATED LIVE HD CAMERA VIEWPORT -->
+            <div id="left-camera-display-box" class="left-camera-display" style="display: none; position: relative; z-index: 2;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fs-7 fw-bold text-white"><i class="fa-solid fa-circle text-danger me-1 fs-9 animate-pulse"></i> Live Facial Camera Viewport</span>
+                    <button type="button" class="btn-close btn-close-white" onclick="stopWebcam()"></button>
                 </div>
 
-                <div class="col-6">
-                    <div class="p-3 rounded-4 border border-white-50 bg-white bg-opacity-10 backdrop-blur d-flex align-items-center gap-3" style="backdrop-filter: blur(12px);">
-                        <div class="rounded-circle bg-info bg-opacity-20 text-info p-2.5 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
-                            <i class="fa-solid fa-bolt"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-white mb-0 fs-7">&lt; 0.3s Speed</h6>
-                            <span class="text-white-50 fs-8">Instant Multi-Face Scan</span>
-                        </div>
-                    </div>
+                <video id="webcam-stream-left" autoplay playsinline muted></video>
+                <canvas id="canvas-snap-left" style="display: none;"></canvas>
+
+                <div class="alert alert-danger py-1.5 px-3 fs-9 mt-2 mb-2" id="cam-err-left" style="display: none;"></div>
+
+                <div class="d-flex justify-content-center gap-3 mt-3">
+                    <button type="button" class="btn btn-outline-light btn-sm py-2 px-3.5 fw-semibold rounded-3" onclick="flipWebcam()">
+                        <i class="fa-solid fa-arrows-rotate me-1.5"></i> Flip Camera (Front/Rear)
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm py-2 px-4 fw-bold rounded-3 shadow-sm" onclick="takeSnapshot()">
+                        <i class="fa-solid fa-camera-retro me-1.5"></i> Capture Photo Snapshot
+                    </button>
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-4 text-white-50 fs-8">
-                <span><i class="fa-solid fa-circle-check text-success me-1.5"></i>Student & Teacher Portals</span>
-                <span><i class="fa-solid fa-circle-check text-success me-1.5"></i>Admin Approvals Queue</span>
+        </div>
+
+        <!-- RIGHT COLUMN: Floating Boxed Auth Form Card -->
+        <div class="col-lg-6 col-12 ms-auto ps-lg-4">
+            <div class="auth-card-container">
+                <div class="auth-card">
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show border-0 rounded-3 mb-3 py-2.5 px-3 fs-8" role="alert">
+                                    <i class="fa-solid fa-circle-info me-1"></i> {{ message }}
+                                    <button type="button" class="btn-close py-2.5" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Clean Header Title -->
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold mb-1" id="form-title" style="color: var(--text-main);">Welcome to SmartVision</h4>
+                        <p class="fs-8 mb-3" id="form-subtitle" style="color: var(--text-muted);">Sign in or register your student/teacher account</p>
+
+                        <!-- Fixed Tab Switcher Pills -->
+                        <div class="auth-nav-pills mb-3">
+                            <a class="nav-link active" id="tab-login" onclick="showView('login')">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i> Sign In
+                            </a>
+                            <a class="nav-link" id="tab-signup" onclick="showView('signup')">
+                                <i class="fa-solid fa-user-plus me-1"></i> Register Account
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- ==================================================================== -->
+                    <!-- 1. SIGN IN FORM -->
+                    <!-- ==================================================================== -->
+                    <div id="view-login">
+                        <form method="POST" action="{{ url_for('auth.login') }}">
+                            <div class="mb-3">
+                                <label class="form-label d-block text-center" style="color: var(--text-main);">Select Login Role</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="login_role" id="role-student" value="student" checked>
+                                    <label class="btn btn-outline-primary btn-sm py-2 fw-semibold" for="role-student"><i class="fa-solid fa-graduation-cap me-1"></i> Student</label>
+
+                                    <input type="radio" class="btn-check" name="login_role" id="role-teacher" value="teacher">
+                                    <label class="btn btn-outline-primary btn-sm py-2 fw-semibold" for="role-teacher"><i class="fa-solid fa-chalkboard-user me-1"></i> Teacher</label>
+
+                                    <input type="radio" class="btn-check" name="login_role" id="role-admin" value="admin">
+                                    <label class="btn btn-outline-primary btn-sm py-2 fw-semibold" for="role-admin"><i class="fa-solid fa-user-gear me-1"></i> Admin</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="login_email" class="form-label" style="color: var(--text-main);">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-envelope"></i></span>
+                                    <input type="email" class="form-control" id="login_email" name="email" placeholder="admin@smart.com" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="login_password" class="form-label" style="color: var(--text-main);">Password</label>
+                                    <a href="{{ url_for('auth.forgot_password') }}" class="fs-9 text-primary text-decoration-none fw-bold">Forgot?</a>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
+                                    <input type="password" class="form-control" id="login_password" name="password" placeholder="••••••••" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-auth w-100 mb-3">
+                                Sign In to Portal <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </button>
+
+                            <!-- Google Sign-In Button -->
+                            {% if config.get('GOOGLE_CLIENT_ID') %}
+                            <a href="{{ url_for('auth.google_login') }}" class="btn btn-outline-secondary w-100 py-2.5 rounded-3 fw-semibold fs-8 d-flex align-items-center justify-content-center gap-2 mb-3">
+                                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-1.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
+                                Continue with Google
+                            </a>
+                            {% endif %}
+
+                            <div class="text-center fs-8" style="color: var(--text-muted);">
+                                Need an account? <a onclick="showView('signup')" class="text-primary fw-bold text-decoration-none" style="cursor: pointer;">Register here</a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ==================================================================== -->
+                    <!-- 2. REGISTRATION FORM -->
+                    <!-- ==================================================================== -->
+                    <div id="view-signup" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label d-block text-center" style="color: var(--text-main);">Register As</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="reg_role_select" id="reg-role-student" value="student" checked onclick="setRole('student')">
+                                <label class="btn btn-outline-primary btn-sm py-2 fw-semibold" for="reg-role-student"><i class="fa-solid fa-user-graduate me-1"></i> Student</label>
+
+                                <input type="radio" class="btn-check" name="reg_role_select" id="reg-role-teacher" value="teacher" onclick="setRole('teacher')">
+                                <label class="btn btn-outline-primary btn-sm py-2 fw-semibold" for="reg-role-teacher"><i class="fa-solid fa-chalkboard-user me-1"></i> Teacher</label>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('auth.register') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="signup_role" id="hidden_signup_role" value="student">
+                            <input type="hidden" name="captured_image_base64" id="captured_image_base64">
+
+                            <!-- COMMON FIELDS -->
+                            <div class="mb-2">
+                                <label class="form-label" style="color: var(--text-main);">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="name" placeholder="John Doe" required>
+                            </div>
+
+                            <div class="row g-2 mb-2">
+                                <div class="col-12 mb-1">
+                                    <label class="form-label" style="color: var(--text-main);">Email Address <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="email" class="form-control" name="email" id="reg_email" placeholder="john@domain.com" required oninput="handleEmailInput(this)">
+                                        <button type="button" class="btn btn-primary btn-sm fw-bold px-3 d-none" id="btn-get-otp" onclick="requestInlineOTP()">
+                                            <i class="fa-solid fa-paper-plane me-1"></i> Send OTP
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="email_verified" id="reg_email_verified" value="false">
+                                    <div id="email-verify-status" class="mt-1 fs-9 text-success fw-bold d-none">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Email Verified Successfully
+                                    </div>
+                                    <div id="reg-email-error" class="mt-2 fs-8 text-danger fw-bold d-none p-2 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-20">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <span id="reg-email-error-text"></span>
+                                    </div>
+                                </div>
+
+                                <!-- INLINE OTP BOX (Revealed when Send OTP is clicked) -->
+                                <div class="col-12 my-1 d-none" id="inline-otp-container">
+                                    <div class="p-3 rounded-3 border bg-light shadow-sm">
+                                        <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                            <span class="fs-9 text-dark fw-bold"><i class="fa-solid fa-envelope-open-text me-1 text-primary"></i> Enter 6-Digit Email OTP</span>
+                                            <span class="fs-9 text-muted" id="otp-timer-display"></span>
+                                        </div>
+                                        <div class="input-group input-group-sm mb-1">
+                                            <input type="text" class="form-control font-monospace fw-bold fs-7 text-center" id="input_inline_otp" maxlength="6" placeholder="Enter 6-digit OTP code" style="letter-spacing: 4px;">
+                                            <button type="button" class="btn btn-success fw-bold px-3" id="btn-verify-otp" onclick="verifyInlineOTP()">
+                                                <i class="fa-solid fa-check-circle me-1"></i> Verify OTP
+                                            </button>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-1">
+                                            <span class="fs-9 text-danger d-none fw-semibold" id="inline-otp-err"></span>
+                                            <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none ms-auto fs-9" onclick="requestInlineOTP()">Resend OTP</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" style="color: var(--text-main);">Mobile Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" name="mobile" placeholder="+91 9876543210" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label" style="color: var(--text-main);">Create Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" name="password" minlength="8" placeholder="Min 8 characters" required>
+                            </div>
+
+                            <!-- STUDENT FIELDS -->
+                            <div id="student-fields">
+                                <div class="mb-2">
+                                    <label class="form-label" style="color: var(--text-main);">Academic Department <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-sm" name="department" id="input_student_department" required>
+                                        <option value="" disabled selected>Select Your Department...</option>
+                                        {% if all_departments %}
+                                            {% for dept in all_departments %}
+                                            <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="CSE">CSE (Computer Science & Engineering)</option>
+                                            <option value="AI">AI (Artificial Intelligence)</option>
+                                            <option value="AI/DS">AI/DS (AI & Data Science)</option>
+                                            <option value="AI/ML">AI/ML (AI & Machine Learning)</option>
+                                            <option value="ORACLE">ORACLE (Database & Systems)</option>
+                                            <option value="MICROSOFT">MICROSOFT (Cloud & Enterprise)</option>
+                                            <option value="IT">IT (Information Technology)</option>
+                                            <option value="ECE">ECE (Electronics & Comm.)</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label" style="color: var(--text-main);">Roll Number <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="roll_no" id="input_roll_no" placeholder="CSE-101" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label" style="color: var(--text-main);">Enrollment No <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="enrollment_no" id="input_enrollment_no" placeholder="EN2024001" required>
+                                    </div>
+                                </div>
+
+                                <!-- FATHER / PARENT CONTACT INFO BOX -->
+                                <div class="p-3 rounded-3 border mb-3" style="background: rgba(99, 102, 241, 0.05); border-color: var(--card-border) !important;">
+                                    <span class="fs-9 fw-bold text-primary d-block mb-2"><i class="fa-solid fa-users me-1"></i> Father / Parent Contact Info</span>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label fs-9 mb-1" style="color: var(--text-main);">Parent Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control form-control-sm" name="parent_name" id="input_parent_name" placeholder="Robert Doe" required>
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label fs-9 mb-1" style="color: var(--text-main);">Parent Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control form-control-sm" name="parent_email" id="input_parent_email" placeholder="parent@gmail.com" required>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label fs-9 mb-1" style="color: var(--text-main);">Parent Phone <span class="text-danger">*</span></label>
+                                            <input type="tel" class="form-control form-control-sm" name="parent_mobile" id="input_parent_mobile" placeholder="+91 9876543210" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TEACHER FIELDS -->
+                            <div id="teacher-fields" style="display: none;">
+                                <div class="mb-2">
+                                    <label class="form-label" style="color: var(--text-main);">Issued Teacher ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control font-monospace" name="teacher_id" id="input_teacher_id" placeholder="TCH-849201">
+                                    <span class="fs-9" style="color: var(--text-muted);">Use Teacher ID issued by your Admin.</span>
+                                </div>
+
+                                <div class="p-2.5 rounded-3 border mb-3" style="background: rgba(99, 102, 241, 0.05); border-color: var(--card-border) !important;">
+                                    <span class="fs-9 fw-bold text-primary d-block mb-1"><i class="fa-solid fa-book-open me-1"></i> Teaching Expertise</span>
+                                    <div class="row g-1.5">
+                                        <div class="col-4">
+                                            <label class="form-label fs-9" style="color: var(--text-main);">Primary</label>
+                                            <input type="text" class="form-control form-control-sm" name="primary_subject" placeholder="AI">
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label fs-9" style="color: var(--text-main);">Secondary</label>
+                                            <input type="text" class="form-control form-control-sm" name="secondary_subject" placeholder="DBMS">
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label fs-9" style="color: var(--text-main);">3rd Choice</label>
+                                            <input type="text" class="form-control form-control-sm" name="tertiary_subject" placeholder="Python">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MANDATORY FACIAL PHOTO SELECTION -->
+                            <div class="mb-3">
+                                <label class="form-label d-block" style="color: var(--text-main);">Register Face Photo <span class="text-danger">* (Mandatory)</span></label>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-bold" onclick="toggleLeftWebcam()">
+                                            <i class="fa-solid fa-camera me-1"></i> Open Camera
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="file" class="form-control form-control-sm" name="student_photo" id="file_photo" accept="image/*" onchange="previewFile(this)">
+                                    </div>
+                                </div>
+
+                                <!-- PHOTO PREVIEW STATUS -->
+                                <div id="photo-preview-status" class="p-2 border rounded-3 d-flex align-items-center gap-3 mt-2" style="display: none !important; background: var(--input-bg);">
+                                    <img id="preview-img" class="photo-preview-thumb" src="" alt="Preview">
+                                    <div>
+                                        <span class="badge bg-success mb-1"><i class="fa-solid fa-circle-check me-1"></i> Photo Attached</span>
+                                        <span class="fs-9 text-muted d-block" id="preview-label">Captured via webcam</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-auth w-100 mb-2">
+                                Complete Registration <i class="fa-solid fa-user-check ms-1"></i>
+                            </button>
+
+                            <button type="button" onclick="showView('login')" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-semibold">
+                                <i class="fa-solid fa-arrow-left me-1"></i> Back to Sign In
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
             </div>
         </div>
 
-        <!-- Bottom Product Tagline (No Names / No University) -->
-        <div class="d-flex align-items-center justify-content-between position-relative z-10 pt-3 border-top border-white border-opacity-10 fs-8 text-white-50">
-            <span><i class="fa-solid fa-lock text-indigo-400 me-1.5"></i> Encrypted Facial Vector Security</span>
-            <span><i class="fa-solid fa-server text-indigo-400 me-1.5"></i> Automated Attendance Engine</span>
-        </div>
-    </div>
-
-    <!-- Right Side: Unified Glass Card (Exact 15% Top, 20% Bottom, 65% Cover Height) -->
-    <div class="col-lg-5 col-12 d-flex flex-column justify-content-start align-items-center bg-light auth-scroll-container">
-        
-        <div class="card auth-card p-4 p-md-4 shadow-lg border-0 w-100 fade-in" 
-             style="background: var(--bg-card); backdrop-filter: blur(24px); border-radius: 24px; border: 1px solid var(--border-card);">
-            
-            <!-- Dynamic State Panels -->
- 
-            <!-- 1. WELCOME PANEL -->
-            <div id="welcome-panel" class="panel-state">
-                <div class="text-center mb-3">
-                    <span class="fs-2 d-block mb-1 text-primary"><i class="fa-solid fa-shield-halved"></i></span>
-                    <h4 class="fw-extrabold text-primary" style="font-weight: 800; font-size: 1.5rem;">Welcome to SmartVision</h4>
-                    <p class="text-muted fs-7 mb-0">Select your portal route below to begin</p>
-                </div>
-                
-                <div class="d-grid gap-2 mt-3">
-                    <button onclick="switchState('login', 'student')" class="btn btn-primary py-2.5 d-flex align-items-center justify-content-center gap-2 shadow">
-                        <i class="fa-solid fa-graduation-cap"></i> Student Portal
-                    </button>
-                    <button onclick="switchState('login', 'teacher')" class="btn btn-info text-white py-2.5 d-flex align-items-center justify-content-center gap-2 shadow-sm">
-                        <i class="fa-solid fa-chalkboard-user"></i> Teacher Portal
-                    </button>
-                    <button onclick="switchState('login', 'admin')" class="btn btn-secondary py-2.5 d-flex align-items-center justify-content-center gap-2">
-                        <i class="fa-solid fa-user-shield"></i> Administrator Portal
-                    </button>
-                </div>
-                
-                <div class="text-center mt-4 pt-2 border-top">
-                    <p class="text-muted mb-0 fs-7">First time using the portal? <a href="javascript:void(0)" onclick="switchState('signup')" class="text-primary fw-bold text-decoration-none">Sign Up here</a></p>
-                </div>
-            </div>
-
-            <!-- 2. LOGIN PANEL -->
-            <div id="login-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-3">
-                    <h4 class="fw-extrabold text-primary mb-1" style="font-weight: 800; font-size: 1.5rem;" id="login-title">Sign In</h4>
-                    <p class="text-muted fs-7 mb-0">Enter credentials or connect via Google</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.login') }}">
-                    <!-- Role Tab Selector -->
-                    <div class="mb-3.5 d-flex justify-content-center bg-light p-1 rounded-3 border">
-                        <input type="radio" class="btn-check" name="login_role" id="login_role_student" value="student" checked onclick="toggleLoginRole('student')">
-                        <label class="btn btn-sm btn-outline-primary px-2 py-2 w-33" for="login_role_student"><i class="fa-solid fa-graduation-cap me-1"></i> Student</label>
-                        
-                        <input type="radio" class="btn-check" name="login_role" id="login_role_teacher" value="teacher" onclick="toggleLoginRole('teacher')">
-                        <label class="btn btn-sm btn-outline-primary px-2 py-2 w-33" for="login_role_teacher"><i class="fa-solid fa-chalkboard-user me-1"></i> Teacher</label>
-
-                        <input type="radio" class="btn-check" name="login_role" id="login_role_admin" value="admin" onclick="toggleLoginRole('admin')">
-                        <label class="btn btn-sm btn-outline-primary px-2 py-2 w-33" for="login_role_admin"><i class="fa-solid fa-user-shield me-1"></i> Admin</label>
-                    </div>
-
-                    <!-- Email Input -->
-                    <div class="mb-2">
-                        <label for="login_email" class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Email Address</label>
-                        <input type="email" class="form-control py-2" id="login_email" name="email" placeholder="name@domain.com" required style="font-size: 0.85rem;">
-                    </div>
-                    
-                    <!-- Password Input -->
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <label for="login_password" class="form-label fw-semibold mb-0" style="font-size: 0.8rem;">Password</label>
-                            <a href="javascript:void(0)" onclick="switchState('forgot')" class="text-primary text-decoration-none fw-semibold" style="font-size: 0.8rem;">Forgot password?</a>
-                        </div>
-                        <input type="password" class="form-control py-2" id="login_password" name="password" placeholder="••••••••" required style="font-size: 0.85rem;">
-                    </div>
-                    
-                    <!-- Submit Button -->
-                    <button type="submit" class="btn btn-primary w-100 py-2.5 mb-2 shadow" style="font-size: 0.9rem;">
-                        Sign In
-                    </button>
-                </form>
-
-                {% if google_enabled %}
-                <div class="position-relative text-center my-2">
-                    <hr class="text-muted my-1">
-                    <span class="position-absolute top-50 start-50 translate-middle login-or-divider px-2 text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Or</span>
-                </div>
-                <a href="{{ url_for('auth.google_login') }}" class="btn btn-google w-100 py-2 shadow-sm" style="font-size: 0.9rem;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    Sign In with Google
-                </a>
-                {% endif %}
-
-                <div class="text-center mt-3">
-                    <p class="text-muted mb-0 fs-7">Don't have an account? <a href="javascript:void(0)" onclick="switchState('signup')" class="text-primary fw-bold text-decoration-none">Sign Up here</a></p>
-                    <a href="javascript:void(0)" onclick="switchState('welcome')" class="text-muted d-block mt-2 text-decoration-none fs-8">← Back to Role Welcome</a>
-                </div>
-            </div>
-
-            <!-- 3. SIGN UP PANEL -->
-            <div id="signup-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-2">
-                    <h4 class="fw-extrabold text-primary mb-1" style="font-weight: 800; font-size: 1.5rem;">Create Account</h4>
-                    <p class="text-muted mb-0 fs-7">Register as Student or Teacher</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.signup') }}" enctype="multipart/form-data" id="signup-form" onsubmit="window.stopCamera('signup')">
-                    <!-- Signup Role Selector -->
-                    <div class="mb-3 d-flex justify-content-center bg-light p-1 rounded-3 border">
-                        <input type="radio" class="btn-check" name="signup_role" id="signup_role_student" value="student" checked onclick="toggleSignupRole('student')">
-                        <label class="btn btn-sm btn-outline-primary px-3 py-1.5 w-50" for="signup_role_student"><i class="fa-solid fa-graduation-cap me-1"></i> Student</label>
-                        
-                        <input type="radio" class="btn-check" name="signup_role" id="signup_role_teacher" value="teacher" onclick="toggleSignupRole('teacher')">
-                        <label class="btn btn-sm btn-outline-primary px-3 py-1.5 w-50" for="signup_role_teacher"><i class="fa-solid fa-chalkboard-user me-1"></i> Teacher</label>
-                    </div>
-
-                    <!-- Common Fields -->
-                    <div class="mb-2">
-                        <label for="su_name" class="form-label fw-semibold mb-0.5" style="font-size: 0.8rem;">Full Name</label>
-                        <input type="text" class="form-control py-2" id="su_name" name="name" placeholder="John Doe" required style="font-size: 0.85rem;">
-                    </div>
-                    <div class="mb-2">
-                        <label for="su_email" class="form-label fw-semibold mb-0.5" style="font-size: 0.8rem;">Email Address</label>
-                        <input type="email" class="form-control py-2" id="su_email" name="email" placeholder="name@domain.com" required style="font-size: 0.85rem;">
-                    </div>
-                    <div class="mb-2">
-                        <label for="su_password" class="form-label fw-semibold mb-0.5" style="font-size: 0.8rem;">Password</label>
-                        <input type="password" class="form-control py-2" id="su_password" name="password" placeholder="Min. 8 characters" required minlength="8" style="font-size: 0.85rem;">
-                    </div>
-
-                    <!-- Teacher-Only Fields -->
-                    <div id="teacher_signup_fields" class="p-2 rounded-3 border mb-2 d-none" style="background: rgba(14, 165, 233, 0.05); border-color: rgba(14, 165, 233, 0.2) !important; font-size: 0.85rem;">
-                        <h6 class="fw-bold text-info mb-2" style="font-size: 0.82rem;">
-                            <i class="fa-solid fa-id-badge me-1"></i>Teacher Details
-                        </h6>
-                        <div class="mb-2">
-                            <label for="su_emp_id" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Employee ID <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control py-1" id="su_emp_id" name="emp_id" placeholder="EMP-1024" style="font-size: 0.8rem;">
-                        </div>
-                    </div>
-
-                    <!-- Student & Shared Fields -->
-                    <div id="student_signup_fields" class="p-2 rounded-3 border mb-2" style="background: rgba(99,102,241,0.04); border-color: rgba(99,102,241,0.15) !important; font-size: 0.85rem;">
-                        <h6 class="fw-bold text-primary mb-2" style="font-size: 0.82rem;" id="photo-section-header">
-                            <i class="fa-solid fa-id-card me-1"></i>Student Information
-                        </h6>
-                        <div class="mb-2">
-                            <label for="su_mobile" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Mobile Number</label>
-                            <input type="tel" class="form-control py-1" id="su_mobile" name="mobile" placeholder="+91 9876543210" style="font-size: 0.8rem;">
-                        </div>
-                        <div class="row g-2 mb-2" id="roll_enroll_container">
-                            <div class="col-6">
-                                <label for="su_roll_no" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Roll No <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control py-1" id="su_roll_no" name="roll_no" placeholder="CS2026-04" required style="font-size: 0.8rem;">
-                            </div>
-                            <div class="col-6">
-                                <label for="su_enrollment_no" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Enrollment No <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control py-1" id="su_enrollment_no" name="enrollment_no" placeholder="EN12345678" required style="font-size: 0.8rem;">
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <label class="form-label fw-semibold mb-1" style="font-size: 0.75rem;">Face Registration Photo</label>
-                            
-                            <input type="hidden" name="captured_image_base64" id="captured_image_base64-signup">
-                            
-                            <!-- Toggle Selection Mode -->
-                            <div class="d-flex gap-2 mb-2">
-                                <button type="button" class="btn btn-xs btn-primary w-50 py-1" id="btn-local-mode-signup" onclick="setPhotoMode('signup', 'local')" style="font-size: 0.72rem;">
-                                    <i class="fa-solid fa-image"></i> Local File
-                                </button>
-                                <button type="button" class="btn btn-xs btn-outline-primary w-50 py-1" id="btn-camera-mode-signup" onclick="setPhotoMode('signup', 'camera')" style="font-size: 0.72rem;">
-                                    <i class="fa-solid fa-camera"></i> Camera Capture
-                                </button>
-                            </div>
-
-                            <!-- Local File Input -->
-                            <div id="file-input-container-signup">
-                                <input type="file" class="form-control py-1" id="file-input-signup" name="student_photo" accept="image/*" data-originally-required="false" style="font-size: 0.8rem;">
-                            </div>
-
-                            <!-- Camera Preview Section -->
-                            <div class="camera-container d-none mb-2 text-center border p-2 rounded-3" id="camera-section-signup" style="background: rgba(0,0,0,0.03);">
-                                <video id="webcam-signup" autoplay playsinline style="width: 100%; max-height: 150px; border-radius: 8px; transform: scaleX(-1); background: #000;"></video>
-                                <canvas id="canvas-signup" class="d-none"></canvas>
-                                
-                                <!-- Captured Photo Preview -->
-                                <div id="captured-preview-container-signup" class="d-none mt-1 text-center">
-                                    <img id="captured-preview-signup" class="img-fluid rounded border border-primary shadow-sm" style="max-height: 120px;">
-                                    <p class="text-success mt-0.5 fw-semibold mb-0" style="font-size: 0.75rem;"><i class="fa-solid fa-circle-check"></i> Captured</p>
-                                </div>
-                                
-                                <div class="d-flex justify-content-center gap-2 mt-2">
-                                    <button type="button" class="btn btn-xs btn-primary py-0.5 px-2" id="btn-capture-signup" onclick="capturePhoto('signup')" style="font-size: 0.7rem;">Capture</button>
-                                    <button type="button" class="btn btn-xs btn-secondary py-0.5 px-2 d-none" id="btn-retake-signup" onclick="retakePhoto('signup')" style="font-size: 0.7rem;">Retake</button>
-                                </div>
-                            </div>
-
-                            <div class="text-muted mt-1" style="font-size: 0.7rem;" id="photo-help-text">
-                                <i class="fa-solid fa-circle-info me-1 text-primary"></i>Registration photo will be verified by Administrator upon approval.
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm" style="font-size: 0.9rem;">
-                        <i class="fa-solid fa-user-plus me-1"></i> Register Account
-                    </button>
-                </form>
-
-                <div class="text-center mt-2">
-                    <p class="text-muted mb-0 fs-7">Already have an account? <a href="javascript:void(0)" onclick="switchState('login')" class="text-primary fw-bold text-decoration-none">Log In here</a></p>
-                </div>
-            </div>
-
-            <!-- 4. FORGOT PASSWORD PANEL -->
-            <div id="forgot-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-3">
-                    <span class="fs-2 text-warning"><i class="fa-solid fa-key"></i></span>
-                    <h4 class="fw-extrabold text-primary mt-1 mb-1" style="font-weight: 800; font-size: 1.5rem;">Forgot Password?</h4>
-                    <p class="text-muted fs-7 mb-0">Enter your registered email — we'll send a 6-digit OTP to verify your identity.</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.forgot_password') }}">
-                    <div class="mb-3">
-                        <label for="forgot_email" class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text" style="background: var(--bg-card); border-color: var(--border-card);"><i class="fa-solid fa-envelope text-muted"></i></span>
-                            <input type="email" class="form-control py-2" id="forgot_email" name="email" placeholder="name@domain.com" required style="font-size: 0.85rem;">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 shadow" style="font-size: 0.9rem;">
-                        <i class="fa-solid fa-paper-plane me-1"></i> Send OTP
-                    </button>
-                </form>
-                <div class="text-center mt-3">
-                    <a href="javascript:void(0)" onclick="switchState('login')" class="text-primary fw-bold text-decoration-none fs-7">
-                        <i class="fa-solid fa-arrow-left me-1"></i>Return to Sign In
-                    </a>
-                </div>
-            </div>
-
-            <!-- 5. OTP VERIFY PANEL -->
-            <div id="otp-verify-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-3">
-                    <span class="fs-2 text-primary"><i class="fa-solid fa-mobile-screen-button"></i></span>
-                    <h4 class="fw-extrabold text-primary mt-1 mb-1" style="font-weight: 800; font-size: 1.4rem;">Enter OTP</h4>
-                    <p class="text-muted fs-7 mb-0">A 6-digit OTP has been sent to your email. Check the server console if running locally.</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.verify_otp') }}">
-                    <div class="mb-3">
-                        <label for="otp_input" class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">6-Digit OTP Code</label>
-                        <input type="text" class="form-control py-2 text-center fw-bold" id="otp_input" name="otp"
-                               placeholder="••••••" maxlength="6" pattern="[0-9]{6}" inputmode="numeric"
-                               required autocomplete="one-time-code"
-                               style="font-size: 1.4rem; letter-spacing: 0.4em; border-radius: 12px;">
-                        <div class="text-muted mt-1" style="font-size: 0.75rem;">
-                            <i class="fa-solid fa-clock text-warning me-1"></i>OTP is valid for 10 minutes
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 py-2 shadow" style="font-size: 0.9rem;">
-                        <i class="fa-solid fa-shield-halved me-1"></i> Verify OTP
-                    </button>
-                </form>
-
-                <div class="text-center mt-3">
-                    <p class="text-muted fs-8 mb-1">Didn't receive OTP?</p>
-                    <a href="javascript:void(0)" onclick="switchState('forgot')" class="text-primary fw-bold text-decoration-none fs-7">
-                        <i class="fa-solid fa-rotate-left me-1"></i>Resend OTP
-                    </a>
-                </div>
-            </div>
-
-            <!-- 6. RESET PASSWORD PANEL (after OTP verified) -->
-            <div id="reset-password-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-3">
-                    <span class="fs-2 text-success"><i class="fa-solid fa-lock-open"></i></span>
-                    <h4 class="fw-extrabold text-success mt-1 mb-1" style="font-weight: 800; font-size: 1.4rem;">Set New Password</h4>
-                    <p class="text-muted fs-7 mb-0">OTP verified successfully. Choose a strong new password.</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.reset_password_otp') }}">
-                    <div class="mb-2">
-                        <label for="rp_password" class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">New Password</label>
-                        <input type="password" class="form-control py-2" id="rp_password" name="password"
-                               placeholder="Min. 8 characters" required minlength="8" style="font-size: 0.85rem;">
-                    </div>
-                    <div class="mb-3">
-                        <label for="rp_confirm" class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Confirm Password</label>
-                        <input type="password" class="form-control py-2" id="rp_confirm" name="confirm_password"
-                               placeholder="Re-enter password" required minlength="8" style="font-size: 0.85rem;">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100 py-2 shadow" style="font-size: 0.9rem;">
-                        <i class="fa-solid fa-floppy-disk me-1"></i> Save New Password
-                    </button>
-                </form>
-            </div>
-
-            <!-- 7. RECOVERY SUCCESS PANEL -->
-            <div id="forgot-success-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-3">
-                    <span class="fs-2 text-success"><i class="fa-solid fa-envelope-open-text"></i></span>
-                    <h4 class="fw-extrabold text-success mt-1 mb-1" style="font-weight: 800; font-size: 1.5rem;">OTP Sent!</h4>
-                    <p class="text-muted fs-7 mb-0">Recovery OTP dispatched for <strong id="success-email">your email</strong></p>
-                </div>
-                
-                <div class="alert alert-info border-0 shadow-sm rounded-3 py-2 text-start mb-3" style="font-size: 0.8rem; line-height: 1.4;">
-                    <strong><i class="fa-solid fa-terminal me-1"></i>Developer Note:</strong><br>
-                    OTP has been printed to the <strong>server console/terminal</strong>. Enter it in the OTP panel to reset your password.
-                </div>
-
-                <button onclick="switchState('otp-verify')" class="btn btn-primary w-100 py-2">
-                    <i class="fa-solid fa-input-numeric me-1"></i> Enter OTP
-                </button>
-            </div>
-
-            <!-- 8. GOOGLE COMPLETE PANEL -->
-            <div id="google-complete-panel" class="panel-state" style="display: none;">
-                <div class="text-center mb-2">
-                    <span class="fs-2 text-primary"><i class="fa-solid fa-rocket"></i></span>
-                    <h4 class="fw-extrabold text-primary mt-1 mb-1" style="font-weight: 800; font-size: 1.5rem;" id="g-complete-title">Almost There!</h4>
-                    <p class="text-muted mb-0 fs-7" id="g-complete-email">Finish account setup</p>
-                </div>
-
-                <form method="POST" action="{{ url_for('auth.google_signup_complete') }}" enctype="multipart/form-data" id="gcomplete-form" onsubmit="window.stopCamera('gcomplete')">
-                    <input type="hidden" name="role" value="student">
-
-                    <!-- Student Specific Section -->
-                    <div id="gcomplete_fields" class="p-2 rounded-3 border mb-2" style="background: rgba(99,102,241,0.04); border-color: rgba(99, 102, 241, 0.15) !important; font-size: 0.85rem;">
-                        <h6 class="fw-bold text-primary mb-2" style="font-size: 0.82rem;">
-                            <i class="fa-solid fa-id-card me-1"></i>Student Information
-                        </h6>
-                        <div class="mb-2">
-                            <label for="gcomplete_mobile" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Mobile Number</label>
-                            <input type="tel" class="form-control py-1" id="gcomplete_mobile" name="mobile" placeholder="+91 9876543210" style="font-size: 0.8rem;">
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-6">
-                                <label for="gcomplete_roll_no" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Roll No <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control py-1" id="gcomplete_roll_no" name="roll_no" placeholder="CS2026-04" required style="font-size: 0.8rem;">
-                            </div>
-                            <div class="col-6">
-                                <label for="gcomplete_enrollment_no" class="form-label fw-semibold mb-0.5" style="font-size: 0.75rem;">Enrollment No <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control py-1" id="gcomplete_enrollment_no" name="enrollment_no" placeholder="EN12345678" required style="font-size: 0.8rem;">
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <label class="form-label fw-semibold mb-1" style="font-size: 0.75rem;">Face Registration Photo</label>
-                            
-                            <input type="hidden" name="captured_image_base64" id="captured_image_base64-gcomplete">
-                            
-                            <!-- Toggle Selection Mode -->
-                            <div class="d-flex gap-2 mb-2">
-                                <button type="button" class="btn btn-xs btn-primary w-50 py-1" id="btn-local-mode-gcomplete" onclick="setPhotoMode('gcomplete', 'local')" style="font-size: 0.72rem;">
-                                    <i class="fa-solid fa-image"></i> Local File
-                                </button>
-                                <button type="button" class="btn btn-xs btn-outline-primary w-50 py-1" id="btn-camera-mode-gcomplete" onclick="setPhotoMode('gcomplete', 'camera')" style="font-size: 0.72rem;">
-                                    <i class="fa-solid fa-camera"></i> Camera Capture
-                                </button>
-                            </div>
-
-                            <!-- Local File Input -->
-                            <div id="file-input-container-gcomplete">
-                                <input type="file" class="form-control py-1" id="file-input-gcomplete" name="student_photo" accept="image/*" data-originally-required="false" style="font-size: 0.8rem;">
-                            </div>
-
-                            <!-- Camera Preview Section -->
-                            <div class="camera-container d-none mb-2 text-center border p-2 rounded-3" id="camera-section-gcomplete" style="background: rgba(0,0,0,0.03);">
-                                <video id="webcam-gcomplete" autoplay playsinline style="width: 100%; max-height: 150px; border-radius: 8px; transform: scaleX(-1); background: #000;"></video>
-                                <canvas id="canvas-gcomplete" class="d-none"></canvas>
-                                
-                                <!-- Captured Photo Preview -->
-                                <div id="captured-preview-container-gcomplete" class="d-none mt-1 text-center">
-                                    <img id="captured-preview-gcomplete" class="img-fluid rounded border border-primary shadow-sm" style="max-height: 120px;">
-                                    <p class="text-success mt-0.5 fw-semibold mb-0" style="font-size: 0.75rem;"><i class="fa-solid fa-circle-check"></i> Captured</p>
-                                </div>
-                                
-                                <div class="d-flex justify-content-center gap-2 mt-2">
-                                    <button type="button" class="btn btn-xs btn-primary py-0.5 px-2" id="btn-capture-gcomplete" onclick="capturePhoto('gcomplete')" style="font-size: 0.7rem;">Capture</button>
-                                    <button type="button" class="btn btn-xs btn-secondary py-0.5 px-2 d-none" id="btn-retake-gcomplete" onclick="retakePhoto('gcomplete')" style="font-size: 0.7rem;">Retake</button>
-                                </div>
-                            </div>
-
-                            <div class="text-muted mt-1" style="font-size: 0.7rem;">
-                                <i class="fa-solid fa-circle-info me-1 text-primary"></i>Admin will assign your class after registration.
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm" style="font-size: 0.9rem;">
-                        <i class="fa-solid fa-user-plus me-1"></i> Complete Registration
-                    </button>
-                </form>
-            </div>
-
-            <!-- End Panels -->
-
-        </div>
     </div>
 </div>
 
-<!-- Dynamic SPA Javascript Controllers -->
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/bootstrap.bundle.min.js"></script>
+
 <script>
-// Toggle and load appropriate layout state
-function switchState(state, roleContext = null) {
-    // Hide all panels
-    const panels = document.querySelectorAll('.panel-state');
-    panels.forEach(p => p.style.display = 'none');
+    let currentStream = null;
+    let cameraFacing = "user"; // "user" front, "environment" rear
 
-    // Show selected panel
-    const selectedPanel = document.getElementById(state + '-panel');
-    if (selectedPanel) {
-        selectedPanel.style.display = 'block';
-    }
+    // Flawless Theme Switcher Logic
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('smartvision-theme', newTheme);
 
-    // Role contextual handling for Login
-    if (state === 'login' && roleContext) {
-        if (roleContext === 'student') {
-            document.getElementById('login_role_student').checked = true;
-            toggleLoginRole('student');
-        } else if (roleContext === 'admin') {
-            document.getElementById('login_role_admin').checked = true;
-            toggleLoginRole('admin');
+        const icon = document.getElementById('theme-icon');
+        const text = document.getElementById('theme-text');
+        if (newTheme === 'dark') {
+            icon.className = 'fa-solid fa-moon text-warning';
+            text.innerText = 'Dark';
+        } else {
+            icon.className = 'fa-solid fa-sun text-warning';
+            text.innerText = 'Light';
         }
     }
-}
 
-// Login role switches
-function toggleLoginRole(role) {
-    const title = document.getElementById('login-title');
-    if (role === 'student') {
-        title.innerHTML = '<i class="fa-solid fa-graduation-cap me-2"></i> Student Sign In';
-    } else if (role === 'teacher') {
-        title.innerHTML = '<i class="fa-solid fa-chalkboard-user me-2"></i> Teacher Sign In';
+    const savedTheme = localStorage.getItem('smartvision-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const icon = document.getElementById('theme-icon');
+    const text = document.getElementById('theme-text');
+    if (savedTheme === 'dark') {
+        icon.className = 'fa-solid fa-moon text-warning';
+        text.innerText = 'Dark';
     } else {
-        title.innerHTML = '<i class="fa-solid fa-user-shield me-2"></i> Administrator Sign In';
+        icon.className = 'fa-solid fa-sun text-warning';
+        text.innerText = 'Light';
     }
-}
 
-// Signup dynamic fields toggles (student vs teacher)
-function toggleSignupFields(role) {
-    const studentFields = document.getElementById('student_signup_fields');
-    const teacherFields = document.getElementById('teacher_signup_fields');
-    const rollEnrollContainer = document.getElementById('roll_enroll_container');
-    const photoHeader = document.getElementById('photo-section-header');
-    const rollNo = document.getElementById('su_roll_no');
-    const enrollmentNo = document.getElementById('su_enrollment_no');
-    const empId = document.getElementById('su_emp_id');
+    // Auto-dismiss Flash Alert Messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            document.querySelectorAll('.alert-dismissible').forEach(function(alertEl) {
+                try {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                    if (bsAlert) bsAlert.close();
+                } catch (e) {
+                    alertEl.style.display = 'none';
+                }
+            });
+        }, 5000);
+    });
 
-    if (role === 'teacher') {
-        if (teacherFields) teacherFields.classList.remove('d-none');
-        if (studentFields) studentFields.classList.remove('d-none');
-        if (rollEnrollContainer) rollEnrollContainer.classList.add('d-none');
-        if (photoHeader) photoHeader.innerHTML = '<i class="fa-solid fa-camera me-1"></i>Teacher Photo Registration';
-        if (rollNo) rollNo.required = false;
-        if (enrollmentNo) enrollmentNo.required = false;
-        if (empId) empId.required = true;
-    } else {
-        // Student
-        if (teacherFields) teacherFields.classList.add('d-none');
-        if (studentFields) studentFields.classList.remove('d-none');
-        if (rollEnrollContainer) rollEnrollContainer.classList.remove('d-none');
-        if (photoHeader) photoHeader.innerHTML = '<i class="fa-solid fa-id-card me-1"></i>Student Information';
-        if (rollNo) rollNo.required = true;
-        if (enrollmentNo) enrollmentNo.required = true;
-        if (empId) empId.required = false;
-    }
-}
+    // Fixed Tab Switcher Function
+    function showView(view) {
+        const viewLogin = document.getElementById('view-login');
+        const viewSignup = document.getElementById('view-signup');
+        const tabLogin = document.getElementById('tab-login');
+        const tabSignup = document.getElementById('tab-signup');
+        const formTitle = document.getElementById('form-title');
 
-// Alias for onclick attributes in HTML
-function toggleSignupRole(role) { toggleSignupFields(role); }
-
-// Google completion dynamic fields toggles
-function toggleGCompleteRole(role) {
-    const fields = document.getElementById('gcomplete_fields');
-    const adminNote = document.getElementById('gcomplete_admin_note');
-    const rollNo = document.getElementById('gcomplete_roll_no');
-    const enrollmentNo = document.getElementById('gcomplete_enrollment_no');
-
-    if (role === 'student') {
-        fields.style.display = 'block';
-        if (adminNote) adminNote.style.display = 'none';
-        if (rollNo) rollNo.required = true;
-        if (enrollmentNo) enrollmentNo.required = true;
-    } else {
-        fields.style.display = 'none';
-        if (adminNote) adminNote.style.display = 'block';
-        if (rollNo) rollNo.required = false;
-        if (enrollmentNo) enrollmentNo.required = false;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initial State loading from Flask render arguments
-    const initialState = "{{ state }}";
-    const recoveryEmail = "{{ email }}";
-    const googleDataExists = {% if google_data %}true{% else %}false{% endif %};
-
-    if (initialState === 'forgot-success' && recoveryEmail) {
-        const el = document.getElementById('success-email');
-        if (el) el.innerText = recoveryEmail;
-        switchState('forgot-success');
-    } else if (initialState === 'otp-verify') {
-        switchState('otp-verify');
-    } else if (initialState === 'reset-password') {
-        switchState('reset-password');
-    } else if (initialState === 'google-complete' && googleDataExists) {
-        const name = "{{ google_data.name if google_data else '' }}";
-        const email = "{{ google_data.email if google_data else '' }}";
-        const titleEl = document.getElementById('g-complete-title');
-        const emailEl = document.getElementById('g-complete-email');
-        if (titleEl) titleEl.innerText = "Welcome, " + name + "!";
-        if (emailEl) emailEl.innerText = "Finish account setup for " + email;
-        switchState('google-complete');
-    } else if (['login', 'signup', 'forgot'].includes(initialState)) {
-        switchState(initialState);
-        if (initialState === 'login') {
-            toggleLoginRole('student');
+        if (view === 'login') {
+            viewLogin.style.display = 'block';
+            viewSignup.style.display = 'none';
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            formTitle.innerText = 'Welcome to SmartVision';
+            stopWebcam();
+        } else {
+            viewLogin.style.display = 'none';
+            viewSignup.style.display = 'block';
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            formTitle.innerText = 'Create Account';
         }
-    } else {
-        switchState('welcome');
     }
-});
+
+    function setRole(role) {
+        document.getElementById('hidden_signup_role').value = role;
+        const studentFields = document.getElementById('student-fields');
+        const teacherFields = document.getElementById('teacher-fields');
+        
+        const studentDept = document.getElementById('input_student_department');
+        const rollNo = document.getElementById('input_roll_no');
+        const enrollNo = document.getElementById('input_enrollment_no');
+        const parentName = document.getElementById('input_parent_name');
+        const parentEmail = document.getElementById('input_parent_email');
+        const parentMobile = document.getElementById('input_parent_mobile');
+        const teacherId = document.getElementById('input_teacher_id');
+
+        if (role === 'student') {
+            studentFields.style.display = 'block';
+            teacherFields.style.display = 'none';
+            if (studentDept) studentDept.required = true;
+            rollNo.required = true;
+            enrollNo.required = true;
+            if (parentName) parentName.required = true;
+            parentEmail.required = true;
+            parentMobile.required = true;
+            if (teacherId) teacherId.required = false;
+        } else {
+            studentFields.style.display = 'none';
+            teacherFields.style.display = 'block';
+            if (studentDept) studentDept.required = false;
+            rollNo.required = false;
+            enrollNo.required = false;
+            if (parentName) parentName.required = false;
+            parentEmail.required = false;
+            parentMobile.required = false;
+            if (teacherId) teacherId.required = true;
+        }
+    }
+
+    // WebRTC Camera Controls displaying in the LEFT PANEL
+    async function startWebcam() {
+        stopWebcam();
+        const errDiv = document.getElementById('cam-err-left');
+        if (errDiv) errDiv.style.display = 'none';
+
+        // Swap Left Panel view to Camera Display
+        document.getElementById('left-hero-default').style.display = 'none';
+        const camBox = document.getElementById('left-camera-display-box');
+        camBox.style.display = 'block';
+        camBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const attempts = [
+            { video: { facingMode: cameraFacing } },
+            { video: { facingMode: { exact: cameraFacing } } },
+            { video: true }
+        ];
+
+        let stream = null;
+        for (let constraint of attempts) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraint);
+                if (stream) break;
+            } catch (e) {
+                console.warn('Camera attempt failed:', constraint, e);
+            }
+        }
+
+        if (stream) {
+            currentStream = stream;
+            const video = document.getElementById('webcam-stream-left');
+            video.srcObject = stream;
+            video.play().catch(e => console.log('Autoplay play error:', e));
+        } else {
+            if (errDiv) {
+                errDiv.innerText = "Camera permission denied or device unavailable. Please allow webcam permissions or upload photo.";
+                errDiv.style.display = 'block';
+            }
+        }
+    }
+
+    function stopWebcam() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+        const camBox = document.getElementById('left-camera-display-box');
+        if (camBox) camBox.style.display = 'none';
+        const heroBox = document.getElementById('left-hero-default');
+        if (heroBox) heroBox.style.display = 'block';
+    }
+
+    function toggleLeftWebcam() {
+        startWebcam();
+    }
+
+    function flipWebcam() {
+        cameraFacing = (cameraFacing === "user") ? "environment" : "user";
+        startWebcam();
+    }
+
+    function takeSnapshot() {
+        const video = document.getElementById('webcam-stream-left');
+        const canvas = document.getElementById('canvas-snap-left');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        document.getElementById('captured_image_base64').value = dataUrl;
+
+        // Show Preview in Form
+        const previewBox = document.getElementById('photo-preview-status');
+        const img = document.getElementById('preview-img');
+        const label = document.getElementById('preview-label');
+
+        img.src = dataUrl;
+        label.innerText = 'Captured via left panel camera (' + cameraFacing + ')';
+        previewBox.style.setProperty('display', 'flex', 'important');
+
+        stopWebcam();
+    }
+
+    function previewFile(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewBox = document.getElementById('photo-preview-status');
+                const img = document.getElementById('preview-img');
+                const label = document.getElementById('preview-label');
+
+                img.src = e.target.result;
+                label.innerText = input.files[0].name;
+                previewBox.style.setProperty('display', 'flex', 'important');
+                document.getElementById('captured_image_base64').value = '';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // REAL-TIME INLINE EMAIL VALIDATION & OTP ENGINE
+    let inlineEmailVerified = false;
+
+    function isValidEmail(email) {
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return regex.test(email);
+    }
+
+    function handleEmailInput(input) {
+        const email = input.value.trim();
+        const btnGetOtp = document.getElementById('btn-get-otp');
+
+        if (inlineEmailVerified) return;
+
+        if (isValidEmail(email)) {
+            if (btnGetOtp) btnGetOtp.classList.remove('d-none');
+        } else {
+            if (btnGetOtp) btnGetOtp.classList.add('d-none');
+        }
+    }
+
+    async function requestInlineOTP() {
+        const emailInput = document.getElementById('reg_email');
+        const email = emailInput ? emailInput.value.trim() : '';
+
+        if (!isValidEmail(email)) {
+            alert('Please enter a valid email address first.');
+            return;
+        }
+
+        const btnGet = document.getElementById('btn-get-otp');
+        if (btnGet) {
+            btnGet.disabled = true;
+            btnGet.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Sending...';
+        }
+
+        const errSpan = document.getElementById('inline-otp-err');
+        if (errSpan) errSpan.classList.add('d-none');
+
+        const emailErrDiv = document.getElementById('reg-email-error');
+        const emailErrText = document.getElementById('reg-email-error-text');
+        if (emailErrDiv) emailErrDiv.classList.add('d-none');
+
+        try {
+            const targetUrl = window.location.origin + '/send-register-otp';
+            const res = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email: email })
+            });
+
+            const data = await res.json();
+            if (btnGet) {
+                btnGet.disabled = false;
+                btnGet.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Resend OTP';
+            }
+
+            if (res.ok && data.success) {
+                if (emailErrDiv) emailErrDiv.classList.add('d-none');
+                
+                // Reveal OTP container directly below email
+                const otpBox = document.getElementById('inline-otp-container');
+                if (otpBox) otpBox.classList.remove('d-none');
+                
+                // Focus OTP input
+                const otpInput = document.getElementById('input_inline_otp');
+                if (otpInput) {
+                    otpInput.value = '';
+                    otpInput.focus();
+                }
+
+                if (data.otp_debug) {
+                    console.log("[OTP SENT TO EMAIL]:", data.otp_debug);
+                }
+            } else {
+                if (emailErrDiv && emailErrText) {
+                    emailErrText.innerText = data.message || 'Error sending OTP.';
+                    emailErrDiv.classList.remove('d-none');
+                } else if (errSpan) {
+                    errSpan.innerText = data.message || 'Error sending OTP.';
+                    errSpan.classList.remove('d-none');
+                } else {
+                    alert(data.message || 'Error sending OTP.');
+                }
+            }
+        } catch (e) {
+            if (btnGet) {
+                btnGet.disabled = false;
+                btnGet.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Send OTP';
+            }
+            console.error("OTP Request Error:", e);
+            if (emailErrDiv && emailErrText) {
+                emailErrText.innerText = 'Error sending OTP. Please check server connection.';
+                emailErrDiv.classList.remove('d-none');
+            } else {
+                alert('Error sending OTP. Please check server connection.');
+            }
+        }
+    }
+
+    async function verifyInlineOTP() {
+        const emailInput = document.getElementById('reg_email');
+        const email = emailInput ? emailInput.value.trim() : '';
+        const otpInput = document.getElementById('input_inline_otp');
+        const otp = otpInput ? otpInput.value.trim() : '';
+        const errSpan = document.getElementById('inline-otp-err');
+
+        if (!otp || otp.length < 6) {
+            if (errSpan) {
+                errSpan.innerText = 'Please enter complete 6-digit OTP.';
+                errSpan.classList.remove('d-none');
+            }
+            return;
+        }
+
+        if (errSpan) errSpan.classList.add('d-none');
+
+        const btnVerify = document.getElementById('btn-verify-otp');
+        if (btnVerify) {
+            btnVerify.disabled = true;
+            btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Verifying...';
+        }
+
+        try {
+            const targetUrl = window.location.origin + '/verify-register-otp';
+            const res = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email: email, otp: otp })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                inlineEmailVerified = true;
+                document.getElementById('reg_email_verified').value = 'true';
+                
+                // Hide OTP box
+                const otpBox = document.getElementById('inline-otp-container');
+                if (otpBox) otpBox.classList.add('d-none');
+
+                // Show Green Verified Badge
+                const statusDiv = document.getElementById('email-verify-status');
+                if (statusDiv) statusDiv.classList.remove('d-none');
+
+                // Update Get OTP button to Verified state
+                const btnGet = document.getElementById('btn-get-otp');
+                if (btnGet) {
+                    btnGet.className = 'btn btn-success btn-sm fw-bold px-3';
+                    btnGet.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Verified';
+                    btnGet.disabled = true;
+                }
+
+                // Lock email input
+                if (emailInput) emailInput.readOnly = true;
+            } else {
+                if (btnVerify) {
+                    btnVerify.disabled = false;
+                    btnVerify.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Verify OTP';
+                }
+                if (errSpan) {
+                    errSpan.innerText = data.message || 'Invalid OTP code.';
+                    errSpan.classList.remove('d-none');
+                }
+            }
+        } catch (e) {
+            if (btnVerify) {
+                btnVerify.disabled = false;
+                btnVerify.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Verify OTP';
+            }
+            if (errSpan) {
+                errSpan.innerText = 'Verification failed: ' + e.message;
+                errSpan.classList.remove('d-none');
+            }
+        }
+    }
+
+    // GUARD FORM SUBMIT IF EMAIL NOT VERIFIED
+    document.addEventListener('DOMContentLoaded', function() {
+        const signupForm = document.querySelector('#auth-card form[action*="register"]');
+        if (signupForm) {
+            signupForm.addEventListener('submit', function(e) {
+                const verified = document.getElementById('reg_email_verified').value;
+                if (verified !== 'true') {
+                    e.preventDefault();
+                    alert('Please click "Get OTP" and verify your email address before completing registration.');
+                    const emailInput = document.getElementById('reg_email');
+                    if (emailInput) emailInput.focus();
+                }
+            });
+        }
+    });
 </script>
-
-<style>
-@keyframes slide-right {
-    0% { transform: translateX(-30px); opacity: 0; }
-    100% { transform: translateX(0); opacity: 1; }
-}
-
-.auth-scroll-container {
-    overflow-y: hidden !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    padding-top: 15vh !important;
-    padding-bottom: 20vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    box-sizing: border-box !important;
-}
-
-.auth-card {
-    height: 65vh !important;
-    max-height: 65vh !important;
-    width: 100% !important;
-    max-width: 460px !important;
-    overflow-y: auto !important;
-    scroll-behavior: smooth;
-    padding: 2.25rem 2rem !important;
-    border-radius: 24px !important;
-    margin: 0 !important;
-}
-
-.auth-card::-webkit-scrollbar {
-    width: 6px;
-}
-
-.auth-card::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.auth-card::-webkit-scrollbar-thumb {
-    background-color: rgba(99, 102, 241, 0.3);
-    border-radius: 10px;
-}
-
-.auth-card::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(99, 102, 241, 0.6);
-}
-
-#student_signup_fields, #teacher_signup_fields, #gcomplete_fields {
-    overflow: visible;
-}
-
-/* Compact layout for mobile & small screens */
-@media (max-height: 800px) {
-    .auth-card {
-        padding: 1.25rem 1.5rem !important;
-        border-radius: 16px !important;
-    }
-    .panel-state h3, .panel-state h4 {
-        font-size: 1.3rem !important;
-        margin-bottom: 0.25rem !important;
-    }
-    .panel-state p {
-        font-size: 0.8rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    .form-control, .form-select {
-        padding: 0.4rem 0.75rem !important;
-        font-size: 0.8rem !important;
-    }
-    .form-label {
-        font-size: 0.75rem !important;
-        margin-bottom: 0.25rem !important;
-    }
-    .btn {
-        padding: 0.45rem 1rem !important;
-        font-size: 0.85rem !important;
-    }
-    #student_signup_fields, #teacher_signup_fields, #gcomplete_fields {
-        padding: 0.6rem !important;
-        margin-bottom: 0.75rem !important;
-    }
-}
-</style>
-{% endblock %}
+</body>
+</html>

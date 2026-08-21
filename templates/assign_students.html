@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ASSIGN STUDENTS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Assign Students to Classes - SmartVision{% endblock %}
@@ -9,11 +13,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="fw-bold mb-1" style="color: var(--text-primary);">
-            <i class="fa-solid fa-people-arrows text-warning me-2"></i>Unclassified Students
+            <i class="fa-solid fa-people-arrows text-warning me-2"></i>Class Assignment & Classification Hub
         </h4>
         <p class="text-muted mb-0 fs-7">
-            These students have registered but have not been assigned a class yet. 
-            Assign each student to their correct class below.
+            Assign registered students to academic classes individually, by bulk selection, or using the <strong>Roll Number Range Assignment Tool</strong>.
         </p>
     </div>
     <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm">
@@ -21,50 +24,131 @@
     </a>
 </div>
 
-{% if unclassified_students %}
+<!-- 1. ROLL NUMBER RANGE ASSIGNMENT TOOL -->
+<div class="card border-0 shadow-sm mb-4 rounded-4" style="background: var(--bg-card); border: 1px solid var(--border-card) !important;">
+    <div class="card-body p-3.5">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold fs-8">
+                <i class="fa-solid fa-list-ol me-1"></i>Range Tool
+            </span>
+            <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.95rem;">Roll Number Range Assignment</h6>
+        </div>
+        <p class="text-muted fs-8 mb-3">Quickly assign a sequence of roll numbers (e.g. <strong>1 – 20</strong> or <strong>CS01 – CS20</strong>) to a target class without manual selection.</p>
 
-<div class="card border-0 shadow-sm mb-4" style="background: var(--bg-card); border: 1px solid var(--border-card);">
-    <div class="card-header border-bottom" style="background: var(--bg-card);">
+        <form method="POST" action="{{ url_for('main.assign_students') }}" id="rangeAssignForm" class="row g-2 align-items-center">
+            <div class="col-md-3 col-sm-4">
+                <label for="range_start" class="form-label fw-semibold fs-9 text-muted mb-1">Start Roll No</label>
+                <input type="text" id="range_start" name="range_start" class="form-control form-control-sm" placeholder="e.g. 1 or CS01" required>
+            </div>
+            <div class="col-md-3 col-sm-4">
+                <label for="range_end" class="form-label fw-semibold fs-9 text-muted mb-1">End Roll No</label>
+                <input type="text" id="range_end" name="range_end" class="form-control form-control-sm" placeholder="e.g. 20 or CS20 (Optional)">
+            </div>
+            <div class="col-md-4 col-sm-4">
+                <label for="range_class_id" class="form-label fw-semibold fs-9 text-muted mb-1">Assign to Target Class</label>
+                <select id="range_class_id" name="range_class_id" class="form-select form-select-sm" required>
+                    <option value="" selected disabled>Choose Class...</option>
+                    {% for class_item in classes %}
+                    <option value="{{ class_item.id }}">{{ class_item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 col-12 text-end mt-sm-4">
+                <button type="button" onclick="applyRangeAssignmentsJs()" class="btn btn-sm btn-outline-warning fw-semibold me-1" title="Select & update in table below">
+                    <i class="fa-solid fa-highlighter me-1"></i>Highlight
+                </button>
+                <button type="submit" class="btn btn-sm btn-warning fw-bold px-3">
+                    <i class="fa-solid fa-bolt me-1"></i>Assign Range
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. SEARCH & FILTER CONTROLS BAR -->
+<div class="card border-0 shadow-sm mb-4 rounded-4" style="background: var(--bg-card); border: 1px solid var(--border-card) !important;">
+    <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+            <!-- Search Input -->
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="assignSearchInput" class="form-control bg-light border-start-0 ps-0" placeholder="Search by student name, roll number, or enrollment number..." onkeyup="filterStudentTable()">
+                </div>
+            </div>
+
+            <!-- Filter Status -->
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select form-select-sm" onchange="filterStudentTable()">
+                    <option value="unassigned" selected>Showing: Unassigned Only ({{ unclassified_students|length }})</option>
+                    <option value="all">Showing: All Students ({{ all_students|length }})</option>
+                    <option value="assigned">Showing: Assigned Only</option>
+                </select>
+            </div>
+
+            <!-- Filter Class -->
+            <div class="col-md-4">
+                <select id="classFilterSelect" class="form-select form-select-sm" onchange="filterStudentTable()">
+                    <option value="">All Current Classes</option>
+                    {% for class_item in classes %}
+                    <option value="{{ class_item.name }}">{{ class_item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. STUDENT ASSIGNMENT TABLE -->
+{% if all_students %}
+
+<div class="card border-0 shadow-sm mb-4 rounded-4" style="background: var(--bg-card); border: 1px solid var(--border-card) !important;">
+    <div class="card-header border-bottom py-3" style="background: var(--bg-card);">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <span class="fw-semibold" style="color: var(--text-primary);">
-                <i class="fa-solid fa-users-slash text-warning me-2"></i>
-                {{ unclassified_students|length }} Student{% if unclassified_students|length != 1 %}s{% endif %} Awaiting Class Assignment
+                <i class="fa-solid fa-users text-primary me-2"></i>
+                <span id="studentTableCount">{{ unclassified_students|length }}</span> Student(s) Displayed
             </span>
             <div class="d-flex gap-2 align-items-center">
                 <!-- Bulk assign controls -->
-                <label class="text-muted fs-8 mb-0">Assign All To:</label>
-                <select id="bulkClassSelect" class="form-select form-select-sm" style="width: 200px; font-size: 0.82rem;">
+                <label class="text-muted fs-8 mb-0">Assign Selected To:</label>
+                <select id="bulkClassSelect" class="form-select form-select-sm" style="width: 180px; font-size: 0.82rem;">
                     <option value="">— Select Class —</option>
                     {% for class_item in classes %}
                     <option value="{{ class_item.id }}">{{ class_item.name }}</option>
                     {% endfor %}
                 </select>
-                <button type="button" id="bulkAssignBtn" class="btn btn-warning btn-sm fw-semibold">
-                    <i class="fa-solid fa-bolt me-1"></i> Apply to All
+                <button type="button" id="bulkAssignBtn" class="btn btn-primary btn-sm fw-semibold">
+                    <i class="fa-solid fa-bolt me-1"></i> Apply to Selected
                 </button>
             </div>
         </div>
     </div>
 
     <form method="POST" action="{{ url_for('main.assign_students') }}" id="assignForm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="color: var(--text-primary);">
-                <thead style="background: rgba(99,102,241,0.07); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0" id="studentsAssignTable" style="color: var(--text-primary);">
+                <thead class="sticky-top bg-light" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; z-index: 1;">
                     <tr>
                         <th class="ps-4 py-3" style="width: 40px;">
-                            <input type="checkbox" id="selectAll" class="form-check-input" title="Select all">
+                            <input type="checkbox" id="selectAll" class="form-check-input" title="Select all visible">
                         </th>
                         <th class="py-3">Student</th>
                         <th class="py-3">Roll No</th>
                         <th class="py-3">Enrollment No</th>
-                        <th class="py-3">Mobile</th>
-                        <th class="py-3">Registered Email</th>
-                        <th class="py-3" style="min-width: 220px;">Assign Class</th>
+                        <th class="py-3">Current Class</th>
+                        <th class="py-3" style="min-width: 220px;">New / Assigned Class</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for student in unclassified_students %}
-                    <tr class="student-row" data-student-id="{{ student.id }}">
+                    {% for student in all_students %}
+                    <tr class="student-row" 
+                        data-student-id="{{ student.id }}" 
+                        data-name="{{ student.name|lower }}" 
+                        data-roll="{{ (student.roll_no or '')|lower }}" 
+                        data-enroll="{{ (student.enrollment_no or '')|lower }}" 
+                        data-assigned="{% if student.class_id %}assigned{% else %}unassigned{% endif %}"
+                        data-current-class="{{ student.class_assigned.name if student.class_assigned else '' }}">
                         <td class="ps-4">
                             <input type="checkbox" class="form-check-input student-check" data-id="{{ student.id }}">
                         </td>
@@ -74,7 +158,7 @@
                                     <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}"
                                          alt="{{ student.name }}"
                                          class="rounded-circle border"
-                                         style="width: 38px; height: 38px; object-fit: cover; border-color: var(--border-card) !important;">
+                                         style="width: 38px; height: 38px; object-fit: cover;">
                                 {% else %}
                                     <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
                                          style="width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;">
@@ -83,8 +167,11 @@
                                 {% endif %}
                                 <div>
                                     <div class="fw-semibold" style="font-size: 0.9rem;">{{ student.name }}</div>
+                                    <div class="text-primary font-monospace" style="font-size: 0.76rem;">
+                                        <i class="fa-solid fa-envelope me-1"></i>{{ student.user_account.email if (student.user_account and student.user_account.email) else (student.email or 'N/A') }}
+                                    </div>
                                     <div class="text-muted" style="font-size: 0.75rem;">
-                                        {% if student.face_encoding %}
+                                        {% if student.face_encoding or student.image_filename %}
                                             <i class="fa-solid fa-circle-check text-success me-1"></i>Face registered
                                         {% else %}
                                             <i class="fa-solid fa-circle-xmark text-danger me-1"></i>No face photo
@@ -94,39 +181,37 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-light text-dark border" style="font-size: 0.78rem;">{{ student.roll_no }}</span>
+                            <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.78rem;">{{ student.roll_no or 'N/A' }}</span>
                         </td>
                         <td>
-                            <span class="text-muted" style="font-size: 0.85rem;">{{ student.enrollment_no }}</span>
+                            <span class="text-muted font-monospace" style="font-size: 0.85rem;">{{ student.enrollment_no or 'N/A' }}</span>
                         </td>
                         <td>
-                            <span class="text-muted" style="font-size: 0.85rem;">
-                                {% if student.mobile %}
-                                    <i class="fa-solid fa-phone fa-xs me-1 text-success"></i>{{ student.mobile }}
-                                {% else %}
-                                    <span class="text-muted fst-italic">—</span>
-                                {% endif %}
-                            </span>
+                            {% if student.class_assigned %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success px-2.5 py-1 rounded-pill fs-8">
+                                    <i class="fa-solid fa-school me-1"></i>{{ student.class_assigned.name }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-2.5 py-1 rounded-pill fs-8">
+                                    Unassigned
+                                </span>
+                            {% endif %}
                         </td>
                         <td>
-                            <span class="text-muted" style="font-size: 0.85rem;">
-                                {% if student.user_account %}
-                                    {{ student.user_account.email }}
-                                {% else %}
-                                    <span class="fst-italic">—</span>
-                                {% endif %}
-                            </span>
-                        </td>
-                        <td>
-                            <select name="class_for_student_{{ student.id }}"
-                                    class="form-select form-select-sm class-select"
-                                    data-student-id="{{ student.id }}"
-                                    style="font-size: 0.82rem; border-radius: 8px;">
-                                <option value="">— Select a class —</option>
-                                {% for class_item in classes %}
-                                <option value="{{ class_item.id }}">{{ class_item.name }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group input-group-sm">
+                                <select name="class_for_student_{{ student.id }}"
+                                        class="form-select form-select-sm class-select"
+                                        data-student-id="{{ student.id }}"
+                                        style="font-size: 0.82rem; border-radius: 8px 0 0 8px;">
+                                    <option value="">— Select a class —</option>
+                                    {% for class_item in classes %}
+                                    <option value="{{ class_item.id }}" {% if student.class_id == class_item.id %}selected{% endif %}>{{ class_item.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary fw-semibold px-2.5" title="Save assignment for this student">
+                                    <i class="fa-solid fa-check me-1"></i> Assign
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -135,12 +220,12 @@
         </div>
 
         <!-- Action Bar -->
-        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: var(--bg-card); border-top: 1px solid var(--border-card);">
+        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2 py-3" style="background: var(--bg-card); border-top: 1px solid var(--border-card);">
             <span class="text-muted fs-8">
                 <i class="fa-solid fa-circle-info me-1 text-primary"></i>
-                Select a class for each student and click "Save Assignments" to confirm.
+                Select target class for students and click "Save Assignments" to commit.
             </span>
-            <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
                 <i class="fa-solid fa-floppy-disk me-2"></i>Save Assignments
             </button>
         </div>
@@ -149,14 +234,13 @@
 
 {% else %}
 
-<!-- Empty State -->
 <div class="card border-0 shadow-sm text-center py-5" style="background: var(--bg-card);">
     <div class="card-body">
         <div class="mb-3">
             <i class="fa-solid fa-circle-check fa-4x text-success opacity-75"></i>
         </div>
-        <h5 class="fw-bold text-success">All Students are Classified!</h5>
-        <p class="text-muted mb-4">Every registered student has been assigned to a class. No action needed.</p>
+        <h5 class="fw-bold text-success">No Registered Students Found</h5>
+        <p class="text-muted mb-4">No students registered in the system yet.</p>
         <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
             <i class="fa-solid fa-chart-simple me-2"></i>Back to Dashboard
         </a>
@@ -166,18 +250,112 @@
 {% endif %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Select All checkbox
-    const selectAll = document.getElementById('selectAll');
-    const studentChecks = document.querySelectorAll('.student-check');
+function filterStudentTable() {
+    const query = document.getElementById('assignSearchInput').value.trim().toLowerCase();
+    const statusVal = document.getElementById('statusFilter').value;
+    const classFilterVal = document.getElementById('classFilterSelect').value.trim().toLowerCase();
 
+    const rows = document.querySelectorAll('.student-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const name = row.dataset.name || '';
+        const roll = row.dataset.roll || '';
+        const enroll = row.dataset.enroll || '';
+        const assignedStatus = row.dataset.assigned || '';
+        const currentClass = (row.dataset.currentClass || '').toLowerCase();
+
+        // Search Query match
+        const matchesSearch = !query || name.includes(query) || roll.includes(query) || enroll.includes(query);
+
+        // Status Filter match
+        let matchesStatus = true;
+        if (statusVal === 'unassigned') {
+            matchesStatus = (assignedStatus === 'unassigned');
+        } else if (statusVal === 'assigned') {
+            matchesStatus = (assignedStatus === 'assigned');
+        }
+
+        // Class Filter match
+        const matchesClass = !classFilterVal || currentClass === classFilterVal;
+
+        if (matchesSearch && matchesStatus && matchesClass) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const countElem = document.getElementById('studentTableCount');
+    if (countElem) countElem.innerText = visibleCount;
+}
+
+function extractDigits(str) {
+    const matches = (str || '').match(/\d+/g);
+    return matches ? parseInt(matches[matches.length - 1], 10) : null;
+}
+
+function applyRangeAssignmentsJs() {
+    const startVal = document.getElementById('range_start').value.trim();
+    const endVal = document.getElementById('range_end').value.trim();
+    const targetClassId = document.getElementById('range_class_id').value;
+
+    if (!startVal || !endVal || !targetClassId) {
+        alert('Please enter Start Roll No, End Roll No, and select a Target Class.');
+        return;
+    }
+
+    const startNum = extractDigits(startVal);
+    const endNum = extractDigits(endVal);
+
+    if (startNum === null || endNum === null) {
+        alert('Could not parse numeric roll numbers from range inputs. Please enter values containing numbers (e.g. 1 to 20).');
+        return;
+    }
+
+    const minNum = Math.min(startNum, endNum);
+    const maxNum = Math.max(startNum, endNum);
+
+    let updatedCount = 0;
+    const rows = document.querySelectorAll('.student-row');
+
+    rows.forEach(row => {
+        const rollStr = row.dataset.roll || '';
+        const rollNum = extractDigits(rollStr);
+
+        if (rollNum !== null && rollNum >= minNum && rollNum <= maxNum) {
+            const check = row.querySelector('.student-check');
+            const select = row.querySelector('.class-select');
+
+            if (check) check.checked = true;
+            if (select) {
+                select.value = targetClassId;
+                select.style.borderColor = 'var(--bs-warning)';
+                row.style.background = 'rgba(245, 158, 11, 0.08)';
+            }
+            row.style.display = ''; // Ensure row is visible
+            updatedCount++;
+        }
+    });
+
+    if (updatedCount > 0) {
+        alert(`Selected & updated ${updatedCount} student(s) in Roll Range ${minNum}–${maxNum}. Click "Save Assignments" to save changes!`);
+    } else {
+        alert(`No students found matching Roll Range ${minNum}–${maxNum}.`);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    filterStudentTable();
+    const selectAll = document.getElementById('selectAll');
     if (selectAll) {
         selectAll.addEventListener('change', function () {
-            studentChecks.forEach(cb => cb.checked = selectAll.checked);
+            const visibleChecks = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-check');
+            visibleChecks.forEach(cb => cb.checked = selectAll.checked);
         });
     }
 
-    // Bulk assign button
     const bulkAssignBtn = document.getElementById('bulkAssignBtn');
     const bulkClassSelect = document.getElementById('bulkClassSelect');
 
@@ -189,35 +367,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Apply to checked students, or all if none checked
-            const checkedIds = Array.from(studentChecks)
-                .filter(cb => cb.checked)
-                .map(cb => cb.dataset.id);
+            const visibleChecks = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-check:checked');
+            if (visibleChecks.length === 0) {
+                alert('Please select at least one student checkbox to bulk assign.');
+                return;
+            }
 
-            const selects = document.querySelectorAll('.class-select');
-            selects.forEach(sel => {
-                const studentId = sel.dataset.studentId;
-                if (checkedIds.length === 0 || checkedIds.includes(studentId)) {
-                    sel.value = selectedClass;
-                    // Visual feedback
-                    sel.style.borderColor = 'var(--success)';
-                    setTimeout(() => sel.style.borderColor = '', 1200);
+            visibleChecks.forEach(cb => {
+                const row = cb.closest('tr');
+                const select = row.querySelector('.class-select');
+                if (select) {
+                    select.value = selectedClass;
+                    select.style.borderColor = 'var(--bs-primary)';
                 }
             });
         });
     }
-
-    // Highlight rows when class selected
-    document.querySelectorAll('.class-select').forEach(sel => {
-        sel.addEventListener('change', function () {
-            const row = this.closest('tr');
-            if (this.value) {
-                row.style.background = 'rgba(16, 185, 129, 0.04)';
-            } else {
-                row.style.background = '';
-            }
-        });
-    });
 });
 </script>
 

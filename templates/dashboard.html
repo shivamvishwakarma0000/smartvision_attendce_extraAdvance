@@ -1,13 +1,35 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - DASHBOARD VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Dashboard - SmartVision{% endblock %}
-{% block page_title %}Administrator Dashboard{% endblock %}
+{% block page_title %}
+<div class="d-flex align-items-center gap-4 flex-nowrap">
+    <h5 class="fw-extrabold text-dark tracking-tight mb-0 text-nowrap">Administrator Dashboard</h5>
+    
+    <!-- Clean, Spacious Single-Line Live Clock Pill (With generous padding, no text touching) -->
+    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-xs border text-nowrap"
+         style="background: linear-gradient(135deg, #090d16 0%, #1e293b 100%); border-color: rgba(56, 189, 248, 0.3) !important;">
+        <!-- Calendar Section: Generous inner padding, no line touching -->
+        <span class="d-inline-flex align-items-center gap-1.5 fs-9 fw-semibold text-white-50 ps-1 pe-2.5 border-end border-secondary border-opacity-50 text-nowrap">
+            <i class="fa-regular fa-calendar-days text-info fs-8 me-1"></i>
+            <span class="text-white">{{ today_day_name }}</span>
+        </span>
+        <!-- Time Section -->
+        <span id="live-clock" class="font-monospace fw-bold fs-8 tracking-wider text-nowrap px-1" style="color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);">--:--:--</span>
+        <!-- AM/PM Badge -->
+        <span id="live-ampm" class="badge rounded-pill font-monospace fw-bold fs-9 py-0.5 px-2" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">--</span>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
 
 {% if unclassified_students_count > 0 %}
 <!-- Unclassified Students Alert -->
-<div class="alert border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
+<div class="alert border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2"
      style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.04) 100%); border-left: 4px solid #f59e0b !important;">
     <div class="d-flex align-items-center gap-3">
         <span class="fs-3 text-warning"><i class="fa-solid fa-user-clock"></i></span>
@@ -15,289 +37,1171 @@
             <div class="fw-bold" style="color: var(--text-primary);">
                 {{ unclassified_students_count }} Student{% if unclassified_students_count != 1 %}s{% endif %} Awaiting Class Assignment
             </div>
-            <div class="text-muted fs-8">These students have registered but have not been assigned a class yet.</div>
+            <div class="text-muted fs-8">These students have registered photos but have not been assigned to a class yet.</div>
         </div>
     </div>
-    <a href="{{ url_for('main.assign_students') }}" class="btn btn-warning btn-sm fw-semibold shadow-sm">
+    <a href="{{ url_for('main.assign_students') }}" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 shadow-xs">
         <i class="fa-solid fa-people-arrows me-1"></i>Assign Classes Now
     </a>
 </div>
 {% endif %}
 
-<!-- Top Row with Glassmorphic Stats -->
-<div class="row mb-4">
-    <!-- Total Students Stats -->
-    <div class="col-lg-4 col-md-6 mb-3">
-        <div class="card stat-card-gradient-primary border-0 p-4 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted fw-semibold mb-1">Total Enrolled Students</h6>
-                    <h2 class="fw-bold text-primary mb-0">{{ student_count }}</h2>
-                </div>
-                <div class="fs-1 text-primary"><i class="fa-solid fa-graduation-cap"></i></div>
+<!-- Top Row: 4 Spacious KPI Stat Cards with Vibrant Accents & Borders -->
+<div class="row g-3 mb-4">
+    <!-- 1. Total Students -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card p-4 shadow-sm rounded-4 h-100 position-relative overflow-hidden hover-card-lift" 
+             style="background: linear-gradient(145deg, #ffffff 0%, #f5f7ff 100%); border: 1.5px solid rgba(79, 70, 229, 0.2) !important; border-top: 4px solid #4f46e5 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2.5">
+                <span class="text-muted fw-bold fs-8 text-uppercase tracking-wider">Total Students</span>
+                <span class="rounded-circle p-2 d-flex align-items-center justify-content-center shadow-xs" 
+                      style="width: 42px; height: 42px; background: rgba(79, 70, 229, 0.12); color: #4f46e5;">
+                    <i class="fa-solid fa-graduation-cap fs-5"></i>
+                </span>
             </div>
-            <p class="text-muted fs-7 mb-0 mt-3">Students currently registered under your classes.</p>
+            <h2 class="fw-extrabold mb-1" style="color: #3730a3; font-size: 2.2rem;">{{ student_count }}</h2>
+            <p class="text-muted fs-8 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-0.5 rounded-pill fs-9 fw-bold">Active</span>
+                <span>Enrolled across departments</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- 2. Total Classes -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card p-4 shadow-sm rounded-4 h-100 position-relative overflow-hidden hover-card-lift" 
+             style="background: linear-gradient(145deg, #ffffff 0%, #faf5ff 100%); border: 1.5px solid rgba(147, 51, 234, 0.2) !important; border-top: 4px solid #9333ea !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2.5">
+                <span class="text-muted fw-bold fs-8 text-uppercase tracking-wider">Total Classes</span>
+                <span class="rounded-circle p-2 d-flex align-items-center justify-content-center shadow-xs" 
+                      style="width: 42px; height: 42px; background: rgba(147, 51, 234, 0.12); color: #9333ea;">
+                    <i class="fa-solid fa-chalkboard fs-5"></i>
+                </span>
+            </div>
+            <h2 class="fw-extrabold mb-1" style="color: #6b21a8; font-size: 2.2rem;">{{ classes|length }}</h2>
+            <p class="text-muted fs-8 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge px-2 py-0.5 rounded-pill fs-9 fw-bold" style="background: rgba(147, 51, 234, 0.1); color: #9333ea;">Curriculum</span>
+                <span>{{ subjects_managed }} subjects curriculum</span>
+            </p>
         </div>
     </div>
     
-    <!-- Subjects Managed Stats -->
-    <div class="col-lg-4 col-md-6 mb-3">
-        <div class="card stat-card-gradient-success border-0 p-4 shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted fw-semibold mb-1">Subjects Managed</h6>
-                    <h2 class="fw-bold text-success mb-0">{{ subjects_managed }}</h2>
-                </div>
-                <div class="fs-1 text-success"><i class="fa-solid fa-book-open"></i></div>
-            </div>
-            <p class="text-muted fs-7 mb-0 mt-3">Curriculum subjects mapped under your departments.</p>
-        </div>
-    </div>
-
-    <!-- Long-Term Retention Risk Stats -->
-    <div class="col-lg-4 col-md-12 mb-3">
-        <div class="card border-0 p-4 shadow-sm h-100" style="{% if retention_risk_students|length > 0 %}background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%); border-left: 5px solid #ef4444 !important;{% else %}background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%); border-left: 5px solid #10b981 !important;{% endif %}">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted fw-semibold mb-1">Retention Risk (5+ Days)</h6>
-                    <h2 class="fw-bold mb-0 {% if retention_risk_students|length > 0 %}text-danger{% else %}text-success{% endif %}">
-                        {{ retention_risk_students|length }}
-                    </h2>
-                </div>
-                <div class="fs-3 {% if retention_risk_students|length > 0 %}text-danger{% else %}text-muted{% endif %}">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <span class="text-muted fs-7">Zero attendance in the last 5 days.</span>
-                <a href="{{ url_for('main.retention_risk_report') }}" class="btn btn-sm {% if retention_risk_students|length > 0 %}btn-outline-danger{% else %}btn-outline-success{% endif %} fs-8 py-1">View List</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Attendance Chart -->
-<div class="card mb-4 shadow-sm border-0">
-    <div class="card-header fw-bold bg-white text-dark d-flex align-items-center justify-content-between">
-        <span><i class="fa-solid fa-chart-simple text-primary me-2"></i> Today's Attendance Overview</span>
-        <a href="{{ url_for('main.take_attendance') }}" class="btn btn-sm btn-primary">Scan Attendance</a>
-    </div>
-    <div class="card-body">
-        <div style="height: 350px; position: relative;">
-            <canvas id="attendanceChart"></canvas>
-        </div>
-    </div>
-</div>
-
-<!-- Registered Students Grid Section -->
-<hr class="my-4 text-muted">
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="fw-bold text-dark mb-0">Registered Students</h4>
-    <div class="d-flex align-items-center gap-3">
-        <!-- Class Filter Dropdown -->
-        <select class="form-select form-select-sm border shadow-sm" id="classFilter" style="width: 180px; padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;">
-            <option value="all">All Classes</option>
-            {% for class_item in classes %}
-            <option value="class-{{ class_item.id }}">{{ class_item.name }}</option>
-            {% endfor %}
-            <option value="class-None">Awaiting Class (Unclassified)</option>
-        </select>
-        <a href="{{ url_for('main.register_student') }}" class="btn btn-primary btn-sm shadow-sm py-2 px-3 fw-semibold">Add New Student</a>
-    </div>
-</div>
-
-<!-- Interactive Class Metrics Panel -->
-<div class="card p-3 mb-4 shadow-sm border-0" id="classMetricsPanel" style="background: var(--bg-card); border: 1px solid var(--border-card); transition: all 0.3s ease;">
-    <div class="row align-items-center">
-        <div class="col-md-3 border-end border-muted py-1.5 text-center text-md-start">
-            <span class="text-muted fs-8 uppercase tracking-wider text-uppercase d-block mb-1">Class Level Selected</span>
-            <h4 class="fw-extrabold text-primary mb-0 mt-0" id="metricsClassName">All Classes</h4>
-        </div>
-        <div class="col-md-3 border-end border-muted py-1.5 text-center">
-            <span class="text-muted fs-8 uppercase tracking-wider text-uppercase d-block mb-1">Students Enrolled</span>
-            <h4 class="fw-bold text-dark mb-0 mt-0" id="metricsEnrolledCount">{{ student_count }}</h4>
-        </div>
-        <div class="col-md-6 py-1.5 text-center text-md-start ps-md-4">
-            <div class="row">
-                <div class="col-6 text-center">
-                    <span class="text-muted fs-8 uppercase tracking-wider text-uppercase d-block mb-1">Class Avg Attendance</span>
-                    <h4 class="fw-bold text-success mb-0 mt-0" id="metricsAvgAttendance">{{ overall_avg }}%</h4>
-                </div>
-                <div class="col-6 text-center border-start border-muted">
-                    <span class="text-muted fs-8 uppercase tracking-wider text-uppercase d-block mb-1" id="facultyMetricLabel" style="display: none;">Faculty Assigned</span>
-                    <h6 class="fw-bold text-dark mb-0 mt-0 text-truncate mx-auto" id="metricsFaculty" title="{{ all_teachers_str }}" style="font-size: 0.95rem; max-width: 180px; display: none;">{{ all_teachers_str }}</h6>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-{% if students %}
-<div class="row" id="studentCardsGrid">
-    {% for student in students %}
-    <div class="col-xl-3 col-lg-4 col-md-6 mb-4 student-item class-{{ student.class_id }}">
-        <div class="card student-card border-0 shadow-sm h-100">
-            <!-- Face Photo -->
-            {% if student.image_filename %}
-                <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
-                     class="card-img-top" 
-                     alt="Photo of {{ student.name }}">
-            {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center border-bottom" style="height: 200px; font-size: 3rem;">
-                    <i class="fa-solid fa-user-tie text-muted fa-3x"></i>
-                </div>
-            {% endif %}
-            
-            <div class="card-body d-flex flex-column text-center">
-                <h5 class="card-title fw-bold mb-1">{{ student.name }}</h5>
-                <span class="badge badge-attendance {% if student.overall_attendance >= 75 %}badge-present{% else %}badge-absent{% endif %} mb-3 align-self-center">
-                    {{ student.overall_attendance }}% Attendance
+    <!-- 3. Total Faculty -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card p-4 shadow-sm rounded-4 h-100 position-relative overflow-hidden hover-card-lift" 
+             style="background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%); border: 1.5px solid rgba(16, 185, 129, 0.22) !important; border-top: 4px solid #10b981 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2.5">
+                <span class="text-muted fw-bold fs-8 text-uppercase tracking-wider">Total Faculty</span>
+                <span class="rounded-circle p-2 d-flex align-items-center justify-content-center shadow-xs" 
+                      style="width: 42px; height: 42px; background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                    <i class="fa-solid fa-chalkboard-user fs-5"></i>
                 </span>
-                
-                <p class="card-text text-muted fs-7 mb-3 text-start">
-                    <strong>Class:</strong> {{ student.class_assigned.name if student.class_assigned else 'No Class' }}<br>
-                    <strong>Roll No:</strong> {{ student.roll_no }}<br>
-                    <strong>Enrollment:</strong> {{ student.enrollment_no }}
-                </p>
-                <div class="mt-auto pt-2 border-top">
-                    <form action="{{ url_for('main.delete_student', student_id=student.id) }}" 
-                          method="POST" 
-                          onsubmit="return confirm('Are you sure you want to delete this student?');">
-                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">Delete Student</button>
-                    </form>
+            </div>
+            <h2 class="fw-extrabold mb-1" style="color: #065f46; font-size: 2.2rem;">{{ total_teachers_count }}</h2>
+            <p class="text-muted fs-8 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-success bg-opacity-10 text-success px-2 py-0.5 rounded-pill fs-9 fw-bold">Verified</span>
+                <span>Enrolled faculty members</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- 4. Campus Average Attendance -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card p-4 shadow-sm rounded-4 h-100 position-relative overflow-hidden hover-card-lift" 
+             style="background: linear-gradient(145deg, #ffffff 0%, #ecfeff 100%); border: 1.5px solid rgba(6, 182, 212, 0.22) !important; border-top: 4px solid #06b6d4 !important;">
+            <div class="d-flex justify-content-between align-items-center mb-2.5">
+                <span class="text-muted fw-bold fs-8 text-uppercase tracking-wider">Campus Avg</span>
+                <span class="rounded-circle p-2 d-flex align-items-center justify-content-center shadow-xs" 
+                      style="width: 42px; height: 42px; background: rgba(6, 182, 212, 0.12); color: #06b6d4;">
+                    <i class="fa-solid fa-chart-pie fs-5"></i>
+                </span>
+            </div>
+            <h2 class="fw-extrabold mb-1" style="color: #0e7490; font-size: 2.2rem;">{{ overall_avg }}%</h2>
+            <p class="text-muted fs-8 mb-0 d-flex align-items-center gap-1.5">
+                <span class="badge bg-info bg-opacity-10 text-info px-2 py-0.5 rounded-pill fs-9 fw-bold">Cumulative</span>
+                <span>Student attendance</span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- 1. Faculty Daily Attendance Pulse (Over / Above Students Pulse) -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-chalkboard-user text-success me-2"></i>Faculty Daily Attendance Pulse
+            </h5>
+            <span class="fs-8 text-muted">Real-time morning check-in logs and attendance status</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold fs-8">
+                <i class="fa-solid fa-clipboard-user me-1"></i> Faculty Check-in Log
+            </a>
+            <a href="{{ url_for('main.approvals') }}#emergencyProxyDeskSection" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-8">
+                <i class="fa-solid fa-user-shield me-1"></i> Approvals Proxy Desk
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 align-items-center">
+        <!-- Donut Chart (Left) -->
+        <div class="col-lg-4 col-md-5 text-center">
+            <div style="height: 200px; position: relative;" class="mx-auto">
+                <canvas id="facultyDonutChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Metric Tiles (Right) -->
+        <div class="col-lg-8 col-md-7">
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">🟢 On-Time</span>
+                        <h3 class="fw-extrabold text-success mb-1">{{ teachers_ontime_count }}</h3>
+                        <span class="text-muted fs-9 d-block">Arrived 08:00–09:00 AM</span>
+                    </div>
                 </div>
+
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-warning bg-opacity-15 text-warning rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">🟡 Late</span>
+                        <h3 class="fw-extrabold text-warning mb-1">{{ teachers_late_count }}</h3>
+                        <span class="text-muted fs-9 d-block">Grace Period Check-Ins</span>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">🔴 Absent / Pending</span>
+                        <h3 class="fw-extrabold text-danger mb-1">{{ teachers_absent_count }}</h3>
+                        <span class="text-muted fs-9 d-block">Not Logged Today</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-4 border mt-3 bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                        <i class="fa-solid fa-user-check fs-8"></i>
+                    </span>
+                    <span class="fs-8 text-muted"><strong>Faculty Attendance Rate:</strong> {{ faculty_present_pct }}% ({{ teachers_checked_in_count }} of {{ total_teachers_count }} faculty members logged in today).</span>
+                </div>
+                <span class="badge bg-success text-white rounded-pill px-3 py-1 fs-9 fw-bold">Live Synced</span>
             </div>
         </div>
     </div>
-    {% endfor %}
 </div>
-{% else %}
-<div class="text-center py-5">
-    <span class="fs-1 text-muted"><i class="fa-solid fa-users-slash"></i></span>
-    <h5 class="text-muted mt-3">No students have been registered yet.</h5>
-    <a href="{{ url_for('main.register_student') }}" class="btn btn-primary mt-2">Register First Student</a>
-</div>
-{% endif %}
 
-<!-- Chart.js Rendering -->
+<!-- 2. Students Daily Attendance Pulse (Below Faculty Pulse) -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-graduation-cap text-primary me-2"></i>Students Daily Attendance Pulse
+            </h5>
+            <span class="fs-8 text-muted">Attendances recorded across today's classes and lectures</span>
+        </div>
+        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1.5 fs-8 fw-bold">
+            <i class="fa-regular fa-calendar-check me-1"></i>{{ today_completed_classes_count }} / {{ today_scheduled_classes_count }} Classes Conducted Today
+        </span>
+    </div>
+
+    <div class="row g-4 align-items-center">
+        <!-- Donut Chart (Left) -->
+        <div class="col-lg-4 col-md-5 text-center">
+            <div style="height: 200px; position: relative;" class="mx-auto">
+                <canvas id="studentDonutChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Metric Tiles (Right) -->
+        <div class="col-lg-8 col-md-7">
+            <div class="row g-3">
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">🟢 Present in Classes</span>
+                        <h3 class="fw-extrabold text-success mb-1">{{ today_records_present }} <span class="fs-7 text-muted fw-normal">/ {{ today_total_attendances }}</span></h3>
+                        <span class="text-muted fs-9 d-block fw-semibold">{{ today_attendance_pct }}% Today's Class Rate</span>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">🔴 Absent in Classes</span>
+                        <h3 class="fw-extrabold text-danger mb-1">{{ today_records_absent }}</h3>
+                        <span class="text-muted fs-9 d-block">Missed Class Lectures</span>
+                    </div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div class="p-3.5 rounded-4 border bg-light text-center h-100">
+                        <span class="badge bg-info bg-opacity-15 text-info rounded-pill px-2.5 py-1 fs-9 fw-bold mb-2 d-inline-block">👥 Students Present</span>
+                        <h3 class="fw-extrabold text-info mb-1">{{ today_unique_present_count }} <span class="fs-7 text-muted fw-normal">/ {{ student_count }}</span></h3>
+                        <span class="text-muted fs-9 d-block fw-semibold">Unique Students on Campus</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-4 border mt-3 bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-circle bg-info bg-opacity-10 text-info p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
+                        <i class="fa-solid fa-chart-line fs-8"></i>
+                    </span>
+                    <span class="fs-8 text-muted"><strong>Overall Campus Academic Standing:</strong> {{ overall_avg }}% weighted student attendance rate across {{ classes|length }} classes.</span>
+                </div>
+                <span class="badge bg-success text-white rounded-pill px-3 py-1 fs-9 fw-bold">Live Synced</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Registered Directory (Students & Faculty Dual-Mode with Toggle Switcher) -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <!-- Directory Mode Switcher (Students / Faculty) -->
+            <div class="btn-group rounded-pill shadow-xs p-1 bg-light border" role="group" id="directoryToggleGroup">
+                <button type="button" class="btn btn-sm btn-white rounded-pill active fw-bold px-3 shadow-xs" id="btn-mode-students" onclick="switchDirectoryMode('students')">
+                    <i class="fa-solid fa-graduation-cap text-primary me-1.5"></i> Registered Students
+                </button>
+                <button type="button" class="btn btn-sm rounded-pill fw-bold px-3 text-muted" id="btn-mode-faculty" onclick="switchDirectoryMode('faculty')">
+                    <i class="fa-solid fa-chalkboard-user text-warning me-1.5"></i> Registered Faculty
+                </button>
+            </div>
+            <span class="text-muted fs-8 d-none d-md-inline" id="directorySubtitle">Search by name, roll number, or filter by class</span>
+        </div>
+        
+        <!-- View Switcher (Cards / Table) -->
+        <div class="btn-group btn-group-sm rounded-pill shadow-xs p-0.5 bg-light border" role="group">
+            <button type="button" class="btn btn-sm btn-white rounded-pill active fw-bold px-3" id="btn-view-grid" onclick="switchDirectoryView('grid')">
+                <i class="fa-solid fa-grid-2 me-1"></i> Cards
+            </button>
+            <button type="button" class="btn btn-sm rounded-pill fw-bold px-3 text-muted" id="btn-view-table" onclick="switchDirectoryView('table')">
+                <i class="fa-solid fa-list me-1"></i> Table
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== 1. STUDENTS SECTION ==================== -->
+    <div id="studentsDirectorySection">
+        <!-- Students Filter Bar (Department FIRST, then Class) -->
+        <div class="row g-2 mb-4 align-items-center">
+            <!-- 1. Department Filter -->
+            <div class="col-md-3 col-sm-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </span>
+                    <select class="form-select form-select-sm rounded-end-pill px-3 fs-8 border border-start-0 shadow-xs" id="studentDeptFilter" onchange="onDashboardStudentDeptChange()">
+                        <option value="all">All Departments</option>
+                        {% for dept in all_departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- 2. Class Filter (Linked to Department) -->
+            <div class="col-md-3 col-sm-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
+                        <i class="fa-solid fa-chalkboard"></i>
+                    </span>
+                    <select class="form-select form-select-sm rounded-end-pill px-3 fs-8 border border-start-0 shadow-xs" id="classFilter" onchange="filterStudentsDirectory()">
+                        <option value="all">All Classes ({{ students|length }} Students)</option>
+                        {% for class_item in classes %}
+                        <option value="class-{{ class_item.id }}" data-dept="{{ class_item.department or 'General' }}">{{ class_item.name }} ({{ class_item.department or 'General' }})</option>
+                        {% endfor %}
+                        <option value="class-None">Pending Assignment ({{ unclassified_students_count }})</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3. Search Input -->
+            <div class="col-md-6 col-sm-12">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="studentSearchInput" class="form-control form-control-sm border-start-0 border-end-0 fs-8 shadow-xs" placeholder="Type student name or roll number..." onkeyup="if(event.key === 'Enter') filterStudentsDirectory()">
+                    <button type="button" class="btn btn-primary btn-sm rounded-end-pill px-4 fw-bold shadow-xs" onclick="filterStudentsDirectory()">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Cards Grid View -->
+        <div class="row g-3" id="studentCardsGrid">
+            {% if students %}
+            {% for student in students %}
+            <div class="col-xl-3 col-lg-4 col-md-6 student-item class-{{ student.class_id }} {% if not student.class_id %}is-unclassified{% endif %} dept-{{ (student.department or (student.class_assigned.department if student.class_assigned else 'general'))|lower|replace(' ', '')|replace('/', '') }}"
+                 data-name="{{ student.name|lower }}"
+                 data-roll="{{ student.roll_no|lower }}"
+                 data-enroll="{{ student.enrollment_no|lower }}"
+                 data-dept="{{ (student.department or (student.class_assigned.department if student.class_assigned else 'general'))|lower }}"
+                 data-attendance="{{ student.overall_attendance }}">
+                <div class="card student-card border rounded-4 shadow-sm h-100 bg-white overflow-hidden">
+                    {% if student.image_filename %}
+                        <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
+                             class="card-img-top object-fit-cover" 
+                             style="height: 190px;" 
+                             alt="Photo of {{ student.name }}">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center border-bottom text-muted" style="height: 190px;">
+                            <i class="fa-solid fa-user-tie fa-3x opacity-50"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body p-3.5 d-flex flex-column text-center">
+                        <h5 class="card-title fw-bold mb-1 text-dark text-truncate" title="{{ student.name }}">{{ student.name }}</h5>
+                        
+                        <div class="my-2 d-flex justify-content-center gap-1 flex-wrap">
+                            {% if student.overall_attendance >= 75 %}
+                            <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #dcfce7 !important; color: #15803d !important; border: 1px solid #bbf7d0 !important; font-size: 0.8rem !important;">
+                                {{ student.overall_attendance }}% Attendance
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill px-2.5 py-1 fw-bold" style="background-color: #fee2e2 !important; color: #b91c1c !important; border: 1px solid #fecaca !important; font-size: 0.8rem !important;">
+                                {{ student.overall_attendance }}% Attendance
+                            </span>
+                            {% endif %}
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 rounded-pill px-2.5 py-1 fw-bold fs-9">
+                                <i class="fa-solid fa-building-user me-1"></i>{{ student.department or (student.class_assigned.department if student.class_assigned else 'General') }}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted fs-8 mb-3 text-start bg-light p-2.5 rounded-3">
+                            <span class="d-block text-truncate"><strong>Class:</strong> {{ student.class_assigned.name if student.class_assigned else 'Unassigned' }}</span>
+                            <span class="d-block"><strong>Roll No:</strong> {{ student.roll_no }}</span>
+                            <span class="d-block text-truncate"><strong>Enrollment:</strong> {{ student.enrollment_no }}</span>
+                        </p>
+                        <div class="mt-auto pt-2.5 border-top d-flex align-items-center gap-2 w-100">
+                            <button type="button" 
+                                    onclick="quickAskStudentAI('{{ student.name|replace('\'', '\\\'') }}')" 
+                                    class="btn btn-sm btn-outline-primary rounded-pill fw-bold fs-9 text-nowrap d-inline-flex align-items-center justify-content-center px-2 py-1.5 flex-grow-1"
+                                    style="height: 36px;">
+                                <i class="fa-solid fa-robot me-1.5"></i> AI Insights
+                            </button>
+                            <form action="{{ url_for('main.delete_student', student_id=student.id) }}" 
+                                  method="POST" 
+                                  class="flex-grow-1 m-0" 
+                                  onsubmit="return confirm('Are you sure you want to delete this student?');">
+                                <button type="submit" 
+                                        class="btn btn-sm btn-outline-danger w-100 rounded-pill fw-bold fs-9 text-nowrap d-inline-flex align-items-center justify-content-center px-2 py-1.5"
+                                        style="height: 36px;">
+                                    <i class="fa-regular fa-trash-can me-1.5"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-5 text-muted col-12">
+                <i class="fa-solid fa-users-slash fs-1 opacity-50 mb-2"></i>
+                <h6 class="fw-bold">No students registered yet.</h6>
+                <a href="{{ url_for('main.register_student') }}" class="btn btn-primary btn-sm rounded-pill mt-2">Register First Student</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Student Table View -->
+        <div class="table-responsive rounded-3 border d-none mt-2" id="studentTableView">
+            <table class="table table-hover align-middle mb-0 fs-8">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">Photo</th>
+                        <th>Student Name</th>
+                        <th>Roll No</th>
+                        <th>Enrollment</th>
+                        <th>Department</th>
+                        <th>Class</th>
+                        <th>Overall Attendance</th>
+                        <th>Status</th>
+                        <th style="width: 120px;" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr class="student-table-row class-{{ student.class_id }} {% if not student.class_id %}is-unclassified{% endif %} dept-{{ (student.department or (student.class_assigned.department if student.class_assigned else 'general'))|lower|replace(' ', '')|replace('/', '') }}"
+                        data-name="{{ student.name|lower }}"
+                        data-roll="{{ student.roll_no|lower }}"
+                        data-enroll="{{ student.enrollment_no|lower }}"
+                        data-dept="{{ (student.department or (student.class_assigned.department if student.class_assigned else 'general'))|lower }}"
+                        data-attendance="{{ student.overall_attendance }}">
+                        <td>
+                            {% if student.image_filename %}
+                            <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" class="rounded-circle object-fit-cover border" style="width: 34px; height: 34px;" alt="">
+                            {% else %}
+                            <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-dark">{{ student.name }}</td>
+                        <td><code>{{ student.roll_no }}</code></td>
+                        <td>{{ student.enrollment_no }}</td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20">{{ student.department or (student.class_assigned.department if student.class_assigned else 'General') }}</span></td>
+                        <td>{{ student.class_assigned.name if student.class_assigned else 'Unassigned' }}</td>
+                        <td>
+                            {% if student.overall_attendance >= 75 %}
+                            <span class="badge rounded-pill px-2.5 py-1" style="background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">
+                                {{ student.overall_attendance }}%
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill px-2.5 py-1" style="background-color: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;">
+                                {{ student.overall_attendance }}%
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.overall_attendance >= 75 %}
+                            <span class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Good</span>
+                            {% else %}
+                            <span class="text-danger fw-semibold"><i class="fa-solid fa-triangle-exclamation me-1"></i>Low</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-primary rounded-circle" onclick="quickAskStudentAI('{{ student.name|replace('\'', '\\\'') }}')" title="AI Insights">
+                                    <i class="fa-solid fa-robot"></i>
+                                </button>
+                                <form action="{{ url_for('main.delete_student', student_id=student.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete student?');">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger rounded-circle" title="Delete">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== 2. FACULTY SECTION (Initially Hidden) ==================== -->
+    <div id="facultyDirectorySection" class="d-none">
+        <!-- Faculty Filter Bar -->
+        <div class="row g-2 mb-4 align-items-center">
+            <div class="col-md-4 col-sm-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="facultySearchInput" class="form-control bg-light border-start-0 rounded-end-pill fs-8" placeholder="Search faculty by name, code, email...">
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-4">
+                <select id="facultyDeptFilter" class="form-select fs-8 rounded-pill">
+                    <option value="all">All Departments</option>
+                    {% for dept in all_departments %}
+                    <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5 col-sm-3 d-flex justify-content-end gap-2">
+                <div class="btn-group p-1 bg-light rounded-pill border" role="group">
+                    <button type="button" class="btn btn-xs btn-white rounded-pill shadow-xs px-2.5 fw-semibold active" id="facultyCardViewBtn" onclick="setFacultyViewMode('cards')">
+                        <i class="fa-solid fa-grip me-1"></i> Cards
+                    </button>
+                    <button type="button" class="btn btn-xs text-muted rounded-pill px-2.5 fw-semibold" id="facultyTableViewBtn" onclick="setFacultyViewMode('table')">
+                        <i class="fa-solid fa-table-list me-1"></i> Table
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Cards Grid View -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="facultyCardsContainer">
+            {% if teachers %}
+            {% for teacher in teachers %}
+            <div class="col faculty-card-col dept-{{ (teacher.department or 'general')|lower|replace(' ', '') }}" 
+                 data-name="{{ teacher.name|lower }}"
+                 data-code="{{ (teacher.employee_code or teacher.emp_id or '')|lower }}"
+                 data-email="{{ (teacher.email or '')|lower }}"
+                 data-dept="{{ (teacher.department or 'general')|lower }}">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden bg-white faculty-card">
+                    {% if teacher.image_filename %}
+                        <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}" 
+                             class="card-img-top object-fit-cover" 
+                             style="height: 190px;" 
+                             alt="Photo of {{ teacher.name }}">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center border-bottom text-muted" style="height: 190px;">
+                            <i class="fa-solid fa-chalkboard-user fa-3x opacity-50 text-warning"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body p-3.5 d-flex flex-column text-center">
+                        <h5 class="card-title fw-bold mb-1 text-dark text-truncate" title="{{ teacher.name }}">{{ teacher.name }}</h5>
+                        
+                        <div class="my-2">
+                            <span class="badge rounded-pill px-3 py-1.5 fw-bold bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-8">
+                                <i class="fa-solid fa-building-user me-1"></i>{{ teacher.department or 'General' }}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted fs-8 mb-3 text-start bg-light p-2.5 rounded-3">
+                            <span class="d-block text-truncate"><strong>Employee Code:</strong> <code>{{ teacher.employee_code or teacher.emp_id or 'EMP-' ~ teacher.id }}</code></span>
+                            <span class="d-block text-truncate"><strong>Mobile:</strong> {{ teacher.mobile or 'N/A' }}</span>
+                            <span class="d-block text-truncate"><strong>Email:</strong> {{ teacher.email or 'N/A' }}</span>
+                        </p>
+
+                        <!-- Balanced, Non-Overflowing Action Buttons with Generous Margin -->
+                        <div class="mt-auto pt-2.5 border-top d-flex align-items-center justify-content-between gap-2 w-100 px-0">
+                            <button type="button" 
+                                    onclick="quickAskFacultyAI('{{ teacher.name|replace('\'', '\\\'') }}')" 
+                                    class="btn btn-sm btn-outline-primary rounded-pill fw-bold text-nowrap d-inline-flex align-items-center justify-content-center flex-grow-1"
+                                    style="height: 35px; font-size: 0.78rem; padding: 4px 6px; min-width: 0;">
+                                <i class="fa-solid fa-robot me-1"></i> AI Insights
+                            </button>
+                            <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" 
+                               class="btn btn-sm btn-outline-warning text-dark rounded-pill fw-bold text-nowrap d-inline-flex align-items-center justify-content-center flex-grow-1"
+                               style="height: 35px; font-size: 0.78rem; padding: 4px 6px; min-width: 0;">
+                                <i class="fa-solid fa-calendar-check me-1"></i> Attendance
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-5 text-muted col-12">
+                <i class="fa-solid fa-user-slash fs-1 opacity-50 mb-2"></i>
+                <h6 class="fw-bold">No faculty members registered yet.</h6>
+                <a href="{{ url_for('main.enrolled_teachers') }}" class="btn btn-warning btn-sm rounded-pill mt-2 text-dark fw-bold">Manage Faculty</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Faculty Table View -->
+        <div class="table-responsive rounded-3 border d-none mt-2" id="facultyTableView">
+            <table class="table table-hover align-middle mb-0 fs-8">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 50px;">Photo</th>
+                        <th>Faculty Name</th>
+                        <th>Employee Code</th>
+                        <th>Department</th>
+                        <th>Mobile</th>
+                        <th>Email</th>
+                        <th style="width: 120px;" class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in teachers %}
+                    <tr class="faculty-table-row dept-{{ (teacher.department or 'general')|lower|replace(' ', '') }}"
+                        data-name="{{ teacher.name|lower }}"
+                        data-code="{{ (teacher.employee_code or teacher.emp_id or '')|lower }}"
+                        data-dept="{{ (teacher.department or 'general')|lower }}"
+                        data-mobile="{{ (teacher.mobile or '')|lower }}">
+                        <td>
+                            {% if teacher.image_filename %}
+                            <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}" class="rounded-circle object-fit-cover border" style="width: 34px; height: 34px;" alt="">
+                            {% else %}
+                            <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                <i class="fa-solid fa-chalkboard-user text-warning"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-dark">{{ teacher.name }}</td>
+                        <td><code>{{ teacher.employee_code or teacher.emp_id or 'EMP-' ~ teacher.id }}</code></td>
+                        <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20">{{ teacher.department or 'General' }}</span></td>
+                        <td>{{ teacher.mobile or 'N/A' }}</td>
+                        <td>{{ teacher.email or 'N/A' }}</td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1">
+                                <button type="button" class="btn btn-xs btn-outline-primary rounded-circle" onclick="quickAskFacultyAI('{{ teacher.name|replace('\'', '\\\'') }}')" title="AI Insights">
+                                    <i class="fa-solid fa-robot"></i>
+                                </button>
+                                <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="btn btn-xs btn-outline-warning text-dark rounded-circle" title="Attendance">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================================================= -->
+<!-- 🎓 EXAM ELIGIBILITY & CUSTOM ATTENDANCE THRESHOLD ANALYZER (CROSS-CAMPUS) -->
+<!-- ========================================================================= -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" id="examThresholdSection">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-graduation-cap text-primary me-2"></i>Exam Eligibility & Custom Attendance Threshold Analyzer
+            </h4>
+            <span class="text-muted fs-8">
+                Cross-Campus multi-class analysis to audit student exam clearance, filter attendance percentages (1% – 100%), and export official PDF reports.
+            </span>
+        </div>
+        
+        <!-- Official PDF Export Button (Royal Blue / Indigo Styling) -->
+        <a id="btnDownloadExamPdf" 
+           href="{{ url_for('main.export_exam_eligibility_report', threshold=50, condition='below', class_id='all') }}" 
+           target="_blank" 
+           class="btn btn-sm rounded-pill px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-2 text-white"
+           style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); border: none;">
+            <i class="fa-solid fa-file-pdf"></i> Download Official Exam PDF Report
+        </a>
+    </div>
+
+    <!-- Threshold Interactive Control Deck (Ultra-Modern UI with Custom Slider Track) -->
+    <style>
+        .custom-exam-slider-deck {
+            background: linear-gradient(135deg, #ffffff 0%, #f6f8fe 100%);
+            border: 1.5px solid rgba(99, 102, 241, 0.18) !important;
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.06);
+        }
+        #thresholdRangeSlider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        #thresholdRangeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3.5px solid #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(79, 70, 229, 0.45);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        #thresholdRangeSlider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.65);
+        }
+        #thresholdRangeSlider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3.5px solid #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(79, 70, 229, 0.45);
+        }
+        .slider-num-pill {
+            background: #ffffff;
+            border: 1.5px solid #4f46e5 !important;
+            color: #312e81 !important;
+            font-weight: 800 !important;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+            transition: all 0.2s ease;
+        }
+        .slider-num-pill:focus {
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25) !important;
+            border-color: #4338ca !important;
+        }
+    </style>
+    <div class="p-4 rounded-4 custom-exam-slider-deck mb-4">
+        <div class="row g-4 align-items-center">
+            <!-- Column 1: Range Slider & Direct Number Input -->
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label fw-bold fs-8 text-dark mb-0 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-gauge-high text-primary"></i> Attendance Cutoff Threshold:
+                    </label>
+                    <span class="badge rounded-pill px-3 py-1 fw-extrabold fs-8 text-white shadow-xs" id="sliderValueBadge" style="background: linear-gradient(135deg, #2563eb, #4f46e5);">50%</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <input type="range" class="form-range flex-grow-1" id="thresholdRangeSlider" min="1" max="100" value="50" oninput="onThresholdChange(this.value)">
+                    <div class="position-relative" style="width: 82px;">
+                        <input type="number" class="form-control form-control-sm text-center slider-num-pill rounded-pill" id="thresholdNumberInput" min="1" max="100" value="50" onchange="onThresholdChange(this.value)">
+                    </div>
+                </div>
+                <span class="fs-9 text-muted mt-2 d-block">Filters all students across campus with attendance below this cutoff for exam clearance audits.</span>
+            </div>
+
+            <!-- Column 2: Class Scope Selector -->
+            <div class="col-md-6">
+                <label class="form-label fw-bold fs-8 text-dark mb-1.5">
+                    <i class="fa-solid fa-school text-info me-1.5"></i>Target Class Scope:
+                </label>
+                <select class="form-select form-select-sm rounded-pill fs-8 shadow-xs border px-3 py-1.5" id="thresholdClassScopeSelect" onchange="runThresholdAnalysis()">
+                    <option value="all" selected>All Classes (Cross-Campus Audit)</option>
+                    {% for class_item in classes %}
+                    <option value="{{ class_item.id }}">{{ class_item.name }} ({{ class_item.department or 'General' }} Dept)</option>
+                    {% endfor %}
+                    <option value="unclassified">Pending / Unclassified</option>
+                </select>
+                <span class="fs-9 text-muted mt-1.5 d-block">Filter to audit a specific class or leave as Cross-Campus for complete institutional audit.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Campus Statistics Banner -->
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-md-4">
+            <div class="p-3 rounded-4 border bg-light h-100">
+                <span class="fs-9 text-muted d-block fw-semibold mb-1">Total Students Evaluated</span>
+                <h4 class="fw-extrabold text-dark mb-0" id="statTotalEvaluated">{{ students|length }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded-4 border bg-light h-100">
+                <span class="fs-9 text-muted d-block fw-semibold mb-1" id="statMatchingLabel">Students Below Cutoff (Ineligible)</span>
+                <h4 class="fw-extrabold text-danger mb-0" id="statMatchingCount">0</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded-4 border bg-light h-100">
+                <span class="fs-9 text-muted d-block fw-semibold mb-1">Campus Ineligibility Rate</span>
+                <h4 class="fw-extrabold text-primary mb-0" id="statMatchingPct">0.0%</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class-Wise Grouped Student Breakdowns (Dynamic Container) -->
+    <div id="thresholdClassBreakdownContainer">
+        <!-- Rendered dynamically by JavaScript -->
+    </div>
+</div>
+
+
+<!-- Chart.js, Directory Switching & Dynamic Threshold Filtering Scripts -->
 <script>
+// Embedded Campus Student & Class Data for Instant Client-Side Reactivity
+const CAMPUS_STUDENTS = [
+    {% for student in students %}
+    {
+        id: {{ student.id }},
+        name: "{{ student.name|replace('"', '\\"') }}",
+        roll_no: "{{ student.roll_no or 'N/A' }}",
+        enrollment_no: "{{ student.enrollment_no or 'N/A' }}",
+        class_id: "{{ student.class_id or 'unclassified' }}",
+        class_name: "{{ student.class_assigned.name if student.class_assigned else 'Pending / Unclassified' }}",
+        attendance: {{ student.overall_attendance or 0.0 }},
+        parent_name: "{{ student.parent_name or 'Parent / Guardian' }}",
+        parent_mobile: "{{ student.parent_mobile or 'N/A' }}",
+        image_url: "{% if student.image_filename %}{{ url_for('main.uploaded_face', filename=student.image_filename) }}{% else %}{% endif %}"
+    },
+    {% endfor %}
+];
+
+const CAMPUS_CLASSES = [
+    {% for class_item in classes %}
+    { id: "{{ class_item.id }}", name: "{{ class_item.name }}", department: "{{ class_item.department or 'General' }}" },
+    {% endfor %}
+    { id: "unclassified", name: "Pending / Unclassified", department: "Unassigned" }
+];
+
 document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    // 1. Digital Live Clock
+    function updateClock() {
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const hoursStr = String(hours).padStart(2, '0');
 
-    const subjectNames = {{ subject_names | tojson }};
-    const attendanceData = {{ attendance_percentages | tojson }};
+        const clockEl = document.getElementById('live-clock');
+        const ampmEl = document.getElementById('live-ampm');
+        if (clockEl) clockEl.textContent = `${hoursStr}:${minutes}:${seconds}`;
+        if (ampmEl) ampmEl.textContent = ampm;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    if (subjectNames.length === 0) {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#888";
-        ctx.textAlign = "center";
-        ctx.fillText("No subjects registered yet. Add subjects to see attendance data.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-        return;
+    // 2. Donut Chart: Faculty Pulse
+    const facultyDonutCtx = document.getElementById('facultyDonutChart')?.getContext('2d');
+    if (facultyDonutCtx) {
+        new Chart(facultyDonutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['On-Time', 'Late', 'Absent / Pending'],
+                datasets: [{
+                    data: [{{ teachers_ontime_count }}, {{ teachers_late_count }}, {{ teachers_absent_count }} || ({{ teachers_ontime_count }} === 0 && {{ teachers_late_count }} === 0 ? 1 : 0)],
+                    backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
     }
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: subjectNames,
-            datasets: [{
-                label: '% Present Today',
-                data: attendanceData,
-                backgroundColor: 'rgba(99, 102, 241, 0.65)',
-                borderColor: 'rgba(99, 102, 241, 1)',
-                borderWidth: 1.5,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+    // 3. Donut Chart: Students Pulse
+    const studentDonutCtx = document.getElementById('studentDonutChart')?.getContext('2d');
+    if (studentDonutCtx) {
+        new Chart(studentDonutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present in Classes', 'Absent in Classes'],
+                datasets: [{
+                    data: [{{ today_records_present }} || ({{ today_records_absent }} === 0 ? 1 : 0), {{ today_records_absent }}],
+                    backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(239, 68, 68, 0.85)'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
             },
-            plugins: {
-                legend: {
-                    display: false
-                }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
+    }
+
+    // Run Initial Exam Threshold Analysis (Default 50%)
+    runThresholdAnalysis();
+});
+
+// ==================== DIRECTORY SWITCHING (STUDENTS / FACULTY) ====================
+let currentDirectoryMode = 'students';
+let currentDirectoryView = 'grid';
+
+function switchDirectoryMode(mode) {
+    currentDirectoryMode = mode;
+    const btnStudents = document.getElementById('btn-mode-students');
+    const btnFaculty = document.getElementById('btn-mode-faculty');
+    const secStudents = document.getElementById('studentsDirectorySection');
+    const secFaculty = document.getElementById('facultyDirectorySection');
+    const subtitle = document.getElementById('directorySubtitle');
+
+    if (mode === 'students') {
+        btnStudents.classList.add('btn-white', 'active', 'shadow-xs');
+        btnStudents.classList.remove('text-muted');
+        btnFaculty.classList.remove('btn-white', 'active', 'shadow-xs');
+        btnFaculty.classList.add('text-muted');
+
+        secStudents.classList.remove('d-none');
+        secFaculty.classList.add('d-none');
+        if (subtitle) subtitle.textContent = 'Search by name, roll number, or filter by class';
+    } else {
+        btnFaculty.classList.add('btn-white', 'active', 'shadow-xs');
+        btnFaculty.classList.remove('text-muted');
+        btnStudents.classList.remove('btn-white', 'active', 'shadow-xs');
+        btnStudents.classList.add('text-muted');
+
+        secFaculty.classList.remove('d-none');
+        secStudents.classList.add('d-none');
+        if (subtitle) subtitle.textContent = 'Search by faculty name, employee code, mobile, or department';
+    }
+    applyCurrentView();
+}
+
+function switchDirectoryView(view) {
+    currentDirectoryView = view;
+    const btnGrid = document.getElementById('btn-view-grid');
+    const btnTable = document.getElementById('btn-view-table');
+
+    if (view === 'grid') {
+        btnGrid.classList.add('btn-white', 'active');
+        btnGrid.classList.remove('text-muted');
+        btnTable.classList.remove('btn-white', 'active');
+        btnTable.classList.add('text-muted');
+    } else {
+        btnTable.classList.add('btn-white', 'active');
+        btnTable.classList.remove('text-muted');
+        btnGrid.classList.remove('btn-white', 'active');
+        btnGrid.classList.add('text-muted');
+    }
+    applyCurrentView();
+}
+
+function applyCurrentView() {
+    const sGrid = document.getElementById('studentCardsGrid');
+    const sTable = document.getElementById('studentTableView');
+    const fGrid = document.getElementById('facultyCardsGrid');
+    const fTable = document.getElementById('facultyTableView');
+
+    if (currentDirectoryView === 'grid') {
+        if (sGrid) sGrid.classList.remove('d-none');
+        if (sTable) sTable.classList.add('d-none');
+        if (fGrid) fGrid.classList.remove('d-none');
+        if (fTable) fTable.classList.add('d-none');
+    } else {
+        if (sGrid) sGrid.classList.add('d-none');
+        if (sTable) sTable.classList.remove('d-none');
+        if (fGrid) fGrid.classList.add('d-none');
+        if (fTable) fTable.classList.remove('d-none');
+    }
+}
+
+function onDashboardStudentDeptChange() {
+    const deptVal = document.getElementById('studentDeptFilter')?.value || 'all';
+    const classSelect = document.getElementById('classFilter');
+    
+    if (classSelect) {
+        const options = classSelect.querySelectorAll('option');
+        let selectedStillValid = false;
+        options.forEach(opt => {
+            if (opt.value === 'all' || opt.value === 'class-None') {
+                opt.style.display = '';
+                return;
             }
+            const optDept = (opt.getAttribute('data-dept') || '').toLowerCase();
+            if (deptVal === 'all' || optDept === deptVal.toLowerCase()) {
+                opt.style.display = '';
+                if (opt.value === classSelect.value) selectedStillValid = true;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        if (!selectedStillValid && classSelect.value !== 'all' && classSelect.value !== 'class-None') {
+            classSelect.value = 'all';
+        }
+    }
+    filterStudentsDirectory();
+}
+
+function filterStudentsDirectory() {
+    const searchVal = (document.getElementById('studentSearchInput')?.value || '').toLowerCase().trim();
+    const deptVal = (document.getElementById('studentDeptFilter')?.value || 'all').toLowerCase().trim();
+    const classVal = document.getElementById('classFilter')?.value || 'all';
+
+    const cardItems = document.querySelectorAll('.student-item');
+    const tableRows = document.querySelectorAll('.student-table-row');
+
+    function checkMatch(el) {
+        const name = el.getAttribute('data-name') || '';
+        const roll = el.getAttribute('data-roll') || '';
+        const enroll = el.getAttribute('data-enroll') || '';
+        const dept = (el.getAttribute('data-dept') || '').toLowerCase();
+
+        const matchesSearch = !searchVal || name.includes(searchVal) || roll.includes(searchVal) || enroll.includes(searchVal);
+        
+        let matchesDept = true;
+        if (deptVal !== 'all') {
+            matchesDept = (dept === deptVal);
+        }
+
+        let matchesClass = true;
+        if (classVal === 'class-None') {
+            matchesClass = el.classList.contains('is-unclassified');
+        } else if (classVal !== 'all') {
+            matchesClass = el.classList.contains(classVal);
+        }
+        return matchesSearch && matchesDept && matchesClass;
+    }
+
+    cardItems.forEach(el => el.style.display = checkMatch(el) ? '' : 'none');
+    tableRows.forEach(el => el.style.display = checkMatch(el) ? '' : 'none');
+}
+
+function filterFacultyDirectory() {
+    const searchVal = (document.getElementById('facultySearchInput')?.value || '').toLowerCase().trim();
+    const deptVal = document.getElementById('facultyDeptFilter')?.value || 'all';
+
+    const cardItems = document.querySelectorAll('.faculty-item');
+    const tableRows = document.querySelectorAll('.faculty-table-row');
+
+    function checkMatch(el) {
+        const name = el.getAttribute('data-name') || '';
+        const code = el.getAttribute('data-code') || '';
+        const dept = el.getAttribute('data-dept') || '';
+        const mobile = el.getAttribute('data-mobile') || '';
+
+        const matchesSearch = !searchVal || name.includes(searchVal) || code.includes(searchVal) || mobile.includes(searchVal) || dept.includes(searchVal);
+        let matchesDept = true;
+        if (deptVal !== 'all') {
+            matchesDept = el.classList.contains(deptVal);
+        }
+        return matchesSearch && matchesDept;
+    }
+
+    cardItems.forEach(el => el.style.display = checkMatch(el) ? '' : 'none');
+    tableRows.forEach(el => el.style.display = checkMatch(el) ? '' : 'none');
+}
+
+// ==================== EXAM ELIGIBILITY & THRESHOLD ANALYZER ====================
+function onThresholdChange(val) {
+    let numVal = parseFloat(val);
+    if (isNaN(numVal)) numVal = 50;
+    numVal = Math.max(1, Math.min(100, numVal));
+
+    document.getElementById('thresholdRangeSlider').value = numVal;
+    document.getElementById('thresholdNumberInput').value = numVal;
+    document.getElementById('sliderValueBadge').textContent = `${numVal}%`;
+
+    runThresholdAnalysis();
+}
+
+function setThresholdPreset(pct, cond) {
+    document.getElementById('thresholdConditionSelect').value = cond;
+    onThresholdChange(pct);
+}
+
+function runThresholdAnalysis() {
+    const threshold = parseFloat(document.getElementById('thresholdNumberInput')?.value || 50);
+    const scopeClassId = document.getElementById('thresholdClassScopeSelect')?.value || 'all';
+
+    // Update Download PDF link href
+    const pdfBtn = document.getElementById('btnDownloadExamPdf');
+    if (pdfBtn) {
+        pdfBtn.href = `/admin/export_exam_eligibility_report?threshold=${threshold}&condition=below&class_id=${scopeClassId}`;
+    }
+
+    // Filter Students
+    let totalEvaluated = 0;
+    let matchingStudents = [];
+
+    CAMPUS_STUDENTS.forEach(s => {
+        if (scopeClassId !== 'all' && String(s.class_id) !== String(scopeClassId)) {
+            return;
+        }
+        totalEvaluated++;
+        if (s.attendance < threshold) {
+            matchingStudents.push(s);
         }
     });
 
-    // Class-wise Interactive Filtering
-    const classFilter = document.getElementById('classFilter');
-    const classDetails = {{ class_details | tojson }};
-    
-    if (classFilter) {
-        classFilter.addEventListener('change', function() {
-            const selectedClass = this.value;
-            const key = selectedClass === 'all' ? 'all' : selectedClass;
-            
-            // 1. Update Metrics panel text dynamically
-            if (classDetails && classDetails[key]) {
-                const details = classDetails[key];
-                document.getElementById('metricsClassName').textContent = details.name;
-                document.getElementById('metricsEnrolledCount').textContent = details.enrolled;
-                document.getElementById('metricsAvgAttendance').textContent = details.avg_attendance;
-                
-                const facultyLabel = document.getElementById('facultyMetricLabel');
-                const facultyEl = document.getElementById('metricsFaculty');
-                
-                if (key === 'all') {
-                    if (facultyLabel) facultyLabel.style.display = 'none';
-                    if (facultyEl) {
-                        facultyEl.style.display = 'none';
-                        facultyEl.textContent = '';
-                    }
-                } else {
-                    if (facultyLabel) facultyLabel.style.display = 'block';
-                    if (facultyEl) {
-                        facultyEl.style.display = 'block';
-                        facultyEl.textContent = details.faculty;
-                        facultyEl.setAttribute('title', details.faculty);
-                    }
-                }
-            }
-            
-            // 2. Hide/show student cards
-            const studentItems = document.querySelectorAll('.student-item');
-            let visibleCount = 0;
+    // Update Live Metric Counts
+    const statTotalEl = document.getElementById('statTotalEvaluated');
+    const statMatchEl = document.getElementById('statMatchingCount');
+    const statPctEl = document.getElementById('statMatchingPct');
+    const statLabelEl = document.getElementById('statMatchingLabel');
 
-            studentItems.forEach(item => {
-                if (selectedClass === 'all' || item.classList.contains(selectedClass)) {
-                    item.style.setProperty('display', 'block', 'important');
-                    visibleCount++;
-                } else {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-
-            // Display a clean feedback message if no students exist in the selected class
-            const noStudentsMsg = document.getElementById('noClassStudentsMsg');
-            if (visibleCount === 0) {
-                if (!noStudentsMsg) {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.id = 'noClassStudentsMsg';
-                    msgDiv.className = 'text-center py-5 w-100 col-12';
-                    msgDiv.innerHTML = '<span class="fs-1 text-muted"><i class="fa-solid fa-users-slash"></i></span><h5 class="text-muted mt-3">No students enrolled under this class yet.</h5>';
-                    document.getElementById('studentCardsGrid').appendChild(msgDiv);
-                } else {
-                    noStudentsMsg.style.display = 'block';
-                }
-            } else if (noStudentsMsg) {
-                noStudentsMsg.style.display = 'none';
-            }
-        });
+    if (statTotalEl) statTotalEl.textContent = totalEvaluated;
+    if (statMatchEl) {
+        statMatchEl.textContent = matchingStudents.length;
+        statMatchEl.className = 'fw-extrabold text-danger mb-0';
     }
-});
+    if (statLabelEl) {
+        statLabelEl.textContent = `Students Below ${threshold}% (Ineligible)`;
+    }
+    if (statPctEl) {
+        const pct = totalEvaluated > 0 ? ((matchingStudents.length / totalEvaluated) * 100).toFixed(1) : '0.0';
+        statPctEl.textContent = `${pct}%`;
+    }
+
+    // Render Class-Wise Breakdowns
+    const container = document.getElementById('thresholdClassBreakdownContainer');
+    if (!container) return;
+
+    if (matchingStudents.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5 border rounded-4 bg-light text-muted">
+                <i class="fa-solid fa-circle-check fs-1 text-success opacity-75 mb-2"></i>
+                <h6 class="fw-bold text-dark">No Ineligible Students Flagged</h6>
+                <p class="fs-8 mb-0">All audited students satisfy the attendance cutoff threshold (&ge; ${threshold}%).</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Group matching students by class
+    let classGroups = {};
+    CAMPUS_CLASSES.forEach(c => {
+        if (scopeClassId !== 'all' && String(c.id) !== String(scopeClassId)) {
+            return;
+        }
+        const cStudents = matchingStudents.filter(s => String(s.class_id) === String(c.id));
+        if (cStudents.length > 0) {
+            classGroups[c.id] = { name: c.name, department: c.department || 'General', students: cStudents };
+        }
+    });
+
+    let html = '';
+    Object.keys(classGroups).forEach(cid => {
+        const grp = classGroups[cid];
+        const rows = grp.students.map((s, idx) => {
+            const barColor = s.attendance < 50 ? 'bg-danger' : (s.attendance < 75 ? 'bg-warning' : 'bg-success');
+            const badgeClass = 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
+            const badgeLabel = `⛔ Ineligible (< ${threshold}%)`;
+
+            return `
+                <tr>
+                    <td class="text-center text-muted">${idx + 1}</td>
+                    <td><code>${s.roll_no}</code></td>
+                    <td>${s.enrollment_no}</td>
+                    <td class="fw-bold text-dark">${s.name}</td>
+                    <td style="min-width: 140px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-extrabold fs-8 ${s.attendance < 50 ? 'text-danger' : (s.attendance < 75 ? 'text-warning' : 'text-success')}">${s.attendance}%</span>
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar ${barColor}" style="width: ${s.attendance}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fs-9">
+                            <span class="d-block fw-semibold">${s.parent_name}</span>
+                            <span class="text-muted"><i class="fa-solid fa-phone me-1"></i>${s.parent_mobile}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-bold ${badgeClass}">
+                            ${badgeLabel}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-xs btn-outline-primary rounded-circle" onclick="quickAskStudentAI('${s.name.replace(/'/g, "\\'")}')" title="AI Insights">
+                            <i class="fa-solid fa-robot"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        html += `
+            <div class="card mb-3 border rounded-4 overflow-hidden shadow-xs">
+                <div class="card-header bg-light py-2.5 px-3.5 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold fs-8 text-dark">
+                            <i class="fa-solid fa-chalkboard-user me-1.5 text-primary"></i> Class: <strong>${grp.name}</strong>
+                        </span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 fs-9 rounded-pill fw-bold">
+                            <i class="fa-solid fa-building-user me-1"></i>${grp.department} Dept
+                        </span>
+                    </div>
+                    <span class="badge bg-danger rounded-pill px-3 py-1 fs-9 fw-bold">
+                        ${grp.students.length} Student(s) Ineligible (&lt; ${threshold}%)
+                    </span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm align-middle mb-0 fs-8">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40px;" class="text-center">#</th>
+                                <th>Roll No</th>
+                                <th>Enrollment</th>
+                                <th>Student Name</th>
+                                <th>Attendance Rate</th>
+                                <th>Parent Contact</th>
+                                <th class="text-center">Exam Status</th>
+                                <th style="width: 50px;" class="text-center">AI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function quickAskStudentAI(studentName) {
+    if (window.openSmartVisionAICopilot) {
+        window.openSmartVisionAICopilot(`Tell me all the details about student ${studentName}, including roll number, attendance percentage, and parent contact.`);
+    }
+}
+
+function quickAskFacultyAI(facultyName) {
+    if (window.openSmartVisionAICopilot) {
+        window.openSmartVisionAICopilot(`Tell me about teacher ${facultyName}, including department, mobile, and today's check-in status.`);
+    }
+}
 </script>
 {% endblock %}

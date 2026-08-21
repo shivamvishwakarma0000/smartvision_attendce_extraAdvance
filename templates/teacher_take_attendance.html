@@ -1,185 +1,493 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER TAKE ATTENDANCE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends 'base.html' %}
 
-{% block title %}Teacher Portal | Take Attendance{% endblock %}
+{% block title %}Teacher Portal | Attendance Session Flow{% endblock %}
 
 {% block content %}
 <div class="container py-4">
+    <!-- Header Banner -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <div class="d-flex align-items-center justify-content-between">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white">
+                <div class="d-flex align-items-md-center justify-content-between flex-column flex-md-row gap-3">
                     <div>
-                        <h3 class="fw-bold mb-1 text-dark"><i class="fas fa-camera text-primary me-2"></i>Teacher Multi-Face Attendance Capture</h3>
-                        <p class="text-muted mb-0">Select your class & subject, upload group photos, or capture multiple live camera snaps to mark attendance instantly.</p>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h3 class="fw-bold mb-0 text-dark fs-5 fs-md-4"><i class="fas fa-camera text-primary me-2"></i>Class-Scoped Attendance Session</h3>
+                            {% if session %}
+                            <span class="badge {% if session.status == 'COMPLETED' %}bg-success{% elif session.status == 'ATTENDANCE_OPEN' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-2.5 py-1 rounded-pill fs-9">
+                                {{ session.status }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-0 fs-8">Scan classroom photos via camera or manually review present & absent roll numbers below.</p>
                     </div>
-                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary rounded-3">
+
+                    <!-- Quick Session Switcher Dropdown (Responsive) -->
+                    {% if today_teacher_sessions %}
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-1.5 gap-sm-2 w-100 w-md-auto" style="max-width: 100%;">
+                        <label for="sessionSelectDropdown" class="form-label fw-bold text-dark fs-8 mb-0 text-nowrap">
+                            <i class="fa-solid fa-clock-rotate-left text-primary me-1"></i>Select Today's Class:
+                        </label>
+                        <select id="sessionSelectDropdown" class="form-select form-select-sm fw-bold border-primary shadow-xs" style="min-width: 0; width: 100%; max-width: 100%;" onchange="if(this.value) window.location.href=this.value;">
+                            {% for s in today_teacher_sessions %}
+                            <option value="{{ url_for('teacher.take_attendance', session_id=s.id) }}" {% if session and session.id == s.id %}selected{% endif %}>
+                                {{ s.subject.name if s.subject else 'Class' }} ({{ s.start_time or '00:00' }} - {{ s.end_time or '00:00' }}) {% if s.status == 'COMPLETED' %}✔ Marked{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary rounded-3 btn-sm align-self-start align-self-md-auto">
                         <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    {% if results %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 border-start border-success border-4">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h4 class="fw-bold text-success mb-0"><i class="fas fa-check-circle me-2"></i>Attendance Scan Complete!</h4>
-                        <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">{{ results.present_students|length }} Marked Present</span>
-                    </div>
-                    <p class="text-muted">Scanned <strong>{{ results.total_faces }}</strong> face(s) in <strong>{{ results.subject_name }}</strong>.</p>
-
-                    {% if results.present_students %}
-                    <div class="row g-3 mt-2">
-                        {% for student in results.present_students %}
-                        <div class="col-md-4 col-lg-3">
-                            <div class="p-3 bg-light rounded-3 d-flex align-items-center">
-                                <div class="avatar-circle bg-primary text-white me-3 fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
-                                    {{ student.name[0] }}
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold mb-0 text-dark">{{ student.name }}</h6>
-                                    <span class="text-muted small">Roll: {{ student.roll_no }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+    {% if is_sandbox_mode %}
+    <!-- Sandbox / Practice Mode Alert Banner -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white mb-4 border-start border-4 border-warning">
+        <div class="d-flex align-items-md-center justify-content-between flex-column flex-md-row gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-15 p-3 text-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; min-width: 48px;">
+                    <i class="fa-solid fa-flask-vial fs-4 text-warning"></i>
                 </div>
+                <div>
+                    <h5 class="fw-bold text-dark mb-1 fs-6 fs-md-5">🧪 Face Recognition Practice & Scanner Test Mode</h5>
+                    <p class="text-muted fs-8 mb-0">
+                        You opened standalone attendance testing. Faces and roll numbers scanned here are for <strong>camera testing only</strong> and are <strong>NOT recorded</strong> into official attendance records.
+                    </p>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('teacher.dashboard') }}#teacherScheduleSection" class="btn btn-warning btn-sm rounded-pill px-3.5 py-2 fw-bold text-dark shadow-xs text-nowrap">
+                    <i class="fa-solid fa-calendar-days me-1.5"></i> Go to Scheduled Lecture
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if sandbox_matches %}
+    <div class="alert alert-success rounded-4 p-3 p-md-4 mb-4 border-0 shadow-sm bg-success bg-opacity-10">
+        <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-circle-check me-2"></i>Sandbox Test Scan Results ({{ sandbox_matches|length }} Students Detected)</h6>
+        <p class="fs-8 text-muted mb-3">These students were recognized in the uploaded/captured photos (Test Mode only — not logged to database):</p>
+        <div class="d-flex flex-wrap gap-2">
+            {% for st in sandbox_matches %}
+            <span class="badge bg-white text-dark border px-3 py-2 rounded-pill fs-8 shadow-xs">
+                <i class="fa-solid fa-user-check text-success me-1.5"></i><strong>{{ st.name }}</strong> (Roll: {{ st.roll_no }})
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif session %}
+    <!-- Active Lecture Session Info Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white mb-4">
+        <div class="d-flex align-items-md-center justify-content-between flex-column flex-md-row gap-3">
+            <div>
+                <span class="badge bg-primary text-white mb-1 fs-9">Active Lecture Session #{{ session.id }}</span>
+                <h5 class="fw-bold text-dark mb-1 fs-6 fs-md-5"><i class="fa-solid fa-school text-primary me-2"></i>Class: {{ session.class_assigned.name }} — {{ session.subject.name }}</h5>
+                <span class="fs-8 text-muted"><i class="fa-solid fa-clock me-1"></i>Time: {{ session.start_time or '09:00' }} – {{ session.end_time or '09:50' }} | Date: {{ session.date.strftime('%B %d, %Y') }}</span>
+            </div>
+            <div>
+                {% if session.status == 'COMPLETED' and not is_same_day_editable %}
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fs-8 fw-bold">
+                    <i class="fa-solid fa-lock me-1"></i>Session Locked (Past Day / After 11 PM IST)
+                </span>
+                {% elif session.status == 'COMPLETED' and is_same_day_editable %}
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-8 fw-bold">
+                    <i class="fa-solid fa-pen-to-square me-1"></i>Same-Day Edit Mode (Before 11:00 PM IST)
+                </span>
+                {% else %}
+                <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-30 px-3 py-2 rounded-pill fs-8 fw-bold">
+                    <i class="fa-solid fa-lock-open me-1"></i>ATTENDANCE_OPEN (Actionable)
+                </span>
+                {% endif %}
             </div>
         </div>
     </div>
     {% endif %}
 
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-upload text-primary me-2"></i>Upload / Capture Group Photo</h5>
+    <!-- Attendance Mode Toggle Switch Tabs -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-2.5 p-md-3 mb-4">
+        <ul class="nav nav-pills nav-fill gap-2 flex-column flex-sm-row" id="attendanceModeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold py-2 rounded-3 fs-8 text-truncate" id="camera-tab" data-bs-toggle="tab" data-bs-target="#camera-mode-pane" type="button" role="tab" aria-controls="camera-mode-pane" aria-selected="true">
+                    <i class="fas fa-camera me-1.5"></i>📷 Camera Scan Mode
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold py-2 rounded-3 fs-8 text-truncate" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-mode-pane" type="button" role="tab" aria-controls="manual-mode-pane" aria-selected="false">
+                    <i class="fas fa-user-pen me-1.5"></i>✍️ Manual Mode (Roll List)
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="attendanceModeTabContent">
+        <!-- Pane 1: Camera Scan Mode (Camera & Session Log) -->
+        <div class="tab-pane fade show active" id="camera-mode-pane" role="tabpanel" aria-labelledby="camera-tab">
+            <div class="row g-4 mb-4">
+                <!-- Left Column: Camera & Photo Scan -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-video text-primary me-2"></i>Class-Scoped Camera & Photo Scan</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            {% if session and session.status == 'COMPLETED' and not is_same_day_editable %}
+                            <div class="alert alert-info rounded-3 p-3 text-center">
+                                <i class="fa-solid fa-circle-info fs-4 d-block mb-2 text-info"></i>
+                                <h6 class="fw-bold mb-1">Session Attendance is Locked</h6>
+                                <p class="fs-8 mb-0">This session is locked because it is from a past date or past 11:00 PM IST.</p>
+                            </div>
+                            {% else %}
+
+                            <!-- 1. Universal Camera Closed / Attendance Saved State Banner -->
+                            <div id="camera-closed-banner" class="p-4 rounded-4 text-center bg-light border border-secondary border-opacity-25 mb-3 shadow-xs {% if not ((session and session.status == 'COMPLETED') or (session and present_count > 0)) %}d-none{% endif %}">
+                                <div class="rounded-circle {% if session and (session.status == 'COMPLETED' or present_count > 0) %}bg-success bg-opacity-20 text-success{% else %}bg-secondary bg-opacity-10 text-secondary{% endif %} d-inline-flex align-items-center justify-content-center mb-3" style="width: 58px; height: 58px;">
+                                    {% if session and (session.status == 'COMPLETED' or present_count > 0) %}
+                                    <i class="fa-solid fa-circle-check fs-2 text-success"></i>
+                                    {% else %}
+                                    <i class="fa-solid fa-video-slash fs-2 text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                {% if session and (session.status == 'COMPLETED' or present_count > 0) %}
+                                <h5 class="fw-bold text-dark mb-1">Attendance Marked & Saved</h5>
+                                <p class="text-muted fs-8 mb-3">
+                                    Attendance has been recorded in the <strong>Session Attendance Log</strong> (<strong class="text-success">{{ present_count }} Present</strong>, <strong class="text-danger">{{ absent_count }} Absent</strong>). The camera is currently closed.
+                                </p>
+                                {% else %}
+                                <h5 class="fw-bold text-dark mb-1">Camera is Closed</h5>
+                                <p class="text-muted fs-8 mb-3">
+                                    The webcam feed is currently stopped. Click below whenever you want to reopen the camera to scan classroom photos.
+                                </p>
+                                {% endif %}
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-bold shadow-xs" id="btn-reopen-camera" onclick="window.reopenAttendanceCamera()">
+                                        <i class="fa-solid fa-camera me-1.5"></i> Open Camera & Scan Photos
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 2. Camera & Photo Form Container (Hidden initially if session is already completed or marked) -->
+                            <div id="camera-form-container" class="{% if session and (session.status == 'COMPLETED' or present_count > 0) %}d-none{% endif %}">
+                                <form id="attendanceForm" method="POST" enctype="multipart/form-data" action="{{ url_for('teacher.take_attendance', session_id=session.id if session else '') }}" onsubmit="return window.validateAttendanceForm();">
+                                    {% if session %}
+                                    <input type="hidden" name="session_id" id="session_id" value="{{ session.id }}">
+                                    <input type="hidden" id="current_class_id" value="{{ session.class_id }}">
+                                    <input type="hidden" id="current_subject_id" value="{{ session.subject_id }}">
+                                    {% endif %}
+
+                                    {% if is_sandbox_mode %}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-dark fs-8"><i class="fa-solid fa-school me-1 text-primary"></i>Target Class to Test Scan</label>
+                                        <select name="class_id" id="class_id" class="form-select form-select-sm rounded-3">
+                                            {% for c in all_classes %}
+                                            <option value="{{ c.id }}">{{ c.name }} ({{ c.department or 'General' }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Photo Input Mode and Selection -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold text-dark fs-7 mb-2">Classroom Group Photo(s)</label>
+                                        
+                                        <!-- Mode Selector Tab -->
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <button type="button" class="btn btn-outline-primary w-100 py-2.5 rounded-3 fw-bold fs-8 d-flex align-items-center justify-content-center" id="btn-local-mode-attendance" onclick="window.setAttendanceMode('local')">
+                                                    <i class="fa-solid fa-image me-2"></i> Local File(s)
+                                                </button>
+                                            </div>
+                                            <div class="col-6">
+                                                <button type="button" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold fs-8 d-flex align-items-center justify-content-center shadow-sm" id="btn-camera-mode-attendance" onclick="window.setAttendanceMode('camera')">
+                                                    <i class="fa-solid fa-camera me-2"></i> Camera Capture
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Local File Input Container -->
+                                        <div id="file-input-container-attendance" class="d-none">
+                                            <div class="p-4 text-center bg-white rounded-4 border border-2 border-primary" style="border-style: dashed !important; border-color: #4f46e5 !important; background: #faf5ff;">
+                                                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px;">
+                                                    <i class="fa-solid fa-cloud-arrow-up text-primary fs-3"></i>
+                                                </div>
+                                                <h6 class="fw-bold text-dark mb-1">Click to Upload Group Images</h6>
+                                                <p class="text-muted fs-9 mb-3">You can select multiple photos at once</p>
+                                                <div class="d-flex justify-content-center">
+                                                    <input type="file" class="form-control form-control-sm" id="group_photos" name="group_photos" accept="image/*" multiple style="max-width: 320px;">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- In-App WebRTC AI Live Camera Section -->
+                                        <div id="camera-section-attendance" class="border p-3 rounded-4 bg-light text-center" style="background: rgba(0,0,0,0.03); border-color: rgba(99,102,241,0.15) !important;">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="fs-8 text-dark fw-bold"><i class="fa-solid fa-circle-play text-success me-1"></i> Live Camera Preview</span>
+                                                <div class="d-flex gap-1.5">
+                                                    <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2.5 rounded-pill" onclick="window.toggleAttendanceCameraDirection()" style="font-size: 0.75rem;" title="Switch Front/Back Camera">
+                                                        <i class="fa-solid fa-arrows-rotate me-1"></i> Flip
+                                                    </button>
+                                                    <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2.5 rounded-pill" onclick="window.closeAttendanceCameraReopened()" style="font-size: 0.75rem;" title="Close Camera">
+                                                        <i class="fa-solid fa-power-off me-1"></i> Close Camera
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Video Container with Bounding Box Overlay & Floating Count Popup -->
+                                            <div class="position-relative mb-2 rounded-3 overflow-hidden bg-dark shadow-sm" style="min-height: 250px; max-height: 320px;">
+                                                <video id="webcam-attendance" autoplay playsinline muted class="w-100 h-100 position-relative" style="object-fit: cover; display: block; max-height: 320px;"></video>
+
+                                                <!-- Overlay Canvas for Face Bounding Boxes -->
+                                                <canvas id="overlay-canvas-attendance" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none; z-index: 5;"></canvas>
+
+                                                <!-- Floating Live Face Count Badge (Top-Left overlay) -->
+                                                <div class="position-absolute top-0 start-0 m-2 px-2.5 py-1 rounded-pill bg-dark bg-opacity-75 text-white fs-8 fw-semibold d-flex align-items-center shadow-sm" style="z-index: 10; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2);">
+                                                    <span id="live-pulse-dot" class="spinner-grow spinner-grow-sm text-success me-1.5" role="status" style="width: 8px; height: 8px;"></span>
+                                                    <span>Faces Found: <strong id="live-face-count" class="text-warning">0</strong></span>
+                                                </div>
+
+                                                <!-- Floating Recognized Students Live Popup (Bottom-Left overlay) -->
+                                                <div id="live-recognized-popup" class="position-absolute bottom-0 start-0 m-2 p-2 rounded-3 bg-dark bg-opacity-85 text-white fs-8 shadow-sm d-none" style="z-index: 10; max-width: 90%; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.15);">
+                                                    <div class="fw-bold text-success mb-1 fs-9 d-flex align-items-center">
+                                                        <i class="fa-solid fa-user-check me-1"></i> Live Recognized Students:
+                                                    </div>
+                                                    <div id="live-students-list" class="d-flex flex-wrap gap-1">
+                                                        <!-- Dynamic student pills -->
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <canvas id="canvas-attendance" class="d-none"></canvas>
+                                            
+                                            <div class="d-flex justify-content-center mb-3">
+                                                <button type="button" class="btn btn-primary btn-sm px-4 py-2 rounded-pill fw-bold shadow-xs" onclick="window.captureAttendancePhoto()">
+                                                    <i class="fa-solid fa-camera me-1"></i> Capture Photo
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Grid of captured photos -->
+                                            <div class="text-start mb-2">
+                                                <span class="fw-bold text-dark fs-8">Captured Frames (<span id="captured-count">0</span>):</span>
+                                            </div>
+                                            <div id="captured-frames-grid" class="row row-cols-3 g-2 mb-2">
+                                                <!-- Dynamically generated previews -->
+                                            </div>
+                                            
+                                            <!-- Hidden inputs wrapper -->
+                                            <div id="hidden-inputs-container"></div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3 py-3 fw-bold shadow-sm">
+                                        <i class="fas fa-bolt me-2"></i>Run Face Matching & Save Attendance
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <form method="POST" enctype="multipart/form-data" id="teacherAttendanceForm">
-                        <!-- 1. Select Subject -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark">Select Assigned Subject</label>
-                            <select name="subject_id" id="teacher_subject_id" class="form-select form-select-lg rounded-3" required>
-                                <option value="" disabled selected>-- Select Subject --</option>
-                                {% for sub in subjects %}
-                                <option value="{{ sub.id }}">{{ sub.name }} (Class: {{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
 
-                        <!-- Option 1: Upload Group Photo(s) -->
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-dark"><i class="fas fa-images text-primary me-1"></i> Option 1: Upload Group Photo File(s)</label>
-                            <input type="file" name="group_photo" class="form-control form-control-lg rounded-3" multiple accept="image/*">
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple photo files at once.</small>
-                        </div>
-
-                        <!-- Option 2: Live Camera Capture (Multiple Snaps) -->
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-bold text-dark mb-0"><i class="fas fa-video text-primary me-1"></i> Option 2: Live Camera Multi-Snap Capture</label>
-                                <button type="button" id="flip-cam-btn" class="btn btn-sm btn-outline-secondary py-1 px-2.5 rounded-3" style="font-size: 0.8rem;" onclick="toggleTeacherCameraDirection()">
-                                    <i class="fas fa-sync-alt me-1"></i> Flip Camera
-                                </button>
+                <!-- Right Column: Session Attendance Log & Quick Mark Roll Present -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-clipboard-check text-success me-2"></i>Session Attendance Log</h5>
+                            {% if session %}
+                            <div class="d-flex gap-1.5">
+                                {% if session.status == 'COMPLETED' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-8">
+                                    {{ present_count }} Present
+                                </span>
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-8">
+                                    {{ absent_count }} Absent
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning bg-opacity-15 text-dark px-2.5 py-1 rounded-pill fw-bold border border-warning border-opacity-30 fs-8">
+                                    0 Present
+                                </span>
+                                <span class="badge bg-secondary bg-opacity-10 text-dark px-2.5 py-1 rounded-pill fw-bold border fs-8">
+                                    0 Absent (Session Open)
+                                </span>
+                                {% endif %}
                             </div>
-                            <div class="bg-dark rounded-3 overflow-hidden text-center position-relative mb-2" style="min-height: 240px; max-height: 320px;">
-                                <video id="webcam" autoplay playsinline style="width: 100%; height: 240px; object-fit: cover; display: none;"></video>
-                                
-                                <!-- Canvas overlay for real-time face bounding boxes -->
-                                <canvas id="teacher-overlay-canvas" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none; z-index: 5;"></canvas>
-
-                                <!-- Floating Live Face Counter Badge -->
-                                <div id="teacher-live-badge" class="position-absolute top-0 start-0 m-2 px-2.5 py-1 rounded-pill bg-dark bg-opacity-75 text-white fs-8 fw-semibold d-none align-items-center shadow-sm" style="z-index: 10; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2);">
-                                    <span class="spinner-grow spinner-grow-sm text-success me-1.5" role="status" style="width: 8px; height: 8px;"></span>
-                                    <span>Faces Found: <strong id="teacher-live-count" class="text-warning">0</strong></span>
-                                </div>
-
-                                <!-- Floating Recognized Students Popup Card -->
-                                <div id="teacher-recognized-popup" class="position-absolute bottom-0 start-0 m-2 p-2 rounded-3 bg-dark bg-opacity-85 text-white fs-8 shadow-sm d-none" style="z-index: 10; max-width: 90%; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.15);">
-                                    <div class="fw-bold text-success mb-1 fs-8 d-flex align-items-center">
-                                        <i class="fas fa-user-check me-1"></i> Live Recognized Students:
-                                    </div>
-                                    <div id="teacher-students-list" class="d-flex flex-wrap gap-1">
-                                        <!-- Dynamic student pills -->
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            {% if session %}
+                            <div>
+                                <div class="p-3 bg-light rounded-4 border mb-3">
+                                    <h6 class="fw-bold text-primary mb-1 fs-7">{{ session.subject.name }} ({{ session.class_assigned.name }})</h6>
+                                    <span class="fs-8 text-muted fw-semibold d-block mb-1">
+                                        <i class="fa-solid fa-clock me-1 text-secondary"></i>Period Time: {{ session.start_time }} – {{ session.end_time }}
+                                    </span>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-calendar me-1"></i>Date: {{ session.date.strftime('%B %d, %Y') }}</span>
+                                        <span class="badge bg-info bg-opacity-10 text-info border fs-9 fw-bold">Session #{{ session.id }}</span>
                                     </div>
                                 </div>
 
-                                <div id="camera-placeholder" class="py-5 text-white-50">
-                                    <i class="fas fa-video fs-1 mb-2"></i>
-                                    <p class="mb-0">Click 'Start Camera' below to open live webcam</p>
+                                <!-- Present Roll Numbers Info Box -->
+                                <div class="p-3 rounded-4 border bg-white mb-3 shadow-2xs">
+                                    <span class="text-muted d-block mb-1 fs-9 fw-semibold">
+                                        <i class="fa-solid fa-user-check me-1 text-success"></i>Present Roll Numbers ({{ present_count }}):
+                                    </span>
+                                    <div class="text-dark fw-bold font-monospace fs-7 p-2 rounded-3 bg-light border" style="word-break: break-all; max-height: 75px; overflow-y: auto;">
+                                        {{ present_rolls_str }}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="d-flex gap-2 mb-2">
-                                <button type="button" id="start-cam-btn" class="btn btn-outline-primary rounded-3 flex-grow-1">
-                                    <i class="fas fa-camera me-1"></i>Start Camera
-                                </button>
-                                <button type="button" id="snap-btn" class="btn btn-success rounded-3 flex-grow-1" disabled>
-                                    <i class="fas fa-dot-circle me-1"></i>Capture Snap
-                                </button>
-                            </div>
-                            
-                            <!-- Captured Snaps Counter & Previews -->
-                            <div class="text-start mb-2">
-                                <span class="fw-bold text-dark fs-7">Captured Snaps (<span id="snap-counter">0</span>):</span>
-                            </div>
-                            <div id="captured-previews" class="d-flex flex-wrap gap-2 mb-2"></div>
-                            
-                            <!-- Container for hidden base64 input fields -->
-                            <div id="hidden-snaps-container"></div>
-                        </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3 py-3 fw-bold shadow">
-                            <i class="fas fa-bolt me-2"></i>Process Recognition & Mark Attendance
-                        </button>
-                    </form>
+                                <!-- Absent Roll Numbers Info Box -->
+                                <div class="p-3 rounded-4 border bg-white mb-3 shadow-2xs">
+                                    <span class="text-muted d-block mb-1 fs-9 fw-semibold">
+                                        <i class="fa-solid fa-user-xmark me-1 text-danger"></i>Absent Roll Numbers ({{ absent_count }}):
+                                    </span>
+                                    <div class="text-dark fw-bold font-monospace fs-7 p-2 rounded-3 bg-light border" style="word-break: break-all; max-height: 75px; overflow-y: auto;">
+                                        {{ absent_rolls_str }}
+                                    </div>
+                                </div>
+
+                                <!-- Quick Mark Roll Present Input Form (Positioned directly below Session Attendance Log) -->
+                                <form method="POST" action="{{ url_for('teacher.quick_add_roll', session_id=session.id) }}" class="mt-3">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light text-muted fw-bold border-end-0">
+                                            <i class="fa-solid fa-user-plus text-primary me-1"></i>Quick Mark Roll Present:
+                                        </span>
+                                        <input type="text" name="roll_no" class="form-control fw-bold text-dark border-start-0 border-end-0" placeholder="e.g. 67 or 1, 67" required>
+                                        <button type="submit" class="btn btn-primary px-3.5 fw-bold">
+                                            <i class="fa-solid fa-check me-1"></i>Add
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="d-flex gap-2 pt-3">
+                                <button type="button" class="btn btn-success flex-fill py-2 rounded-3 fw-bold fs-8" onclick="navigator.clipboard.writeText('{{ present_rolls_str }}'); alert('Copied Present roll numbers to clipboard!');">
+                                    <i class="fa-solid fa-copy me-1"></i>Copy Present Rolls
+                                </button>
+                                <a href="https://api.whatsapp.com/send?text=Attendance%20Report%20for%20{{ session.subject.name|urlencode }}%20({{ session.start_time|urlencode }}%20-%20{{ session.end_time|urlencode }})%20on%20{{ today }}:%0APresent%20Rolls%20({{ present_count }}):%20{{ present_rolls_str|urlencode }}%0AAbsent%20Rolls%20({{ absent_count }}):%20{{ absent_rolls_str|urlencode }}" target="_blank" class="btn btn-outline-success flex-fill py-2 rounded-3 fw-bold fs-8">
+                                    <i class="fa-brands fa-whatsapp me-1"></i>Share WhatsApp
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-receipt fs-1 mb-2 text-muted opacity-50"></i>
+                                <p class="mb-0 fs-8 fw-semibold text-dark">No Active Session Log</p>
+                                <span class="fs-9 text-muted">Select a lecture slot from your dashboard timetable to view session logs.</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-calendar-check text-primary me-2"></i>Today's Attendance Logs ({{ today }})</h5>
-                </div>
-                <div class="card-body p-4">
-                    {% if attendance_log %}
-                    {% for sub_name, records in attendance_log.items() %}
-                    <div class="mb-4">
-                        <h6 class="fw-bold text-primary mb-2">{{ sub_name }} ({{ records|length }} Present)</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Roll No</th>
-                                        <th>Time Marked</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for r in records %}
-                                    <tr>
-                                        <td class="fw-bold">{{ r.student.name if r.student else 'N/A' }}</td>
-                                        <td>{{ r.student.roll_no if r.student else 'N/A' }}</td>
-                                        <td><span class="badge bg-success bg-opacity-10 text-success">{{ r.time_marked or 'N/A' }}</span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+        <!-- Pane 2: Manual Attendance Mode -->
+        <div class="tab-pane fade" id="manual-mode-pane" role="tabpanel" aria-labelledby="manual-tab">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4 bg-white">
+                        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-list-check text-primary me-2"></i>Manual Student Review & Attendance Lock</h5>
+                            <span class="badge bg-primary rounded-pill px-3 py-1 fs-8">{{ class_students|length }} Enrolled Students</span>
+                        </div>
+                        <div class="card-body p-4">
+                            {% if session and class_students %}
+                            <!-- Quick Add Present Roll Number Input Form -->
+                            <form method="POST" action="{{ url_for('teacher.quick_add_roll', session_id=session.id) }}" class="mb-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted fw-bold border-end-0">
+                                        <i class="fa-solid fa-user-plus text-primary me-1"></i>Quick Mark Roll Present:
+                                    </span>
+                                    <input type="text" name="roll_no" class="form-control fw-bold text-dark border-start-0 border-end-0" placeholder="e.g. 67 or 1, 67" required>
+                                    <button type="submit" class="btn btn-primary px-3.5 fw-bold">
+                                        <i class="fa-solid fa-check me-1"></i>Add Present
+                                    </button>
+                                </div>
+                            </form>
+
+                            <!-- Manual Student Attendance Selection Table -->
+                            <form method="POST" action="{{ url_for('teacher.confirm_attendance', session_id=session.id) }}">
+                                <div class="table-responsive mb-4 rounded-3 border" style="max-height: 480px; overflow-y: auto;">
+                                    <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th style="width: 35%;">Student Name</th>
+                                                <th style="width: 20%;">Roll No</th>
+                                                <th style="width: 25%;">Match Status / Confidence</th>
+                                                <th class="text-end" style="width: 20%;">Attendance Selection</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for st in class_students %}
+                                            {% set is_match = (st.id in matched_student_ids) %}
+                                            {% set conf = confidence_scores.get(st.id, 1.0 if is_match else 0.0) %}
+                                            {% set saved_st = saved_records_map.get(st.id) %}
+                                            {% set is_pres = (saved_st == 'PRESENT' if saved_st is not none else is_match) %}
+                                            <tr>
+                                                <td class="fw-bold text-dark">
+                                                    <i class="fa-solid fa-user me-1.5 text-secondary"></i>{{ st.name }}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border font-monospace px-2 py-1 fs-9">{{ st.roll_no }}</span>
+                                                </td>
+                                                <td>
+                                                    {% if conf > 0.6 %}
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold">
+                                                        <i class="fa-solid fa-face-smile me-1"></i>{{ (conf * 100)|int }}% Confidence
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="badge bg-light text-muted border px-2.5 py-1 rounded-pill fs-9 fw-semibold">
+                                                        Manual Review
+                                                    </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end text-nowrap">
+                                                    {% if session.status == 'COMPLETED' and not is_same_day_editable %}
+                                                        <span class="badge {% if is_pres %}bg-success{% else %}bg-danger{% endif %} px-2.5 py-1 rounded-pill">
+                                                            {{ 'PRESENT' if is_pres else 'ABSENT' }}
+                                                        </span>
+                                                    {% else %}
+                                                        <div class="btn-group btn-group-sm" role="group">
+                                                            <input type="radio" class="btn-check" name="student_status_{{ st.id }}" id="pres_{{ st.id }}" value="PRESENT" {% if is_pres %}checked{% endif %}>
+                                                            <label class="btn btn-outline-success px-3 py-1 fs-9 fw-bold" for="pres_{{ st.id }}">P</label>
+
+                                                            <input type="radio" class="btn-check" name="student_status_{{ st.id }}" id="abs_{{ st.id }}" value="ABSENT" {% if not is_pres %}checked{% endif %}>
+                                                            <label class="btn btn-outline-danger px-3 py-1 fs-9 fw-bold" for="abs_{{ st.id }}">A</label>
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {% if session.status != 'COMPLETED' or is_same_day_editable %}
+                                <button type="submit" class="btn btn-success btn-lg w-100 rounded-3 py-3 fw-bold shadow-sm">
+                                    <i class="fa-solid fa-save me-2"></i>{% if session.status == 'COMPLETED' %}Save & Update Attendance (Same-Day Edit){% else %}Confirm & Complete Session{% endif %}
+                                </button>
+                                {% endif %}
+                            </form>
+                            {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="fa-solid fa-users-slash fs-1 mb-2 opacity-50"></i>
+                                <p class="mb-0 fs-8 fw-semibold text-dark">No Class Session Selected</p>
+                                <span class="fs-9 text-muted">Select or launch a class session from your dashboard to review students manually.</span>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-clipboard-check text-muted fs-1 mb-3"></i>
-                        <p class="text-muted fw-bold mb-0">No attendance marked yet today for your subjects.</p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -187,207 +495,325 @@
 </div>
 
 <script>
-    const webcam = document.getElementById('webcam');
-    const placeholder = document.getElementById('camera-placeholder');
-    const startBtn = document.getElementById('start-cam-btn');
-    const snapBtn = document.getElementById('snap-btn');
-    const previews = document.getElementById('captured-previews');
-    const hiddenContainer = document.getElementById('hidden-snaps-container');
-    const counterEl = document.getElementById('snap-counter');
+// Camera and multi-capture WebRTC AI scripts
+let attendanceStream = null;
+let attendanceFacingMode = 'environment'; // environment for back camera
+let capturedImagesArray = [];
+let attendanceMode = 'camera'; // Default to camera mode for quick attendance
+let liveDetectionInterval = null;
+let isDetectingLive = false;
 
-    let stream = null;
-    let snapCount = 0;
-    let teacherDetectInterval = null;
-    let isDetectingTeacher = false;
-    let teacherFacingMode = 'environment'; // environment = back camera (classroom), user = front camera (selfie)
+window.setAttendanceMode = function(mode) {
+    attendanceMode = mode;
+    const localBtn = document.getElementById('btn-local-mode-attendance');
+    const cameraBtn = document.getElementById('btn-camera-mode-attendance');
+    const fileContainer = document.getElementById('file-input-container-attendance');
+    const cameraSection = document.getElementById('camera-section-attendance');
+    const fileInput = document.getElementById('group_photos');
 
-    async function startTeacherCamera() {
-        stopTeacherCamera();
+    if (mode === 'local') {
+        if (localBtn) {
+            localBtn.classList.remove('btn-outline-primary');
+            localBtn.classList.add('btn-primary');
+        }
+        if (cameraBtn) {
+            cameraBtn.classList.remove('btn-primary');
+            cameraBtn.classList.add('btn-outline-primary');
+        }
+        if (fileContainer) fileContainer.classList.remove('d-none');
+        if (cameraSection) cameraSection.classList.add('d-none');
+        window.stopAttendanceCamera();
+    } else {
+        if (cameraBtn) {
+            cameraBtn.classList.remove('btn-outline-primary');
+            cameraBtn.classList.add('btn-primary');
+        }
+        if (localBtn) {
+            localBtn.classList.remove('btn-primary');
+            localBtn.classList.add('btn-outline-primary');
+        }
+        if (fileContainer) fileContainer.classList.add('d-none');
+        if (cameraSection) cameraSection.classList.remove('d-none');
+        window.startAttendanceCamera();
+    }
+};
+
+window.startAttendanceCamera = async function() {
+    window.stopAttendanceCamera();
+    const video = document.getElementById('webcam-attendance');
+    try {
+        let stream;
         try {
             stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: teacherFacingMode },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                video: { 
+                    facingMode: { ideal: attendanceFacingMode }, 
+                    width: { ideal: 1280 }, 
+                    height: { ideal: 720 } 
                 },
                 audio: false
             });
-            webcam.srcObject = stream;
-            webcam.style.display = 'block';
-            placeholder.style.display = 'none';
-            snapBtn.disabled = false;
+        } catch (cErr) {
+            console.warn("Fallback to basic video constraints:", cErr);
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+        attendanceStream = stream;
+        if (video) {
+            video.srcObject = stream;
+            video.muted = true;
+            try { await video.play(); } catch(e) {}
+            window.startLiveDetectionLoop();
+        }
+    } catch (err) {
+        console.error("Camera access error:", err);
+        alert('Could not access camera: ' + err.message + '\nPlease check camera permissions or select "Local File(s)" mode.');
+        window.setAttendanceMode('local');
+    }
+};
 
-            if (teacherFacingMode === 'user') {
-                webcam.style.transform = 'scaleX(-1)';
-            } else {
-                webcam.style.transform = 'none';
+window.stopAttendanceCamera = function() {
+    window.stopLiveDetectionLoop();
+    if (attendanceStream) {
+        attendanceStream.getTracks().forEach(track => track.stop());
+        attendanceStream = null;
+    }
+    const video = document.getElementById('webcam-attendance');
+    if (video) video.srcObject = null;
+};
+
+// Real-Time Live Face Detection Loop
+window.startLiveDetectionLoop = function() {
+    window.stopLiveDetectionLoop();
+    liveDetectionInterval = setInterval(async () => {
+        if (isDetectingLive || !attendanceStream) return;
+        const video = document.getElementById('webcam-attendance');
+        const overlayCanvas = document.getElementById('overlay-canvas-attendance');
+        if (!video || !video.videoWidth || video.paused || video.ended) return;
+
+        isDetectingLive = true;
+        try {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.6);
+
+            const classSelect = document.getElementById('class_id');
+            const classInput = document.getElementById('current_class_id');
+            const subjectInput = document.getElementById('current_subject_id');
+
+            const class_id = classInput ? classInput.value : (classSelect ? classSelect.value : null);
+            const subject_id = subjectInput ? subjectInput.value : null;
+
+            const res = await fetch('/api/live_detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: frameBase64,
+                    class_id: class_id,
+                    subject_id: subject_id
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                window.renderLiveDetectionOverlay(data, video, overlayCanvas);
             }
-
-            startBtn.classList.replace('btn-outline-primary', 'btn-outline-secondary');
-            startBtn.innerHTML = '<i class="fas fa-camera me-1"></i>Camera Active';
-
-            document.getElementById('teacher-live-badge').classList.remove('d-none');
-            document.getElementById('teacher-live-badge').classList.add('d-flex');
-
-            startTeacherLiveDetection();
         } catch (err) {
-            alert('Could not access camera: ' + err.message);
+            console.error("Live detection error:", err);
+        } finally {
+            isDetectingLive = false;
         }
+    }, 350);
+};
+
+window.stopLiveDetectionLoop = function() {
+    if (liveDetectionInterval) {
+        clearInterval(liveDetectionInterval);
+        liveDetectionInterval = null;
     }
-
-    function stopTeacherCamera() {
-        if (teacherDetectInterval) clearInterval(teacherDetectInterval);
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-        }
-        if (webcam) webcam.srcObject = null;
-    }
-
-    function toggleTeacherCameraDirection() {
-        teacherFacingMode = (teacherFacingMode === 'environment') ? 'user' : 'environment';
-        startTeacherCamera();
-    }
-
-    startBtn.addEventListener('click', () => {
-        startTeacherCamera();
-    });
-
-    snapBtn.addEventListener('click', () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = webcam.videoWidth || 640;
-        canvas.height = webcam.videoHeight || 480;
-        const ctx = canvas.getContext('2d');
-        if (teacherFacingMode === 'user') {
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-        }
-        ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        snapCount++;
-        counterEl.innerText = snapCount;
-
-        const thumbWrapper = document.createElement('div');
-        thumbWrapper.className = 'position-relative d-inline-block';
-        thumbWrapper.innerHTML = `
-            <img src="${dataUrl}" class="rounded border shadow-sm" style="width: 75px; height: 55px; object-fit: cover;">
-            <span class="badge bg-success position-absolute top-0 start-100 translate-middle rounded-circle p-1" style="font-size: 0.6rem;">✓</span>
-        `;
-        previews.appendChild(thumbWrapper);
-
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'captured_images_base64';
-        hiddenInput.value = dataUrl;
-        hiddenContainer.appendChild(hiddenInput);
-    });
-
-    function startTeacherLiveDetection() {
-        if (teacherDetectInterval) clearInterval(teacherDetectInterval);
-        teacherDetectInterval = setInterval(async () => {
-            if (isDetectingTeacher || !stream) return;
-            if (!webcam || !webcam.videoWidth || webcam.paused || webcam.ended) return;
-
-            isDetectingTeacher = true;
-            try {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = webcam.videoWidth;
-                tempCanvas.height = webcam.videoHeight;
-                const ctx = tempCanvas.getContext('2d');
-                if (teacherFacingMode === 'user') {
-                    ctx.translate(tempCanvas.width, 0);
-                    ctx.scale(-1, 1);
-                }
-                ctx.drawImage(webcam, 0, 0, tempCanvas.width, tempCanvas.height);
-                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.6);
-
-                const subjectSelect = document.getElementById('teacher_subject_id');
-                const subject_id = subjectSelect ? subjectSelect.value : null;
-
-                const res = await fetch('/api/live_detect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image: frameBase64,
-                        subject_id: subject_id
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    renderTeacherOverlay(data);
-                }
-            } catch (err) {
-                console.error("Teacher live detection error:", err);
-            } finally {
-                isDetectingTeacher = false;
-            }
-        }, 700);
-    }
-
-    function renderTeacherOverlay(data) {
-        const overlayCanvas = document.getElementById('teacher-overlay-canvas');
-        if (!overlayCanvas || !webcam) return;
-
-        overlayCanvas.width = webcam.clientWidth || webcam.videoWidth;
-        overlayCanvas.height = webcam.clientHeight || webcam.videoHeight;
+    const overlayCanvas = document.getElementById('overlay-canvas-attendance');
+    if (overlayCanvas) {
         const ctx = overlayCanvas.getContext('2d');
         ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
-        document.getElementById('teacher-live-count').textContent = data.total_faces || 0;
-
-        const popupEl = document.getElementById('teacher-recognized-popup');
-        const studentsListEl = document.getElementById('teacher-students-list');
-
-        if (!data.faces || data.faces.length === 0) {
-            popupEl.classList.add('d-none');
-            return;
-        }
-
-        popupEl.classList.remove('d-none');
-        studentsListEl.innerHTML = '';
-
-        const scaleX = overlayCanvas.width / (data.img_width || webcam.videoWidth);
-        const scaleY = overlayCanvas.height / (data.img_height || webcam.videoHeight);
-
-        data.faces.forEach(face => {
-            const box = face.box;
-            let top = box.top * scaleY;
-            let right = box.right * scaleX;
-            let bottom = box.bottom * scaleY;
-            let left = box.left * scaleX;
-
-            let drawLeft = left;
-            if (teacherFacingMode === 'user') {
-                drawLeft = overlayCanvas.width - right;
-            }
-            const boxWidth = (right - left);
-            const boxHeight = bottom - top;
-
-            ctx.strokeStyle = face.matched ? '#10b981' : '#f59e0b';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(drawLeft, top, boxWidth, boxHeight);
-
-            ctx.fillStyle = face.matched ? 'rgba(16, 185, 129, 0.85)' : 'rgba(245, 158, 11, 0.85)';
-            const labelText = face.matched ? `${face.name} (${face.roll_no})` : 'Unknown Face';
-            ctx.font = 'bold 12px sans-serif';
-            const textWidth = ctx.measureText(labelText).width;
-            ctx.fillRect(drawLeft, Math.max(0, top - 22), textWidth + 12, 22);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(labelText, drawLeft + 6, Math.max(14, top - 6));
-
-            if (studentsListEl) {
-                const pill = document.createElement('span');
-                pill.className = face.matched 
-                    ? 'badge bg-success bg-opacity-75 text-white me-1 mb-1 px-2 py-1 fs-8'
-                    : 'badge bg-warning bg-opacity-75 text-dark me-1 mb-1 px-2 py-1 fs-8';
-                pill.innerHTML = face.matched 
-                    ? `<i class="fas fa-check me-1"></i>${face.name} (${face.roll_no})` 
-                    : `<i class="fas fa-user-times me-1"></i>Unknown`;
-                studentsListEl.appendChild(pill);
-            }
-        });
     }
+    const liveCountEl = document.getElementById('live-face-count');
+    if (liveCountEl) liveCountEl.textContent = '0';
+    const popupEl = document.getElementById('live-recognized-popup');
+    if (popupEl) popupEl.classList.add('d-none');
+};
+
+window.renderLiveDetectionOverlay = function(data, video, canvas) {
+    if (!video || !canvas) return;
+
+    canvas.width = video.clientWidth || video.videoWidth;
+    canvas.height = video.clientHeight || video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const countEl = document.getElementById('live-face-count');
+    if (countEl) {
+        countEl.textContent = data.total_faces || 0;
+        if (data.total_faces > 0) {
+            countEl.className = 'text-success fw-bold';
+        } else {
+            countEl.className = 'text-warning fw-bold';
+        }
+    }
+
+    const popupEl = document.getElementById('live-recognized-popup');
+    const studentsListEl = document.getElementById('live-students-list');
+
+    if (!data.faces || data.faces.length === 0) {
+        if (popupEl) popupEl.classList.add('d-none');
+        return;
+    }
+
+    if (popupEl) popupEl.classList.remove('d-none');
+    if (studentsListEl) studentsListEl.innerHTML = '';
+
+    const scaleX = canvas.width / (data.img_width || video.videoWidth);
+    const scaleY = canvas.height / (data.img_height || video.videoHeight);
+
+    data.faces.forEach(face => {
+        const box = face.box;
+        const top = box.top * scaleY;
+        const right = box.right * scaleX;
+        const bottom = box.bottom * scaleY;
+        const left = box.left * scaleX;
+        const boxWidth = right - left;
+        const boxHeight = bottom - top;
+
+        ctx.strokeStyle = face.matched ? '#10b981' : '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(left, top, boxWidth, boxHeight);
+
+        ctx.fillStyle = face.matched ? 'rgba(16, 185, 129, 0.85)' : 'rgba(245, 158, 11, 0.85)';
+        const labelText = face.matched ? `${face.name} (${face.roll_no})` : 'Unknown Face';
+        ctx.font = 'bold 12px sans-serif';
+        const textWidth = ctx.measureText(labelText).width;
+        ctx.fillRect(left, Math.max(0, top - 22), textWidth + 12, 22);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(labelText, left + 6, Math.max(14, top - 6));
+
+        if (studentsListEl) {
+            const pill = document.createElement('span');
+            pill.className = face.matched 
+                ? 'badge bg-success bg-opacity-75 text-white me-1 mb-1 px-2 py-1 fs-8'
+                : 'badge bg-warning bg-opacity-75 text-dark me-1 mb-1 px-2 py-1 fs-8';
+            pill.innerHTML = face.matched 
+                ? `<i class="fa-solid fa-check me-1"></i>${face.name} (${face.roll_no})` 
+                : `<i class="fa-solid fa-user-xmark me-1"></i>Unknown`;
+            studentsListEl.appendChild(pill);
+        }
+    });
+};
+
+window.toggleAttendanceCameraDirection = function() {
+    attendanceFacingMode = attendanceFacingMode === 'environment' ? 'user' : 'environment';
+    window.startAttendanceCamera();
+};
+
+window.captureAttendancePhoto = function() {
+    const video = document.getElementById('webcam-attendance');
+    const canvas = document.getElementById('canvas-attendance');
+    if (!video || !canvas || !attendanceStream) return;
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas to jpeg data url
+    const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+    capturedImagesArray.push(dataURL);
+
+    // Update previews and hidden inputs
+    window.updateCapturedPreviews();
+};
+
+window.removeCapturedPhoto = function(index) {
+    capturedImagesArray.splice(index, 1);
+    window.updateCapturedPreviews();
+};
+
+window.updateCapturedPreviews = function() {
+    const grid = document.getElementById('captured-frames-grid');
+    const countSpan = document.getElementById('captured-count');
+    const inputsContainer = document.getElementById('hidden-inputs-container');
+    
+    if (!grid || !countSpan || !inputsContainer) return;
+    
+    grid.innerHTML = '';
+    inputsContainer.innerHTML = '';
+    countSpan.textContent = capturedImagesArray.length;
+
+    capturedImagesArray.forEach((base64Data, index) => {
+        const col = document.createElement('div');
+        col.className = 'col position-relative';
+        col.innerHTML = `
+            <div class="position-relative border rounded-2 overflow-hidden shadow-sm bg-white" style="padding-top: 75%;">
+                <img src="${base64Data}" class="position-absolute top-0 start-0 w-100 h-100" style="object-fit: cover;">
+                <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-1 rounded-circle p-0" 
+                        style="width: 20px; height: 20px; line-height: 20px; font-size: 10px; display: flex; align-items: center; justify-content: center; z-index: 10;"
+                        onclick="window.removeCapturedPhoto(${index})">
+                    &times;
+                </button>
+            </div>
+        `;
+        grid.appendChild(col);
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'captured_images_base64';
+        input.value = base64Data;
+        inputsContainer.appendChild(input);
+    });
+};
+
+window.reopenAttendanceCamera = function() {
+    const banner = document.getElementById('camera-closed-banner');
+    const container = document.getElementById('camera-form-container');
+    if (banner) banner.classList.add('d-none');
+    if (container) container.classList.remove('d-none');
+    window.setAttendanceMode('camera');
+};
+
+window.closeAttendanceCameraReopened = function() {
+    window.stopAttendanceCamera();
+    const banner = document.getElementById('camera-closed-banner');
+    const container = document.getElementById('camera-form-container');
+    if (banner) banner.classList.remove('d-none');
+    if (container) container.classList.add('d-none');
+};
+
+window.validateAttendanceForm = function() {
+    if (attendanceMode === 'camera') {
+        if (capturedImagesArray.length === 0 && attendanceStream && document.getElementById('webcam-attendance')) {
+            window.captureAttendancePhoto();
+        }
+        if (capturedImagesArray.length === 0) {
+            alert('Please capture at least one camera photo before submitting.');
+            return false;
+        }
+        window.stopAttendanceCamera();
+    }
+    return true;
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const isCompleted = {{ 'true' if (session and session.status == 'COMPLETED') or (session and present_count > 0) else 'false' }};
+    const cameraPane = document.getElementById('camera-mode-pane');
+    
+    // Only auto-start camera if the session is not completed/marked yet
+    if (!isCompleted && cameraPane && cameraPane.classList.contains('active')) {
+        window.setAttendanceMode('camera');
+    } else {
+        // If already completed, keep camera stopped so teacher can review the log peacefully
+        window.stopAttendanceCamera();
+    }
+});
 </script>
 {% endblock %}

@@ -1,0 +1,205 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER STUDENT MODIFICATIONS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Student Attendance Modification Requests - SmartVision{% endblock %}
+{% block page_title %}Student Attendance Modification & Discrepancy Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <!-- Header Banner -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary">
+                        <i class="fa-solid fa-file-signature fs-3"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Student Attendance Modification Portal</h4>
+                        <p class="text-muted mb-0 fs-8">Review incoming discrepancy requests from students. Approved requests update attendance to Present.</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3.5 py-1.5 fw-bold fs-8">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% set pending_requests = mod_requests | selectattr('status', 'equalto', 'PENDING') | list %}
+    {% set resolved_requests = mod_requests | rejectattr('status', 'equalto', 'PENDING') | list %}
+
+    <!-- Active Pending Requests Section -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+        {% if pending_requests %}
+        <form method="POST" action="{{ url_for('teacher.bulk_approve_discrepancies') }}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 fs-7">
+                        <i class="fa-solid fa-clock-rotate-left text-warning me-2"></i>Pending Discrepancy Requests ({{ pending_requests|length }})
+                    </h6>
+                    <span class="fs-9 text-muted">Showing active pending student correction requests</span>
+                </div>
+                <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs fs-8">
+                    <i class="fa-solid fa-check-double me-1"></i>Approve Selected
+                </button>
+            </div>
+
+            <div class="table-responsive rounded-3 border">
+                <table class="table table-hover align-middle mb-0 fs-8 w-100" style="min-width: 850px;">
+                    <thead class="table-light text-nowrap">
+                        <tr>
+                            <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAllMod" class="form-check-input" onclick="toggleAllModifications(this)"></th>
+                            <th>Student Information</th>
+                            <th>Class & Subject</th>
+                            <th class="text-nowrap">Session Date & Time</th>
+                            <th>Student Explanation / Rationale</th>
+                            <th style="text-align: center;">Image Proof</th>
+                            <th style="text-align: center;">Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in pending_requests %}
+                        <tr>
+                            <td style="text-align: center;">
+                                <input type="checkbox" name="discrepancy_ids" value="{{ req.id }}" class="form-check-input mod-checkbox">
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-8">{{ req.student.name if req.student else 'Student' }}</div>
+                                <span class="badge bg-light text-dark border fs-9 fw-semibold">Roll No: {{ req.student.roll_no if req.student else 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary d-block fs-8">{{ req.session.subject.name if (req.session and req.session.subject) else (req.class_name or 'Class') }}</span>
+                                <span class="fs-9 text-muted"><i class="fa-solid fa-school me-1"></i>Class: {{ req.session.class_assigned.name if (req.session and req.session.class_assigned) else (req.class_name or 'N/A') }}</span>
+                            </td>
+                            <td class="text-nowrap">
+                                {% if req.session %}
+                                <div class="fw-bold text-dark fs-8"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ req.session.date.strftime('%b %d, %Y') }}</div>
+                                <span class="fs-9 text-muted font-monospace"><i class="fa-solid fa-clock me-1 text-secondary"></i>{{ req.session.start_time or 'Lecture' }} {% if req.session.end_time and req.session.end_time != req.session.start_time %}- {{ req.session.end_time }}{% endif %}</span>
+                                {% else %}
+                                <span class="fs-8 text-dark fw-bold">{{ req.created_at.strftime('%b %d, %Y') }}</span>
+                                <span class="fs-9 text-muted d-block">{{ req.lecture_time or 'Lecture' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="p-2 bg-light rounded-3 text-dark border fs-8 fst-italic shadow-xs" style="white-space: normal; word-break: break-word; line-height: 1.35;">
+                                    "{{ req.reason }}"
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                {% if req.image_proof %}
+                                <a href="{{ url_for('static', filename='../' ~ req.image_proof) }}" target="_blank" class="d-inline-block position-relative rounded-3 overflow-hidden border shadow-xs">
+                                    <img src="{{ url_for('static', filename='../' ~ req.image_proof) }}" alt="Proof Attachment" style="width: 44px; height: 44px; object-fit: cover;">
+                                </a>
+                                {% else %}
+                                <span class="text-muted fs-9 fst-italic">No Proof</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="badge bg-warning bg-opacity-15 text-dark px-2.5 py-1 rounded-pill fw-bold border border-warning border-opacity-30 fs-9">
+                                    <i class="fa-solid fa-clock me-1"></i>PENDING
+                                </span>
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <div class="d-inline-flex gap-1 justify-content-end">
+                                    <button type="submit" formaction="{{ url_for('teacher.approve_discrepancy', req_id=req.id) }}" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fw-bold fs-9 shadow-xs" style="font-size: 11px; height: 28px;">
+                                        <i class="fa-solid fa-check me-1"></i>Approve
+                                    </button>
+                                    <button type="submit" formaction="{{ url_for('teacher.reject_discrepancy', req_id=req.id) }}" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-1 fw-bold fs-9" style="font-size: 11px; height: 28px;">
+                                        <i class="fa-solid fa-xmark me-1"></i>Reject
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+        {% else %}
+        <div class="text-center py-4 text-muted fs-8">
+            <i class="fa-solid fa-circle-check text-success fs-1 d-block mb-2"></i>
+            <p class="mb-0 fw-semibold text-dark fs-7">All Student Discrepancy Requests Resolved!</p>
+            <span class="fs-9 text-muted">There are no pending modification requests requiring your review.</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Collapsible Past Resolved Requests History -->
+    {% if resolved_requests %}
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-0 fs-7">
+                    <i class="fa-solid fa-box-archive text-secondary me-2"></i>Resolved Requests History ({{ resolved_requests|length }})
+                </h6>
+                <span class="fs-9 text-muted">Past approved and rejected discrepancy requests</span>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-bold fs-8" type="button" data-bs-toggle="collapse" data-bs-target="#resolvedHistoryCollapse">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>Toggle Resolved History
+            </button>
+        </div>
+
+        <div class="collapse mt-3" id="resolvedHistoryCollapse">
+            <div class="rounded-3 border overflow-hidden">
+                <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                    <thead class="table-light text-nowrap">
+                        <tr>
+                            <th>Student Information</th>
+                            <th>Class & Subject</th>
+                            <th class="text-nowrap">Session Date & Time</th>
+                            <th>Explanation</th>
+                            <th style="text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in resolved_requests %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark fs-8">{{ req.student.name if req.student else 'Student' }}</div>
+                                <span class="badge bg-light text-dark border fs-9">Roll No: {{ req.student.roll_no if req.student else 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary d-block fs-8">{{ req.session.subject.name if (req.session and req.session.subject) else (req.class_name or 'Class') }}</span>
+                            </td>
+                            <td class="text-nowrap">
+                                {% if req.session %}
+                                <span class="fw-bold text-dark fs-8">{{ req.session.date.strftime('%b %d, %Y') }}</span>
+                                {% else %}
+                                <span class="fs-8 text-dark fw-bold">{{ req.created_at.strftime('%b %d, %Y') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fst-italic text-secondary fs-8">"{{ req.reason }}"</span>
+                            </td>
+                            <td style="text-align: center;">
+                                {% if req.status == 'APPROVED' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-9">
+                                    <i class="fa-solid fa-check me-1"></i>APPROVED (PRESENT)
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-9">
+                                    <i class="fa-solid fa-xmark me-1"></i>REJECTED
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function toggleAllModifications(master) {
+        document.querySelectorAll('.mod-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+</script>
+{% endblock %}

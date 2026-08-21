@@ -1,0 +1,108 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER ASSIGNMENTS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Manage Teacher Assignments - SmartVision{% endblock %}
+{% block page_title %}Teacher ↔ Class ↔ Subject Assignments (M:N Mapping){% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Form Column -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-gradient bg-primary text-white p-3.5">
+                <h5 class="fw-bold mb-0 fs-7"><i class="fa-solid fa-link me-2"></i>Create New Assignment</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('main.teacher_assignments') }}">
+                    <div class="mb-3">
+                        <label for="teacher_id" class="form-label fw-semibold fs-8 text-dark">Teacher <span class="text-danger">*</span></label>
+                        <select class="form-select" id="teacher_id" name="teacher_id" required>
+                            <option value="" selected disabled>Select Teacher...</option>
+                            {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.name }} ({{ t.emp_id or 'Faculty' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="class_id" class="form-label fw-semibold fs-8 text-dark">Target Class <span class="text-danger">*</span></label>
+                        <select class="form-select" id="class_id" name="class_id" required>
+                            <option value="" selected disabled>Select Class...</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="subject_id" class="form-label fw-semibold fs-8 text-dark">Subject <span class="text-danger">*</span></label>
+                        <select class="form-select" id="subject_id" name="subject_id" required>
+                            <option value="" selected disabled>Select Subject...</option>
+                            {% for s in subjects %}
+                            <option value="{{ s.id }}">{{ s.name }} (Class: {{ s.class_assigned.name if s.class_assigned else 'N/A' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold shadow-sm">
+                        <i class="fa-solid fa-plus me-1"></i> Assign Teacher
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Column -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-light p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0 fs-7 text-dark"><i class="fa-solid fa-chalkboard-user text-primary me-2"></i>Active Faculty Workload Assignments</h5>
+                <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">{{ assignments|length }} Active Assignments</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 fs-8">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Teacher</th>
+                                <th>Class</th>
+                                <th>Subject</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in assignments %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">
+                                    <i class="fa-solid fa-user-check text-primary me-2"></i>{{ a.teacher.name }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info text-dark rounded-pill px-2.5 py-1 fs-9">{{ a.class_assigned.name if a.class_assigned else 'N/A' }}</span>
+                                </td>
+                                <td class="fw-semibold text-dark">
+                                    {{ a.subject_assigned.name if a.subject_assigned else 'N/A' }}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form method="POST" action="{{ url_for('main.delete_teacher_assignment', id=a.id) }}" class="d-inline" onsubmit="return confirm('Remove this teacher assignment?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-xs rounded-pill px-2.5 py-1">
+                                            <i class="fa-solid fa-trash-can me-1"></i>Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted fs-8">No teacher assignments defined yet. Use the form to assign teachers to subjects across classes.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

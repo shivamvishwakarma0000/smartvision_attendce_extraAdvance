@@ -1,0 +1,88 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ATTENDANCE AUDIT LOGS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Attendance Audit Logs - SmartVision{% endblock %}
+{% block page_title %}Security & System Attendance Audit Trail{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-0 rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-shield-halved text-primary me-2"></i> Attendance Audit Logs</h5>
+                    <p class="text-muted fs-8 mb-0">Immutable records of all attendance creations, modifications, temporary unlocks, and security overrides.</p>
+                </div>
+                <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">{{ logs|length }} Audit Records</span>
+            </div>
+
+            {% if logs %}
+            <div class="table-responsive" style="max-height: 580px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Target Student / Subject</th>
+                            <th>Attendance Date</th>
+                            <th>Prev Status</th>
+                            <th>New Status</th>
+                            <th>Changed By</th>
+                            <th>Rationale / Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="font-monospace text-muted fs-9">
+                                {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                            </td>
+                            <td>
+                                {% if log.action == 'CREATE' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold">CREATE</span>
+                                {% elif log.action == 'UPDATE' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-2.5 py-1 rounded-pill fw-bold">UPDATE</span>
+                                {% elif log.action == 'UNLOCK' %}
+                                <span class="badge bg-info bg-opacity-10 text-info px-2.5 py-1 rounded-pill fw-bold">UNLOCK</span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary px-2.5 py-1 rounded-pill fw-bold">{{ log.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.student %}
+                                <strong class="text-dark d-block">{{ log.student.name }}</strong>
+                                <span class="text-muted fs-9">Roll: {{ log.student.roll_no }}</span>
+                                {% elif log.subject %}
+                                <strong class="text-primary">{{ log.subject.name }}</strong>
+                                {% else %}
+                                <span class="text-muted">System Action</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.date.strftime('%Y-%m-%d') if log.date else 'N/A' }}</td>
+                            <td><span class="badge bg-light text-muted border px-2 py-0.5 fs-9">{{ log.previous_status or 'N/A' }}</span></td>
+                            <td><span class="badge bg-primary bg-opacity-10 text-primary border px-2 py-0.5 fs-9">{{ log.new_status or 'N/A' }}</span></td>
+                            <td>
+                                <strong class="text-dark">{{ log.changed_by.name if log.changed_by else 'User #' ~ log.changed_by_user_id }}</strong>
+                                <span class="badge bg-light text-dark border px-2 py-0.5 fs-9 ms-1 text-uppercase">{{ log.changed_by_role }}</span>
+                            </td>
+                            <td class="text-muted fs-9" style="max-width: 220px; word-break: break-word;">
+                                {{ log.rationale or 'Standard system logging.' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fa-solid fa-file-shield fs-1 text-muted opacity-50 mb-2 d-block"></i>
+                No attendance audit records logged yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

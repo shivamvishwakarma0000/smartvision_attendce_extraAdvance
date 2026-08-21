@@ -2,9 +2,12 @@ venv/
 .venv/
 .system_venv/
 *.db
+instance/
 uploads/
 temp_uploads/
 __pycache__/
 .DS_Store
 .idea/
 *.pyc
+.env
+scratch/

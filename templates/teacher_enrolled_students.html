@@ -1,0 +1,165 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER ENROLLED STUDENTS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Teacher Portal | Enrolled Students{% endblock %}
+{% block page_title %}Assigned Class Roster{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px; font-size: 1.5rem;">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold text-dark mb-1">Enrolled Class Students</h4>
+                            <p class="text-muted mb-0 fs-7">Roster of students registered under your assigned classes and teaching subjects.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-7 shadow-sm">
+                            <i class="fa-solid fa-users me-1"></i> {{ students|length }} Students Shown
+                        </span>
+                    </div>
+                </div>
+
+                {% if assigned_classes %}
+                <div class="mt-3 pt-3 border-top d-flex align-items-center gap-2 flex-wrap fs-8">
+                    <span class="text-muted fw-semibold me-1"><i class="fa-solid fa-school text-primary me-1"></i>Your Assigned Classes:</span>
+                    {% for c in assigned_classes %}
+                    <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fw-semibold">
+                        {{ c.name }} {% if c.class_teacher_id == teacher.id %}<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Class Teacher</span>{% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                <form method="GET" action="{{ url_for('teacher.enrolled_students') }}" class="row g-3 align-items-center">
+                    <!-- Search Input -->
+                    <div class="col-md-7 col-lg-8">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" name="q" class="form-control bg-light border-start-0 ps-0" placeholder="Search by student name, roll number, or enrollment number..." value="{{ search_query or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Filter by Assigned Class -->
+                    <div class="col-md-3 col-lg-3">
+                        <select name="class_id" class="form-select bg-light" onchange="this.form.submit()">
+                            <option value="">All Assigned Classes</option>
+                            {% for c in assigned_classes %}
+                            <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="col-md-2 col-lg-1 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold"><i class="fa-solid fa-filter me-1"></i>Filter</button>
+                        {% if search_query or selected_class_id %}
+                        <a href="{{ url_for('teacher.enrolled_students') }}" class="btn btn-outline-secondary" title="Clear Filters"><i class="fa-solid fa-rotate-left"></i></a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Roster Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                <div class="card-header bg-white border-0 pt-3.5 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark fs-7"><i class="fa-solid fa-id-card text-primary me-2"></i>Class Roster</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Student</th>
+                                    <th>Roll Number</th>
+                                    <th>Enrollment Number</th>
+                                    <th>Class / Section</th>
+                                    <th>Face Photo Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            {% if student.image_filename %}
+                                            <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" class="rounded-circle border" style="width: 42px; height: 42px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary border d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                                                {{ student.name[0].upper() }}
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ student.name }}</div>
+                                                {% if student.user_account and student.user_account.email %}
+                                                <div class="text-muted fs-9">{{ student.user_account.email }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2.5 py-1 fs-8 font-monospace">{{ student.roll_no or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted fs-8 font-monospace">{{ student.enrollment_no or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1.5 rounded-pill fw-bold">
+                                            <i class="fa-solid fa-school me-1"></i>{{ student.class_assigned.name if student.class_assigned else 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if student.face_encoding or student.image_filename %}
+                                        <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>Photo Registered</span>
+                                        {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i>Pending Photo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                            <i class="fa-solid fa-user-slash"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">No Enrolled Students Found</h5>
+                        <p class="text-muted fs-7 mb-3">No students match your search criteria or assigned classes.</p>
+                        {% if search_query or selected_class_id %}
+                        <a href="{{ url_for('teacher.enrolled_students') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Clear Filters</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

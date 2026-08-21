@@ -1,0 +1,100 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - MANAGE HOLIDAYS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Manage Academic Holidays - SmartVision{% endblock %}
+{% block page_title %}Academic Holiday Calendar Management{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Add Holiday Form -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-gradient bg-primary text-white p-3.5">
+                <h5 class="fw-bold mb-0 fs-7"><i class="fa-solid fa-umbrella-beach me-2"></i>Declare New Holiday</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('main.manage_holidays') }}">
+                    <div class="mb-3">
+                        <label for="date" class="form-label fw-semibold fs-8 text-dark">Holiday Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="scope" class="form-label fw-semibold fs-8 text-dark">Scope / Target Class</label>
+                        <select class="form-select" id="scope" name="scope">
+                            <option value="ALL" selected>ALL Classes (Global Institution Holiday)</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">Class Specific: {{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label fw-semibold fs-8 text-dark">Reason / Description</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="e.g. Independence Day, Festival, Semester Break"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 fw-bold shadow-sm">
+                        <i class="fa-solid fa-plus me-1"></i> Save Holiday
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holiday Calendar List -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-light p-3.5 d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0 fs-7 text-dark"><i class="fa-solid fa-calendar-days text-primary me-2"></i>Declared Holiday Calendar</h5>
+                <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">{{ holidays|length }} Total Holidays</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 fs-8">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Scope</th>
+                                <th>Reason</th>
+                                <th class="text-end pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for h in holidays %}
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark">
+                                    <i class="fa-regular fa-calendar-check text-success me-2"></i>{{ h.date.strftime('%B %d, %Y (%A)') }}
+                                </td>
+                                <td>
+                                    {% if h.scope == 'ALL' or h.scope == 'all' %}
+                                    <span class="badge bg-primary rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-globe me-1"></i>Global (All Classes)</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark rounded-pill px-2.5 py-1 fs-9"><i class="fa-solid fa-users me-1"></i>Class ID: {{ h.scope }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-dark">{{ h.reason or 'Declared Holiday' }}</td>
+                                <td class="text-end pe-4">
+                                    <form method="POST" action="{{ url_for('main.delete_holiday', id=h.id) }}" class="d-inline" onsubmit="return confirm('Remove this holiday? Daily schedules for this date will be updated.');">
+                                        <button type="submit" class="btn btn-outline-danger btn-xs rounded-pill px-2.5 py-1">
+                                            <i class="fa-solid fa-trash-can me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted fs-8">No holidays declared yet. Use the form to declare institutional or class-specific holidays.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,312 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER PROXY CLASSES VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Teacher Portal | My Proxy Class Duties{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h3 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-user-clock text-primary me-2"></i>My Proxy Class Duties</h3>
+                            <span class="badge bg-primary rounded-pill px-3 py-1 fs-8">{{ proxy_slots|length }} Active Duty Slot(s)</span>
+                        </div>
+                        <p class="text-muted mb-0">Classes where Administration assigned you as substitute teacher for faculty on approved leave.</p>
+                    </div>
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary rounded-3">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Received Proxy Attendance Transfers Card (For Original Faculty) -->
+    {% if received_transfers %}
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 border-start border-4 border-success">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0 text-success">
+                <i class="fa-solid fa-bell me-2"></i>Proxy Attendance Received from Substitute Teacher
+            </h5>
+            <span class="badge bg-success rounded-pill px-3 py-1 fs-8">{{ received_transfers|length }} Pending Transfer(s)</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="d-flex flex-column gap-3">
+                {% for transfer in received_transfers %}
+                <div class="p-3 bg-light rounded-4 border position-relative d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <!-- Top Right Cross (Cancel/Dismiss Log) -->
+                    <form method="POST" action="{{ url_for('teacher.dismiss_proxy_transfer', transfer_id=transfer.id) }}" style="position: absolute; top: 8px; right: 12px; z-index: 105;">
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0 fs-5 text-decoration-none fw-bold" title="Cancel / Dismiss Log" style="line-height: 1;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </form>
+
+                    <div class="pe-4" style="flex: 1; min-width: 280px;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="fw-bold text-dark fs-7">
+                                <i class="fa-solid fa-user-gear text-primary me-1"></i>From Substitute: {{ transfer.substitute_teacher.name if transfer.substitute_teacher else 'Substitute Teacher' }}
+                            </span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border fs-9">
+                                {{ transfer.subject.name if transfer.subject else 'Subject' }} ({{ transfer.class_assigned.name if transfer.class_assigned else 'Class' }})
+                            </span>
+                        </div>
+                        <span class="fs-8 text-muted fw-semibold d-block mb-2">
+                            <i class="fa-solid fa-clock me-1 text-secondary"></i>Time Slot: {{ transfer.time_slot }} | Date: {{ transfer.date.strftime('%B %d, %Y') }}
+                        </span>
+
+                        <!-- Editable Present Roll Numbers Form -->
+                        <form method="POST" action="{{ url_for('teacher.update_proxy_rolls', transfer_id=transfer.id) }}" class="d-flex align-items-center gap-2 bg-white p-2 rounded-3 border">
+                            <span class="fs-8 text-dark fw-bold font-monospace text-nowrap">
+                                <i class="fa-solid fa-user-check text-success me-1"></i>Present Roll Numbers:
+                            </span>
+                            <input type="text" name="present_rolls" id="rolls_proxy_input_{{ transfer.id }}"
+                                   class="form-control form-control-sm fw-bold font-monospace text-primary border-0 bg-light fs-8 px-2"
+                                   value="{{ transfer.present_rolls.replace(' ', '') }}"
+                                   placeholder="e.g. 1,67,85">
+                            <button type="submit" class="btn btn-sm btn-outline-primary px-2.5 py-1 fs-9 fw-bold text-nowrap" title="Save edited rolls">
+                                <i class="fa-solid fa-check me-1"></i>Save
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 fw-bold fs-8"
+                                onclick="const r = document.getElementById('rolls_proxy_input_{{ transfer.id }}').value.replace(/\s+/g, ''); navigator.clipboard.writeText(r); alert('Copied roll numbers: ' + r);">
+                            <i class="fa-solid fa-copy me-1"></i>Copy Rolls
+                        </button>
+                        <form method="POST" action="{{ url_for('teacher.apply_proxy_rolls', transfer_id=transfer.id) }}"
+                              onsubmit="this.appendChild(document.getElementById('rolls_proxy_input_{{ transfer.id }}').cloneNode(true));">
+                            <button type="submit" class="btn btn-success btn-sm px-3 rounded-3 fw-bold shadow-sm fs-8 text-nowrap">
+                                <i class="fa-solid fa-check-double me-1"></i>Apply Attendance to My Session
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assigned Proxy Class Duties List -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check text-primary me-2"></i>Assigned Proxy Duties</h5>
+                    <span class="fs-9 text-muted"><i class="fa-solid fa-info-circle me-1"></i>Take attendance & share roll numbers with original faculty</span>
+                </div>
+            </div>
+
+            <!-- Prominent Filter Control Toolbar -->
+            <div class="p-2 bg-light rounded-4 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <!-- Today Filter Button -->
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn" id="filterTodayBtn" onclick="filterProxyDuties('today')">
+                        <i class="fa-solid fa-star text-warning me-1"></i>Today's Duties
+                    </button>
+
+                    <!-- All Duties Filter Button -->
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn" id="filterAllBtn" onclick="filterProxyDuties('all')">
+                        <i class="fa-solid fa-list-ul me-1"></i>All Duties (<span id="totalDutiesCount">{{ proxy_slots|length }}</span>)
+                    </button>
+                </div>
+
+                <!-- Date Picker Filter on Right -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="input-group input-group-sm rounded-pill overflow-hidden border bg-white shadow-xs" style="width: 175px;">
+                        <span class="input-group-text bg-white border-0 text-primary px-2.5 fs-9">
+                            <i class="fa-solid fa-calendar-day"></i>
+                        </span>
+                        <input type="date" class="form-control form-control-sm border-0 fs-9 fw-semibold ps-0 bg-white" id="proxyDateInput" onchange="filterProxyDuties('date', this.value)" title="Filter duties by specific date">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            {% if proxy_slots %}
+            <div id="proxyTableContainer" class="table-responsive rounded-3 border">
+                <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 20%;">Original Absent Faculty</th>
+                            <th style="width: 20%;">Duty Date & Leave</th>
+                            <th style="width: 18%;">Subject & Class</th>
+                            <th style="width: 20%;">Time & Room</th>
+                            <th class="text-end" style="width: 22%;">Proxy Actions & Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in proxy_slots %}
+                        <tr class="proxy-duty-row" data-duty-date="{{ item.duty_date.strftime('%Y-%m-%d') }}">
+                            <td>
+                                <div class="fw-bold text-dark fs-8">
+                                    <i class="fa-solid fa-user-tie me-1 text-primary"></i>{{ item.orig_teacher.name if item.orig_teacher else 'Faculty' }}
+                                </div>
+                                <span class="fs-9 text-muted d-block">
+                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ item.orig_teacher.mobile or 'No Phone' }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                <div class="fw-bold text-dark fs-8">
+                                    <i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ item.duty_date.strftime('%b %d, %Y') }}
+                                    {% if item.is_active_today %}
+                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-0.5 fs-9 ms-1 fw-bold">Today</span>
+                                    {% endif %}
+                                </div>
+                                {% if item.leave %}
+                                <span class="fs-9 text-muted d-block mt-0.5">
+                                    Leave: {{ item.leave.date_from.strftime('%b %d') }} - {{ item.leave.date_to.strftime('%b %d') }}
+                                    <span class="badge bg-light text-muted border fs-9 ms-1">{{ item.leave.leave_type or 'FULL' }}</span>
+                                </span>
+                                {% else %}
+                                <span class="fs-9 text-danger d-block mt-0.5 fw-semibold">
+                                    <i class="fa-solid fa-shield-halved me-1"></i>Emergency Admin Proxy
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary d-block fs-8">{{ item.subject_name }}</span>
+                                <span class="fs-9 text-muted"><i class="fa-solid fa-school me-1"></i>Class: {{ item.class_name }}</span>
+                            </td>
+                            <td class="text-nowrap">
+                                <span class="badge bg-light text-dark border font-monospace fs-8 d-block mb-1">
+                                    <i class="fa-solid fa-clock me-1 text-secondary"></i>{{ item.day }} ({{ item.start_time }} - {{ item.end_time }})
+                                </span>
+                                <span class="fs-9 text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>Room: {{ item.room_number }}</span>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                {% if (item.slot.id, item.duty_date) in shared_slot_keys or (item.orig_teacher and (item.orig_teacher.id, item.slot.subject_id, item.duty_date) in shared_slot_keys) or (item.leave and (item.leave.id, item.duty_date) in shared_slot_keys) %}
+                                <span class="btn btn-xs btn-success rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs" style="pointer-events:none;">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Shared &#10003;
+                                </span>
+                                {% elif item.is_active_today %}
+                                <a href="{{ url_for('teacher.take_proxy_attendance', slot_id=item.slot.id, leave_id=(item.leave.id if item.leave else ''), duty_date=item.duty_date.strftime('%Y-%m-%d')) }}" class="btn btn-xs btn-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs">
+                                    <i class="fa-solid fa-camera me-1"></i>Take Proxy Attendance
+                                </a>
+                                {% else %}
+                                <span class="badge bg-light text-muted border fs-9 px-2 py-1 rounded-pill">
+                                    <i class="fa-solid fa-clock me-1"></i>Scheduled
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Filter Empty State -->
+            <div id="proxyFilterEmptyState" class="text-center py-5 text-muted fs-8 d-none">
+                <i class="fa-solid fa-calendar-xmark text-muted fs-1 d-block mb-2 opacity-50"></i>
+                <p class="mb-1 fw-semibold text-dark fs-7" id="proxyFilterEmptyMessage">No proxy duties found for selected filter</p>
+                <span class="fs-9 text-muted d-block mb-3">You do not have any assigned substitute class duties for this date.</span>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1 fs-8 fw-bold" onclick="filterProxyDuties('all')">
+                    <i class="fa-solid fa-rotate-left me-1"></i>View All Duties
+                </button>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted fs-8">
+                <i class="fa-solid fa-clipboard-check text-muted fs-1 d-block mb-2 opacity-50"></i>
+                <p class="mb-0 fw-semibold text-dark fs-7">No Proxy Class Duties Assigned</p>
+                <span class="fs-9 text-muted">You have no active or historical substitute class duties assigned by Administration.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const todayStr = "{{ today.strftime('%Y-%m-%d') if today else '' }}";
+    const rows = document.querySelectorAll('.proxy-duty-row');
+    
+    // Check if there are any duties scheduled for today
+    let todayDutiesExist = false;
+    rows.forEach(r => {
+        if (r.getAttribute('data-duty-date') === todayStr) {
+            todayDutiesExist = true;
+        }
+    });
+
+    // If today has duties, start with Today filter; otherwise start with All duties so the user sees everything immediately
+    if (todayDutiesExist) {
+        filterProxyDuties('today');
+    } else {
+        filterProxyDuties('all');
+    }
+});
+
+function filterProxyDuties(mode, customDate) {
+    const todayStr = "{{ today.strftime('%Y-%m-%d') if today else '' }}";
+    const rows = document.querySelectorAll('.proxy-duty-row');
+    const todayBtn = document.getElementById('filterTodayBtn');
+    const allBtn = document.getElementById('filterAllBtn');
+    const dateInput = document.getElementById('proxyDateInput');
+    const emptyState = document.getElementById('proxyFilterEmptyState');
+    const tableContainer = document.getElementById('proxyTableContainer');
+    const emptyMessage = document.getElementById('proxyFilterEmptyMessage');
+
+    let targetDate = null;
+    if (mode === 'today') {
+        targetDate = todayStr;
+        if (todayBtn) {
+            todayBtn.className = "btn btn-sm btn-primary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+        if (allBtn) {
+            allBtn.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+        if (dateInput) dateInput.value = '';
+    } else if (mode === 'date') {
+        targetDate = customDate;
+        if (todayBtn) {
+            todayBtn.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+        if (allBtn) {
+            allBtn.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+    } else if (mode === 'all') {
+        targetDate = null;
+        if (todayBtn) {
+            todayBtn.className = "btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+        if (allBtn) {
+            allBtn.className = "btn btn-sm btn-primary rounded-pill px-3 py-1.5 fs-8 fw-bold proxy-filter-btn";
+        }
+        if (dateInput) dateInput.value = '';
+    }
+
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const rowDate = row.getAttribute('data-duty-date');
+        if (!targetDate || rowDate === targetDate) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (visibleCount === 0 && rows.length > 0) {
+        if (tableContainer) tableContainer.classList.add('d-none');
+        if (emptyState) emptyState.classList.remove('d-none');
+        if (emptyMessage) {
+            let label = targetDate;
+            if (targetDate === todayStr) label = "today";
+            emptyMessage.textContent = targetDate ? `No proxy duties scheduled for ${label}` : 'No proxy duties found';
+        }
+    } else {
+        if (tableContainer) tableContainer.classList.remove('d-none');
+        if (emptyState) emptyState.classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

@@ -1,53 +1,90 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - RETENTION RISK REPORT VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Retention Risk Report - SmartVision{% endblock %}
-{% block page_title %}Retention Risk Analytics{% endblock %}
+{% block page_title %}Academic Retention Risk Management{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 p-4">
+        <div class="card shadow-sm border-0 p-4 rounded-4 bg-white">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
-                    <h5 class="fw-bold text-danger mb-1"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> Long-Term Retention Risk Register</h5>
-                    <p class="text-muted fs-7 mb-0">Identifying active students who have registered **ZERO attendance records** over the last 5 days (between **{{ report_start_date }}** and **{{ report_end_date }}**).</p>
+                    <h5 class="fw-bold text-danger mb-1"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i> 5-Day Consecutive Absence Retention Risk Register</h5>
+                    <p class="text-muted fs-8 mb-0">Students absent for **5 consecutive academic days** (between **{{ report_start_date }}** and **{{ report_end_date }}**). Requiring immediate parent intervention.</p>
                 </div>
-                {% if total_risk_students > 0 %}
-                <a href="{{ url_for('main.download_risk_report') }}" class="btn btn-danger btn-sm shadow-sm py-2 px-3 fw-semibold">
-                    <i class="fa-solid fa-file-csv me-1"></i> Download Report (CSV)
-                </a>
-                {% endif %}
+                <div class="d-flex gap-2">
+                    {% if total_risk_students > 0 %}
+                    <form action="{{ url_for('main.forward_retention_list') }}" method="POST" onsubmit="return confirm('Forward this retention risk list to all respective Class Teachers?');">
+                        <button type="submit" class="btn btn-warning btn-sm shadow-sm py-2 px-3 fw-bold text-dark">
+                            <i class="fa-solid fa-share-from-square me-1"></i> Forward to Class Teachers
+                        </button>
+                    </form>
+                    <a href="{{ url_for('main.download_risk_report') }}" class="btn btn-danger btn-sm shadow-sm py-2 px-3 fw-bold">
+                        <i class="fa-solid fa-file-csv me-1"></i> Export CSV
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             
             {% if total_risk_students > 0 %}
-                <div class="alert alert-warning border-0 rounded-3 py-2 px-3 mb-4 fs-7" style="background-color: var(--warning-bg); color: var(--warning);">
-                    <i class="fa-solid fa-circle-exclamation me-1"></i> <strong>High Alert:</strong> We flagged <strong>{{ total_risk_students }}</strong> student(s) with continuous absence for more than 5 days.
+                <div class="alert alert-danger border-0 rounded-3 py-2.5 px-3 mb-4 fs-8">
+                    <i class="fa-solid fa-circle-exclamation me-1.5 fs-7"></i> <strong>Critical Attention Required:</strong> Flagged <strong>{{ total_risk_students }}</strong> student(s) absent across 5 consecutive academic days. Use action links below for instant parent contact.
                 </div>
                 
                 <div class="table-responsive border rounded-3">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover align-middle mb-0 fs-8 w-100">
                         <thead class="table-light text-secondary">
                             <tr>
                                 <th class="py-3 px-3">#</th>
                                 <th class="py-3">Student Name</th>
                                 <th class="py-3">Roll Number</th>
-                                <th class="py-3">Assigned Class</th>
-                                <th class="py-3">Enrollment Number</th>
-                                <th class="py-3">Status</th>
+                                <th class="py-3">Class</th>
+                                <th class="py-3">Attendance %</th>
+                                <th class="py-3">Class Teacher</th>
+                                <th class="py-3">Parent Contact Info</th>
+                                <th class="py-3 text-end">Communication Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in risk_students_data %}
+                            {% set st = item.student %}
                             <tr>
                                 <td class="py-3 px-3 fw-semibold">{{ loop.index }}</td>
-                                <td class="py-3 text-dark fw-bold">{{ item.student.name }}</td>
-                                <td class="py-3">{{ item.student.roll_no }}</td>
-                                <td class="py-3 fw-semibold">{{ item.class_name }}</td>
-                                <td class="py-3 text-muted">{{ item.student.enrollment_no }}</td>
+                                <td class="py-3 text-dark fw-bold">{{ st.name }}</td>
+                                <td class="py-3"><span class="badge bg-light text-dark border font-monospace px-2.5 py-1 fs-8">{{ st.roll_no }}</span></td>
+                                <td class="py-3 fw-bold text-primary">{{ item.class_name }}</td>
                                 <td class="py-3">
-                                    <span class="badge badge-attendance badge-absent py-2 px-3">
-                                        5+ Days Absent
+                                    <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold">
+                                        {{ item.attendance_pct }}%
                                     </span>
+                                </td>
+                                <td class="py-3 fw-semibold text-dark"><i class="fa-solid fa-user-shield me-1 text-primary"></i>{{ item.class_teacher_name }}</td>
+                                <td class="py-3">
+                                    <div class="fs-9 text-muted"><i class="fa-solid fa-envelope me-1 text-primary"></i>{{ item.parent_email }}</div>
+                                    <div class="fs-9 text-dark font-monospace fw-semibold"><i class="fa-solid fa-phone me-1 text-success"></i>{{ item.parent_phone }}</div>
+                                </td>
+                                <td class="py-3 text-end">
+                                    <div class="d-flex justify-content-end gap-1.5">
+                                        {% if st.mobile %}
+                                        <a href="https://api.whatsapp.com/send?phone={{ st.mobile|replace('+', '')|replace(' ', '') }}&text={{ ('URGENT Retention Notice: Student ' ~ st.name ~ ' (Roll: ' ~ st.roll_no ~ ') has been absent for 5 consecutive academic days in class ' ~ item.class_name ~ '. Please contact administration.')|urlencode }}" 
+                                           target="_blank" class="btn btn-xs btn-outline-success py-1 px-2 rounded-2" title="Send WhatsApp">
+                                            <i class="fa-brands fa-whatsapp me-1"></i>WhatsApp
+                                        </a>
+                                        <a href="tel:{{ st.mobile }}" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-2" title="Call Parent">
+                                            <i class="fa-solid fa-phone me-1"></i>Call
+                                        </a>
+                                        {% endif %}
+                                        {% if item.parent_email != 'N/A' %}
+                                        <a href="mailto:{{ item.parent_email }}?subject={{ ('Retention Risk Notice for ' ~ st.name)|urlencode }}&body={{ ('Dear Parent, This is an urgent notice regarding ' ~ st.name ~ ' who has missed 5 consecutive academic days.')|urlencode }}" 
+                                           class="btn btn-xs btn-outline-dark py-1 px-2 rounded-2" title="Send Email">
+                                            <i class="fa-solid fa-envelope me-1"></i>Email
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -57,8 +94,8 @@
             {% else %}
                 <div class="text-center py-5">
                     <span class="fs-1 text-success"><i class="fa-solid fa-circle-check"></i></span>
-                    <h5 class="fw-bold text-success mt-3 mb-1">Excellent Student Standing!</h5>
-                    <p class="text-muted fs-7 mb-0">All of your enrolled students have registered at least one attendance matching within the last 5 days.</p>
+                    <h5 class="fw-bold text-success mt-3 mb-1">Excellent Academic Standing!</h5>
+                    <p class="text-muted fs-7 mb-0">No active students have missed 5 consecutive academic days.</p>
                 </div>
             {% endif %}
             

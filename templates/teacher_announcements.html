@@ -1,0 +1,140 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER ANNOUNCEMENTS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Faculty Notice Board & Class Announcements - SmartVision{% endblock %}
+{% block page_title %}Notice Board & Messages{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                <i class="fa-solid fa-bullhorn fs-4 text-warning"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Faculty Notice Board & Class Announcements</h4>
+                <p class="text-muted fs-8 mb-0">View official administrative notices and publish class announcements to your students.</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+                <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+            </a>
+            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#teacherNewNoticeModal">
+                <i class="fa-solid fa-plus me-1.5"></i> Publish Class Notice
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-pills mb-3 gap-2" id="teacherNoticeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-3.5 py-1.5 fs-8 fw-bold" id="admin-notices-tab" data-bs-toggle="pill" data-bs-target="#adminNoticesTab" type="button" role="tab">
+                <i class="fa-solid fa-shield-halved me-1.5 text-danger"></i>Admin Circulars ({{ admin_notices|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-3.5 py-1.5 fs-8 fw-bold" id="my-notices-tab" data-bs-toggle="pill" data-bs-target="#myNoticesTab" type="button" role="tab">
+                <i class="fa-solid fa-chalkboard-user me-1.5 text-primary"></i>My Published Notices ({{ my_announcements|length }})
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="teacherNoticeTabContent">
+        <!-- 1. Admin Notices Tab -->
+        <div class="tab-pane fade show active" id="adminNoticesTab" role="tabpanel">
+            <div class="d-flex flex-column gap-3">
+                {% if admin_notices %}
+                    {% for ann in admin_notices %}
+                        {% include 'partials/_announcement_card.html' %}
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                        <i class="fa-solid fa-envelope-open-text fa-3x text-muted opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark">No Administrative Notices</h6>
+                        <p class="text-muted fs-8 mb-0">No new notices or circulars have been posted by the administration for faculty.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 2. My Published Announcements Tab -->
+        <div class="tab-pane fade" id="myNoticesTab" role="tabpanel">
+            <div class="d-flex flex-column gap-3">
+                {% if my_announcements %}
+                    {% for ann in my_announcements %}
+                        {% include 'partials/_announcement_card.html' %}
+                    {% endfor %}
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                        <i class="fa-solid fa-bullhorn fa-3x text-muted opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark">No Class Notices Published</h6>
+                        <p class="text-muted fs-8 mb-0">You haven't published any notices for your students yet. Click "Publish Class Notice" above.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Publish Notice Modal for Teacher -->
+<div class="modal fade" id="teacherNewNoticeModal" tabindex="-1" aria-labelledby="teacherNewNoticeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <form method="POST" action="{{ url_for('teacher.create_announcement') }}">
+                <div class="modal-header bg-dark text-white p-3 border-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-bullhorn text-warning fs-5"></i>
+                        <h6 class="modal-title fw-bold mb-0" id="teacherNewNoticeModalLabel">Publish Class Announcement</h6>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-dark">Target Class</label>
+                        <select class="form-select fs-8 rounded-3" name="class_id">
+                            <option value="ALL">All My Directed Classes</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }} ({{ c.department or 'General' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-dark">Notice Type <span class="text-danger">*</span></label>
+                        <select class="form-select fs-8 rounded-3" name="notice_type" required>
+                            <option value="Announcement">📢 Class Announcement</option>
+                            <option value="Warning">⚠️ Attendance / Disciplinary Warning</option>
+                            <option value="Circular">📄 Assignment / Exam Notice</option>
+                            <option value="Urgent">🚨 Important Update</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-dark">Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control fs-8 rounded-3" name="title" placeholder="e.g. Lab Test Schedule / Attendance Warning" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold fs-8 text-dark">Details / Instructions <span class="text-danger">*</span></label>
+                        <textarea class="form-control fs-8 rounded-3" name="content" rows="4" placeholder="Write full details for students..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-xs">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Broadcast to Students
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

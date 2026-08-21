@@ -1,0 +1,152 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER TIMETABLE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Class Timetable Matrix - SmartVision{% endblock %}
+{% block page_title %}Academic Class Timetable & Schedule View{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 overflow-hidden">
+        <div class="card-header bg-gradient bg-primary text-white p-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-white shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; min-width: 48px;">
+                    <i class="fa-solid fa-calendar-days fs-4 text-primary"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0 text-white">Weekly Class Timetable Matrix</h4>
+                    <span class="fs-8 text-white-50">View complete 6-day lecture schedule by class (Monday to Saturday)</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <!-- Select Class Filter -->
+                <div class="d-flex align-items-center gap-2">
+                    <label for="teacherClassSelectHeader" class="form-label mb-0 text-white fw-bold fs-8">Select Class:</label>
+                    <select class="form-select form-select-sm rounded-pill px-3.5 fw-bold border-0 shadow-sm text-primary" id="teacherClassSelectHeader" style="min-width: 180px;" onchange="location.href='?class_id=' + this.value">
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>Class {{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <!-- Active Class Summary Bar -->
+            <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border bg-light flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3 fs-8 fw-semibold flex-wrap">
+                    <span class="text-dark"><i class="fa-solid fa-school text-primary me-1"></i> Class: <strong>{{ selected_class.name if selected_class else 'All' }}</strong></span>
+                    <span class="text-muted">|</span>
+                    <span class="text-dark"><i class="fa-solid fa-clock text-primary me-1"></i> 6 Periods + 1 Lunch Slot</span>
+                    <span class="text-muted">|</span>
+                    <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">
+                        {{ timetable_entries|length }} Active Lecture Slots
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-3 py-1.5 fs-8 fw-bold">
+                        <i class="fa-solid fa-eye me-1"></i>Faculty Read-Only View
+                    </span>
+                </div>
+            </div>
+
+            <!-- 6-DAY WEEKLY GRID MATRIX -->
+            <div class="table-responsive rounded-3 border">
+                <table class="table table-bordered align-middle text-center mb-0 fs-8">
+                    <thead class="table-dark" style="background: #1e1b4b;">
+                        <tr style="font-size: 0.75rem;">
+                            <th style="width: 100px;" class="py-1.5 text-center">Time Window</th>
+                            <th class="py-1.5 text-center">Monday</th>
+                            <th class="py-1.5 text-center">Tuesday</th>
+                            <th class="py-1.5 text-center">Wednesday</th>
+                            <th class="py-1.5 text-center">Thursday</th>
+                            <th class="py-1.5 text-center">Friday</th>
+                            <th class="py-1.5 text-center">Saturday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+
+                        {% for ps in period_settings %}
+                        <tr>
+                            <!-- Time Column -->
+                            {% if not ps.is_lunch %}
+                            <td class="table-light align-middle text-center py-1 px-1">
+                                <div class="fw-extrabold text-dark text-nowrap" style="font-size: 0.72rem;">{{ ps.label }}</div>
+                                <div class="text-muted text-nowrap" style="font-size: 0.65rem; opacity: 0.85;">{{ ps.start_time }} – {{ ps.end_time }}</div>
+                            </td>
+                            {% endif %}
+
+                            {% if ps.is_lunch %}
+                            <!-- Full-Width Lunch Break Row -->
+                            <td colspan="7" class="align-middle py-0.5 px-2 bg-warning bg-opacity-15 border-warning border-opacity-30">
+                                <div class="d-flex align-items-center justify-content-center gap-2 text-dark py-0.5">
+                                    <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-utensils me-1"></i>Lunch</span>
+                                    <span class="fw-bold text-dark me-2" style="font-size: 0.72rem;">🍱 {{ ps.label|upper }} ({{ ps.start_time }} – {{ ps.end_time }})</span>
+                                </div>
+                            </td>
+                            {% else %}
+                            <!-- 6 Day Columns -->
+                            {% for d in days %}
+                                {% set ns = namespace(found=false, slot=None) %}
+                                {% for entry in timetable_entries %}
+                                    {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
+                                        {% set ns.found = true %}
+                                        {% set ns.slot = entry %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                <td class="align-middle p-0.5" style="min-width: 100px;">
+                                    {% if ns.found %}
+                                        <div class="p-1 rounded-2 border {% if ns.slot.teacher_id == teacher.id %}bg-primary bg-opacity-15 border-primary{% elif ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-25{% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-25{% else %}bg-light border-secondary border-opacity-25{% endif %} shadow-xs">
+                                            <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                                {% if ns.slot.slot_type == 'LIBRARY' %}
+                                                <span class="badge bg-info text-dark text-truncate fw-bold" style="max-width: 75px; font-size: 0.65rem;" title="{{ ns.slot.custom_title or 'Library Reading' }}">
+                                                    <i class="fa-solid fa-book-bookmark me-0.5"></i>{{ ns.slot.custom_title or 'Library' }}
+                                                </span>
+                                                {% elif ns.slot.slot_type == 'OTHER' %}
+                                                <span class="badge bg-secondary text-white text-truncate fw-bold" style="max-width: 75px; font-size: 0.65rem;" title="{{ ns.slot.custom_title or 'Custom Activity' }}">
+                                                    <i class="fa-solid fa-shapes me-0.5"></i>{{ ns.slot.custom_title or 'Other' }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge {% if ns.slot.teacher_id == teacher.id %}bg-primary text-white{% else %}bg-secondary text-white{% endif %} text-truncate fw-bold" style="max-width: 75px; font-size: 0.65rem;" title="{{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else (ns.slot.subject.name if ns.slot.subject else 'Subject') }}">
+                                                    {{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else (ns.slot.subject.name if ns.slot.subject else 'Subject') }}
+                                                </span>
+                                                {% endif %}
+
+                                                <span class="badge bg-dark bg-opacity-75 text-white font-monospace" style="font-size: 0.58rem;">P{{ ns.slot.period_no or ps.period_no }}</span>
+                                            </div>
+                                            <div class="text-dark fw-semibold text-truncate" style="max-width: 95px; font-size: 0.68rem;">
+                                                <i class="fa-solid fa-chalkboard-user text-muted me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else (ns.slot.teacher.name if ns.slot.teacher else 'Unassigned') }}
+                                            </div>
+                                            {% if ns.slot.room %}
+                                            <div class="text-muted text-truncate" style="font-size: 0.62rem;"><i class="fa-solid fa-location-dot me-1 text-primary"></i>{{ ns.slot.room }}</div>
+                                            {% endif %}
+
+                                            {% if ns.slot.teacher_id == teacher.id %}
+                                            <span class="badge bg-primary bg-opacity-25 text-primary rounded-pill fw-bold mt-0.5 py-0.5 d-inline-block" style="font-size: 0.55rem;">
+                                                <i class="fa-solid fa-star me-1"></i>My Slot
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="rounded-2 border border-dashed p-1 text-center text-muted" style="font-size: 0.65rem;">
+                                            <span class="opacity-50">Free</span>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,50 +1,125 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - MANAGE CLASSES VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Manage Classes - SmartVision{% endblock %}
-{% block page_title %}School Class Register{% endblock %}
+{% block page_title %}School Class Register & Curriculum Workflow{% endblock %}
 
 {% block content %}
 <div class="row">
-    <!-- Form to Add a New Class -->
-    <div class="col-md-6 mb-4">
-        <div class="card shadow-sm border-0 h-100 p-4">
-            <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-school text-primary me-2"></i> Add New Class</h5>
-            <form method="POST" action="">
-                <div class="mb-3">
-                    <label for="class_name" class="form-label fw-semibold">Class Name</label>
-                    <input type="text" class="form-control" id="class_name" name="class_name" placeholder="e.g. Computer Science Year 1" required>
-                    <div class="form-text text-muted">Provide a unique name for this class level.</div>
+    <!-- Form to Create a New Class with Complete Subject & Teacher Workflow -->
+    <div class="col-lg-7 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-school me-2"></i> Create Class & Assign Curriculum</h5>
+                <span class="badge bg-primary rounded-pill px-3 py-1 fs-8">Guided Workflow</span>
+            </div>
+            <p class="text-muted fs-8 mb-4">Complete class setup including subject registers and faculty assignments before class creation.</p>
+
+            <form method="POST" action="{{ url_for('main.manage_classes') }}" id="createClassWorkflowForm">
+                <!-- Class Basic Info -->
+                <div class="p-3 bg-light rounded-3 mb-4 border">
+                    <h6 class="fw-bold text-dark mb-3 fs-8"><i class="fa-solid fa-id-card me-2 text-primary"></i>Class & Department Information</h6>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="class_name" class="form-label fw-semibold fs-8 text-dark mb-1 text-nowrap">Class Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" id="class_name" name="class_name" placeholder="e.g. 7CSE4, 7AIML1" list="existing_classes_datalist" required>
+                            <datalist id="existing_classes_datalist">
+                                {% for class_item in classes %}
+                                <option value="{{ class_item.name }}">{{ class_item.name }} ({{ class_item.department or 'General' }})</option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="department" class="form-label fw-semibold fs-8 text-dark mb-1 text-nowrap">Department <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="department" name="department" required>
+                                <option value="" disabled selected>Select Department...</option>
+                                {% for dept in all_departments %}
+                                <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="class_teacher_id" class="form-label fw-semibold fs-8 text-dark mb-1 text-nowrap">Class Teacher (Optional)</label>
+                            <select class="form-select form-select-sm" id="class_teacher_id" name="class_teacher_id">
+                                <option selected value="">Unassigned (Optional)</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}">{{ teacher.name }} {% if teacher.emp_id %}({{ teacher.emp_id }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-4">
-                    <label for="class_teacher_id" class="form-label fw-semibold">Assign Class Teacher</label>
-                    <select class="form-select" id="class_teacher_id" name="class_teacher_id">
-                        <option selected value="">No Class Teacher Assigned (Optional)</option>
-                        {% for teacher in teachers %}
-                        <option value="{{ teacher.id }}">{{ teacher.name }}</option>
+
+                <!-- Subject Workflow Section -->
+                <div class="p-3 bg-light rounded-3 mb-4 border">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0 fs-8"><i class="fa-solid fa-book-open me-1.5 text-info"></i>Class Subjects & Teacher Assignments</h6>
+                        <span class="text-muted fs-8">Step 1: Set count or add rows</span>
+                    </div>
+                    <p class="text-muted fs-9 mb-3">Select existing catalog subjects or create new ones, and immediately assign subject teachers.</p>
+
+                    <!-- Step 1: Subjects Count Preset -->
+                    <div class="d-flex align-items-center gap-2 mb-3 bg-white p-2 rounded-3 border">
+                        <label for="subject_count_input" class="text-muted fs-8 fw-semibold text-nowrap mb-0">How many subjects would you like to add?</label>
+                        <input type="number" id="subject_count_input" class="form-control form-control-sm text-center fw-bold" style="width: 80px;" min="1" max="15" value="1" oninput="generateSubjectRows()" onchange="generateSubjectRows()">
+                        <button type="button" onclick="generateSubjectRows()" class="btn btn-sm btn-outline-primary py-1 px-3 fs-8 fw-semibold">
+                            Generate Rows
+                        </button>
+                    </div>
+
+                    <!-- Subject Rows Container -->
+                    <div id="subjectRowsContainer" class="d-flex flex-column gap-2 mb-3">
+                        <!-- Dynamic subject rows will be injected here -->
+                    </div>
+
+                    <button type="button" onclick="addSubjectRow()" class="btn btn-sm btn-light border text-primary fw-semibold w-100 py-2">
+                        <i class="fa-solid fa-plus-circle me-1"></i> Add Another Subject Row
+                    </button>
+
+                    <!-- Existing Subjects Datalist for Step 2 & Step 3 -->
+                    <datalist id="existing_subjects_datalist">
+                        {% for sname in all_subject_names %}
+                        <option value="{{ sname }}"></option>
                         {% endfor %}
-                    </select>
+                    </datalist>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm">
-                    Add Class Register
+
+                <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold shadow-sm">
+                    <i class="fa-solid fa-check-double me-1"></i> Create Class & Assign Subjects
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Table of Existing Classes -->
-    <div class="col-md-6 mb-4">
-        <div class="card shadow-sm border-0 h-100 p-4">
-            <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-folder-open text-primary me-2"></i> Active Classes</h5>
-            <div style="max-height: 400px; overflow-y: auto;">
-                <ul class="list-group list-group-flush">
+    <!-- Right Column: Active Classes List -->
+    <div class="col-lg-5 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-folder-open text-primary me-2"></i> Active Classes Register</h5>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1 fs-8">{{ classes|length }} Classes</span>
+            </div>
+            <div style="max-height: 520px; overflow-y: auto;">
+                <ul class="list-group list-group-flush" id="activeClassesList">
                     {% for class_item in classes %}
-                    <li class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <li class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center active-class-item">
                         <div>
-                            <h6 class="fw-bold mb-1 text-dark">{{ class_item.name }}</h6>
-                            <span class="text-muted fs-7 d-block mb-1">{{ class_item.students|length }} students registered</span>
-                            <!-- Dynamic Class Teacher Assignment -->
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h6 class="fw-bold mb-0 text-dark">{{ class_item.name }}</h6>
+                                <span class="badge bg-primary bg-opacity-10 text-primary fs-9 px-2 py-0.5 rounded-pill border border-primary border-opacity-20 fw-bold">
+                                    <i class="fa-solid fa-building-user me-1"></i>{{ class_item.department or 'General' }}
+                                </span>
+                            </div>
+                            <div class="d-flex gap-2 align-items-center mb-1">
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary fs-8 px-2 py-0.5 rounded-pill">{{ class_item.students|length }} Students</span>
+                                <span class="badge bg-info bg-opacity-10 text-info fs-8 px-2 py-0.5 rounded-pill">{{ class_item.subjects|length }} Subjects</span>
+                            </div>
+
+                            <!-- Class Teacher Assignment -->
                             <form action="{{ url_for('main.assign_class_teacher', class_id=class_item.id) }}" method="POST" class="d-inline-block">
-                                <span class="fs-8 text-secondary me-1"><i class="fa-solid fa-chalkboard-user"></i> Teacher:</span>
+                                <span class="fs-8 text-secondary me-1"><i class="fa-solid fa-user-shield text-warning"></i> Class Teacher:</span>
                                 <select name="class_teacher_id" onchange="this.form.submit()" class="form-select form-select-sm d-inline-block p-0 border-0 bg-transparent text-primary fw-semibold" style="width: auto; font-size: 0.8rem; text-decoration: underline; cursor: pointer; display: inline; height: auto;">
                                     <option value="">Unassigned</option>
                                     {% for teacher in teachers %}
@@ -61,12 +136,240 @@
                     </li>
                     {% else %}
                     <li class="list-group-item text-center py-5 text-muted">
-                        No classes added yet. Create one to get started.
+                        No classes added yet. Use the workflow on the left to create one.
                     </li>
                     {% endfor %}
                 </ul>
             </div>
+
+            <!-- Class Pagination Controls (Shown if > 10) -->
+            <div id="classListPaginationWrapper" class="d-none mt-3 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="text-muted fs-8 fw-semibold" id="classListPageSummary"></span>
+                <ul class="pagination pagination-sm mb-0 rounded-pill gap-1" id="classListPageList"></ul>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Bottom Row: Assign Class Teacher & Academic Departments Side by Side in a Row -->
+<div class="row mt-2">
+    <!-- Left Column: Dedicated Class Teacher Assignment Box -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4 rounded-4 bg-white">
+            <h5 class="fw-bold text-dark mb-2"><i class="fa-solid fa-user-shield me-2 text-warning"></i>Assign Class Teacher to Class</h5>
+            <p class="text-muted fs-8 mb-3">Select any class and assign or update its designated Class Teacher individually anytime.</p>
+            <form method="POST" action="{{ url_for('main.assign_class_teacher_direct') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="direct_class_id" class="form-label fw-semibold fs-8 text-dark mb-1">Target Class</label>
+                        <select class="form-select form-select-sm" id="direct_class_id" name="class_id" required>
+                            <option value="" selected disabled>Select Class...</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="direct_teacher_id" class="form-label fw-semibold fs-8 text-dark mb-1">Class Teacher</label>
+                        <select class="form-select form-select-sm" id="direct_teacher_id" name="teacher_id">
+                            <option value="">Unassigned</option>
+                            {% for t in teachers %}
+                            <option value="{{ t.id }}">{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold shadow-xs">
+                            <i class="fa-solid fa-save me-1"></i>Assign
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Dedicated Academic Departments Management Card -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4 rounded-4 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-building-columns text-primary me-2"></i>Academic Departments Directory</h5>
+                    <p class="text-muted fs-8 mb-0">Create and manage institutional departments (e.g. CSE, AI, AI/ML, ORACLE, MICROSOFT).</p>
+                </div>
+                <button class="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#createDeptFormCollapse">
+                    <i class="fa-solid fa-plus me-1"></i> Add Department
+                </button>
+            </div>
+
+            <!-- Collapse Form to Add New Department -->
+            <div class="collapse mt-3 mb-3" id="createDeptFormCollapse">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-dark mb-2 fs-8"><i class="fa-solid fa-folder-plus text-primary me-1.5"></i>Create New Academic Department</h6>
+                    <form method="POST" action="{{ url_for('main.create_department') }}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="dept_name_input" class="form-label fw-semibold fs-8 text-dark mb-1">Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm text-uppercase fw-bold" id="dept_name_input" name="name" placeholder="e.g. CSE, AI/ML" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="dept_full_name_input" class="form-label fw-semibold fs-8 text-dark mb-1">Full Title</label>
+                                <input type="text" class="form-control form-control-sm" id="dept_full_name_input" name="full_name" placeholder="e.g. Computer Science & Eng.">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm rounded-3">
+                                    <i class="fa-solid fa-check me-1"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Existing Departments Pills -->
+            <div class="mt-3" style="max-height: 220px; overflow-y: auto;">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for dept in all_departments %}
+                    <div class="p-2 rounded-3 border bg-light d-flex align-items-center justify-content-between gap-2 shadow-2xs" style="min-width: 170px; flex: 1 1 170px;">
+                        <div>
+                            <span class="badge bg-primary text-white fw-bold px-2 py-0.5 fs-9 rounded-2">{{ dept.name }}</span>
+                            <span class="d-block text-dark fw-semibold fs-9 mt-0.5 text-truncate" style="max-width: 140px;">{{ dept.full_name or dept.name }}</span>
+                        </div>
+                        <form action="{{ url_for('main.delete_department', dept_id=dept.id) }}" method="POST" onsubmit="return confirm('Delete department {{ dept.name }}?');" class="mb-0">
+                            <button type="submit" class="btn btn-xs btn-outline-danger rounded-circle p-1" title="Delete Department">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="text-muted fs-8 py-3 text-center w-100">
+                        No custom departments created yet. Standard departments are available in dropdowns.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const availableTeachers = [
+    {% for teacher in teachers %}
+    { id: "{{ teacher.id }}", name: "{{ teacher.name }}" },
+    {% endfor %}
+];
+
+function addSubjectRow(initialSubName = '', initialTeacherId = '') {
+    const container = document.getElementById('subjectRowsContainer');
+    const rowId = Date.now() + Math.random().toString(36).substring(2, 5);
+
+    let teacherOptionsHtml = '<option value="" selected disabled>Assign Teacher...</option>';
+    availableTeachers.forEach(t => {
+        const isSel = (t.id === initialTeacherId) ? 'selected' : '';
+        teacherOptionsHtml += `<option value="${t.id}" ${isSel}>${t.name}</option>`;
+    });
+
+    const rowHtml = `
+        <div class="row g-2 align-items-center bg-white p-2 rounded-3 border" id="subject_row_${rowId}">
+            <div class="col-md-6">
+                <input type="text" class="form-control form-control-sm" name="subject_names" value="${initialSubName}" placeholder="Subject Name (Select or Type New...)" list="existing_subjects_datalist" required>
+            </div>
+            <div class="col-md-5">
+                <select class="form-select form-select-sm" name="subject_teacher_ids" required>
+                    ${teacherOptionsHtml}
+                </select>
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-xs btn-outline-danger py-1 px-2 border-0" onclick="removeSubjectRow('${rowId}')" title="Remove Subject Row">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function removeSubjectRow(rowId) {
+    const row = document.getElementById(`subject_row_${rowId}`);
+    if (row) row.remove();
+}
+
+function generateSubjectRows() {
+    const countInput = document.getElementById('subject_count_input');
+    const count = parseInt(countInput.value, 10) || 0;
+    const container = document.getElementById('subjectRowsContainer');
+    container.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+        addSubjectRow();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Generate initial 2 rows by default
+    generateSubjectRows();
+
+    // Paginate Active Classes List (10 per page if > 10)
+    const classItems = Array.from(document.querySelectorAll('.active-class-item'));
+    const pageSize = 10;
+    const total = classItems.length;
+
+    if (total > pageSize) {
+        const wrapper = document.getElementById('classListPaginationWrapper');
+        const summary = document.getElementById('classListPageSummary');
+        const list = document.getElementById('classListPageList');
+        wrapper.classList.remove('d-none');
+
+        const totalPages = Math.ceil(total / pageSize);
+        let curPage = 1;
+
+        function showPage(p) {
+            curPage = p;
+            const start = (p - 1) * pageSize;
+            const end = Math.min(start + pageSize, total);
+
+            classItems.forEach((item, idx) => {
+                item.style.display = (idx >= start && idx < end) ? '' : 'none';
+            });
+
+            summary.textContent = `Showing ${start + 1}–${end} of ${total} classes`;
+
+            let html = `
+                <li class="page-item ${curPage === 1 ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-2.5 py-1" ${curPage === 1 ? 'disabled' : ''} onclick="goToClassPage(${curPage - 1})">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                </li>
+            `;
+
+            for (let i = 1; i <= totalPages; i++) {
+                html += `
+                    <li class="page-item ${i === curPage ? 'active' : ''}">
+                        <button type="button" class="page-link rounded-pill px-3 py-1 ${i === curPage ? 'fw-bold' : ''}" onclick="goToClassPage(${i})">
+                            ${i}
+                        </button>
+                    </li>
+                `;
+            }
+
+            html += `
+                <li class="page-item ${curPage === totalPages ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-2.5 py-1" ${curPage === totalPages ? 'disabled' : ''} onclick="goToClassPage(${curPage + 1})">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </li>
+            `;
+
+            list.innerHTML = html;
+        }
+
+        window.goToClassPage = function (p) {
+            if (p >= 1 && p <= totalPages) {
+                showPage(p);
+            }
+        };
+
+        showPage(1);
+    }
+});
+</script>
 {% endblock %}

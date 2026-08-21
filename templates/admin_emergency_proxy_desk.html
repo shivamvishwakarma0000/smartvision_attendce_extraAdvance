@@ -1,0 +1,472 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ADMIN EMERGENCY PROXY DESK VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid px-4 pt-3 pb-5">
+    <!-- Top Breadcrumb & Header Bar (Compressed & Sleek) -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 fs-9">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.approvals') }}" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left me-1"></i> Admin Approvals</a></li>
+                        <li class="breadcrumb-item active text-danger fw-bold" aria-current="page">Emergency Proxy Desk</li>
+                    </ol>
+                </nav>
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center shadow-xs" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-user-shield fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h4 class="fw-extrabold text-dark mb-0 fs-5">Emergency Proxy & Class Reallocation Desk</h4>
+                            <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">Live</span>
+                        </div>
+                        <p class="text-muted fs-9 mb-0">Workload reallocation for confirmed faculty absences & approved leaves.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Selector & Navigation -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <form method="GET" action="{{ url_for('main.emergency_proxy_desk') }}" class="d-flex align-items-center gap-2 bg-light p-1 rounded-pill border">
+                    <span class="text-muted fs-9 fw-bold ps-2"><i class="fa-regular fa-calendar me-1 text-primary"></i>Desk Date:</span>
+                    <input type="date" name="date" value="{{ selected_date.strftime('%Y-%m-%d') }}" class="form-control form-control-sm rounded-pill border-0 bg-white fs-9 shadow-xs" style="width: 135px;" onchange="this.form.submit()">
+                    {% if selected_date != today %}
+                    <a href="{{ url_for('main.emergency_proxy_desk') }}" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5 fs-9">
+                        Today
+                    </a>
+                    {% endif %}
+                </form>
+                <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs">
+                    <i class="fa-solid fa-clipboard-user me-1"></i> Attendance Log
+                </a>
+                <a href="{{ url_for('main.approvals') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 High-Impact Metric Cards (Compressed Spacing) -->
+    <div class="row g-2.5 mb-3">
+        <!-- Card 1: Absent Faculty -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white border-start border-danger border-4 h-100 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 fw-bold text-uppercase">Absent Faculty</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 py-0.5 fs-9 fw-semibold">Live</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-extrabold text-danger mb-0">{{ emergency_desk.total_absent_count }}</h3>
+                    <span class="fs-9 text-muted">faculties</span>
+                </div>
+                <div class="mt-1 pt-1 border-top border-light d-flex gap-1">
+                    <span class="badge bg-danger text-white rounded-pill px-1.5 py-0.5 fs-9 fw-semibold">{{ emergency_desk.uninformed_absent_count }} Uninformed</span>
+                    <span class="badge bg-warning bg-opacity-15 text-dark rounded-pill px-1.5 py-0.5 fs-9 fw-semibold">{{ emergency_desk.total_absent_count - emergency_desk.uninformed_absent_count }} On Leave</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Unassigned Slots -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white border-start border-warning border-4 h-100 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 fw-bold text-uppercase">Action Needed</span>
+                    <span class="badge bg-warning bg-opacity-20 text-dark rounded-pill px-2 py-0.5 fs-9 fw-semibold">Pending</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-extrabold text-warning mb-0">{{ emergency_desk.unresolved_slots_count }}</h3>
+                    <span class="fs-9 text-muted">uncovered slots</span>
+                </div>
+                <div class="mt-1 pt-1 border-top border-light text-muted fs-9 text-truncate">
+                    Requires substitute proxy or cancellation
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Active Proxy Assigned -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white border-start border-success border-4 h-100 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 fw-bold text-uppercase">Proxy Assigned</span>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-0.5 fs-9 fw-semibold">Covered</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-extrabold text-success mb-0">{{ emergency_desk.proxy_slots_count }}</h3>
+                    <span class="fs-9 text-muted">slots assigned</span>
+                </div>
+                <div class="mt-1 pt-1 border-top border-light text-success fs-9 text-truncate fw-semibold">
+                    <i class="fa-solid fa-circle-check me-1"></i>Logged in history
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Cancelled Class Slots -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white border-start border-secondary border-4 h-100 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted fs-9 fw-bold text-uppercase">Cancelled Slots</span>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0.5 fs-9 fw-semibold">Notified</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-extrabold text-secondary mb-0">{{ emergency_desk.cancelled_slots_count }}</h3>
+                    <span class="fs-9 text-muted">slots cancelled</span>
+                </div>
+                <div class="mt-1 pt-1 border-top border-light text-muted fs-9 text-truncate">
+                    Notified to students
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs: Action Needed vs History Log -->
+    <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white mb-3">
+        <ul class="nav nav-pills mb-3 gap-2 border-bottom pb-2.5" id="proxyDeskTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab != 'history' %}active{% endif %} rounded-pill px-3.5 py-1.5 fw-bold fs-8.5" id="today-slots-tab" data-bs-toggle="pill" data-bs-target="#today-slots" type="button" role="tab">
+                    <i class="fa-solid fa-triangle-exclamation me-1.5 text-warning"></i> Action Needed Slots ({{ emergency_desk.pending_slots|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if active_tab == 'history' %}active{% endif %} rounded-pill px-3.5 py-1.5 fw-bold fs-8.5" id="history-log-tab" data-bs-toggle="pill" data-bs-target="#history-log" type="button" role="tab">
+                    <i class="fa-solid fa-clock-rotate-left me-1.5 text-primary"></i> Reallocation & Cancellation History ({{ proxy_history|length }})
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="proxyDeskTabContent">
+            <!-- ==================== TAB 1: ACTION NEEDED / PENDING SLOTS ==================== -->
+            <div class="tab-pane fade {% if active_tab != 'history' %}show active{% endif %}" id="today-slots" role="tabpanel">
+                {% if emergency_desk.pending_slots %}
+                <div class="d-flex justify-content-between align-items-center mb-2.5 flex-wrap gap-2">
+                    <div class="fs-8.5 text-muted fw-semibold">
+                        <i class="fa-solid fa-circle-info text-warning me-1"></i> Pending lecture periods requiring substitute allocation or cancellation for <strong>{{ selected_date.strftime('%A, %b %d, %Y') }}</strong>:
+                    </div>
+                    <div style="max-width: 220px;">
+                        <input type="text" id="slotSearchInput" class="form-control form-control-sm rounded-pill fs-9 py-1 px-2.5" placeholder="🔍 Search class/faculty..." onkeyup="filterSlotTable()">
+                    </div>
+                </div>
+
+                <!-- Compressed Table for Action Needed Slots -->
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover table-sm align-middle mb-0 fs-8.5" id="slotTable">
+                        <thead class="bg-light text-muted text-uppercase fs-9">
+                            <tr>
+                                <th class="px-2.5 py-2" style="width: 130px;">Period & Time</th>
+                                <th class="px-2.5 py-2" style="width: 190px;">Class & Subject</th>
+                                <th class="px-2.5 py-2" style="width: 170px;">Original Faculty</th>
+                                <th class="px-2.5 py-2" style="width: 130px;">Status</th>
+                                <th class="px-2.5 py-2">Allocate Proxy Teacher (Free Matrix)</th>
+                                <th class="px-2.5 py-2 text-end" style="width: 110px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for slot in emergency_desk.pending_slots %}
+                            <tr class="slot-row table-warning bg-warning bg-opacity-10">
+                                <!-- 1. Period & Time (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <div class="fw-bold text-dark fs-8.5">Period {{ slot.period_no or '1' }}</div>
+                                    <span class="text-muted fs-9 font-monospace"><i class="fa-regular fa-clock me-1"></i>{{ slot.start_time }}-{{ slot.end_time }}</span>
+                                </td>
+
+                                <!-- 2. Class & Subject (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <div class="fw-bold text-primary fs-8.5">Class {{ slot.class_name }}</div>
+                                    <div class="text-dark fs-9 fw-semibold text-truncate" style="max-width: 180px;">{{ slot.subject_name }} {% if slot.subject_code %}<span class="badge bg-light text-secondary border py-0 px-1 fs-9">{{ slot.subject_code }}</span>{% endif %}</div>
+                                </td>
+
+                                <!-- 3. Original Faculty (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <div class="fw-bold text-dark fs-8.5 text-truncate" style="max-width: 160px;">{{ slot.original_teacher_name }}</div>
+                                    {% if slot.is_uninformed %}
+                                    <span class="badge bg-danger text-white rounded-pill px-1.5 py-0.5 fs-9 fw-bold">Uninformed Absent</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark rounded-pill px-1.5 py-0.5 fs-9 fw-bold">{{ slot.original_teacher_absent_status }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 4. Current Status -->
+                                <td class="px-2.5 py-2">
+                                    <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bold fs-9 border border-warning">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Unassigned
+                                    </span>
+                                </td>
+
+                                <!-- 5. Proxy Assignment Dropdown (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <form method="POST" action="{{ url_for('main.assign_slot_proxy') }}" class="d-flex align-items-center gap-1.5">
+                                        <input type="hidden" name="daily_schedule_id" value="{{ slot.daily_schedule_id }}">
+                                        <select name="proxy_teacher_id" class="form-select form-select-sm rounded-pill fs-9 py-1 px-2 border-primary shadow-xs" required style="max-width: 250px;">
+                                            <option value="" disabled selected>-- Select Available Teacher --</option>
+                                            {% for pt in slot.available_teachers %}
+                                            <option value="{{ pt.id }}">
+                                                Prof. {{ pt.name }} ({{ pt.department }} • {{ pt.free_periods_count }} Free)
+                                            </option>
+                                            {% endfor %}
+                                            {% if not slot.available_teachers %}
+                                            <option value="" disabled>⚠️ No Free Teachers</option>
+                                            {% endif %}
+                                        </select>
+                                        <button type="submit" class="btn btn-xs btn-primary rounded-pill px-2.5 py-1 fw-bold fs-9 text-nowrap shadow-xs" {% if not slot.available_teachers %}disabled{% endif %}>
+                                            <i class="fa-solid fa-user-check me-1"></i> Assign
+                                        </button>
+                                    </form>
+                                </td>
+
+                                <!-- 6. Actions (Compact) -->
+                                <td class="px-2.5 py-2 text-end text-nowrap">
+                                    <form method="POST" action="{{ url_for('main.cancel_class_slot') }}" class="d-inline" onsubmit="return confirm('Cancel Period {{ slot.period_no }} ({{ slot.subject_name }})?');">
+                                        <input type="hidden" name="daily_schedule_id" value="{{ slot.daily_schedule_id }}">
+                                        <input type="hidden" name="reason" value="Faculty Absent & No Proxy Available">
+                                        <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-1 fw-bold fs-9 shadow-xs" title="Cancel this lecture">
+                                            <i class="fa-solid fa-ban me-1"></i> Cancel
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- Friendly, Clean Empty State -->
+                <div class="p-4 text-center bg-light rounded-4 border">
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success p-2.5 d-inline-flex align-items-center justify-content-center mb-2" style="width: 52px; height: 52px;">
+                        <i class="fa-solid fa-circle-check fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">No Emergency Proxy Action Needed</h6>
+                    <p class="text-muted fs-8.5 mb-2.5">
+                        {% if emergency_desk.total_absent_count == 0 %}
+                        All faculty members for <strong>{{ selected_date.strftime('%A, %b %d, %Y') }}</strong> are either present, checked in, or pending attendance. No unassigned lecture periods detected.
+                        {% else %}
+                        All absent faculty lecture slots for <strong>{{ selected_date.strftime('%A, %b %d, %Y') }}</strong> have already been allocated to proxies or cancelled.
+                        {% endif %}
+                    </p>
+                    <button class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs" onclick="document.getElementById('history-log-tab').click()">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> View Reallocation History ({{ proxy_history|length }}) →
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ==================== TAB 2: HISTORY LOG WITH FILTERS (COMPRESSED & ENHANCED) ==================== -->
+            <div class="tab-pane fade {% if active_tab == 'history' %}show active{% endif %}" id="history-log" role="tabpanel">
+                <!-- Filter Toolbar for History (Compact & Responsive) -->
+                <div class="card border-0 bg-light p-2.5 rounded-3 mb-2.5">
+                    <form method="GET" action="{{ url_for('main.emergency_proxy_desk') }}" id="historyFilterForm" class="row g-2 align-items-center">
+                        <input type="hidden" name="date" value="{{ selected_date.strftime('%Y-%m-%d') }}">
+                        <input type="hidden" name="tab" value="history">
+                        
+                        <!-- History Date Filter -->
+                        <div class="col-lg-3 col-sm-6">
+                            <label class="form-label fs-9 fw-bold text-muted mb-0.5"><i class="fa-regular fa-calendar me-1"></i>Filter Date:</label>
+                            <input type="date" name="history_date" id="historyDateInput" value="{{ history_date_str }}" class="form-control form-control-sm rounded-pill fs-9 bg-white py-1 px-2.5 shadow-xs" onchange="applyHistoryFilters()">
+                        </div>
+
+                        <!-- History Status Filter -->
+                        <div class="col-lg-3 col-sm-6">
+                            <label class="form-label fs-9 fw-bold text-muted mb-0.5"><i class="fa-solid fa-filter me-1"></i>Status:</label>
+                            <select name="history_status" id="historyStatusSelect" class="form-select form-select-sm rounded-pill fs-9 bg-white py-1 px-2.5 shadow-xs" onchange="applyHistoryFilters()">
+                                <option value="ALL" {% if history_status == 'ALL' or not history_status %}selected{% endif %}>All Actions (Proxy & Cancelled)</option>
+                                <option value="PROXY" {% if history_status == 'PROXY' %}selected{% endif %}>Proxy Assigned Only</option>
+                                <option value="CANCELLED" {% if history_status == 'CANCELLED' %}selected{% endif %}>Cancelled Classes Only</option>
+                            </select>
+                        </div>
+
+                        <!-- History Class Filter -->
+                        <div class="col-lg-3 col-sm-6">
+                            <label class="form-label fs-9 fw-bold text-muted mb-0.5"><i class="fa-solid fa-school me-1"></i>Class:</label>
+                            <select name="history_class_id" id="historyClassSelect" class="form-select form-select-sm rounded-pill fs-9 bg-white py-1 px-2.5 shadow-xs" onchange="applyHistoryFilters()">
+                                <option value="">All Classes</option>
+                                {% for c in all_classes %}
+                                <option value="{{ c.id }}" {% if history_class_id == c.id %}selected{% endif %}>Class {{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Submit, Reset & Quick Search -->
+                        <div class="col-lg-3 col-sm-6 d-flex align-items-end gap-1.5 pt-2 pt-lg-0">
+                            <button type="submit" class="btn btn-xs btn-primary rounded-pill px-2.5 py-1.5 fw-bold fs-9 shadow-xs flex-grow-1">
+                                <i class="fa-solid fa-magnifying-glass me-1"></i> Filter
+                            </button>
+                            <a href="{{ url_for('main.emergency_proxy_desk', date=selected_date.strftime('%Y-%m-%d'), tab='history') }}" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1.5 fs-9 shadow-xs text-nowrap">
+                                Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Live Text Filter for History Rows -->
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <span class="fs-9 text-muted fw-semibold">
+                        Showing <span id="historyCountBadge" class="badge bg-secondary rounded-pill px-1.5 py-0.5">{{ proxy_history|length }}</span> log entries:
+                    </span>
+                    <div style="max-width: 220px;">
+                        <input type="text" id="historySearchInput" class="form-control form-control-sm rounded-pill fs-9 py-1 px-2.5" placeholder="🔍 Quick filter history..." onkeyup="filterHistoryTableLive()">
+                    </div>
+                </div>
+
+                {% if proxy_history %}
+                <!-- Compressed & Compact History Table -->
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover table-sm align-middle mb-0 fs-8.5" id="historyTable">
+                        <thead class="bg-light text-muted text-uppercase fs-9">
+                            <tr>
+                                <th class="px-2.5 py-2" style="width: 110px;">Date</th>
+                                <th class="px-2.5 py-2" style="width: 120px;">Period & Time</th>
+                                <th class="px-2.5 py-2" style="width: 170px;">Class & Subject</th>
+                                <th class="px-2.5 py-2" style="width: 140px;">Original Faculty</th>
+                                <th class="px-2.5 py-2" style="width: 120px;">Status</th>
+                                <th class="px-2.5 py-2">Assigned Proxy / Reason</th>
+                                <th class="px-2.5 py-2" style="width: 90px;">Time</th>
+                                <th class="px-2.5 py-2 text-end" style="width: 90px;">Manage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in proxy_history %}
+                            <tr class="history-row" 
+                                data-date="{{ item.date.strftime('%Y-%m-%d') if item.date else '' }}" 
+                                data-status="{% if item.is_cancelled %}CANCELLED{% elif item.is_proxy %}PROXY{% else %}NORMAL{% endif %}"
+                                data-class="{{ item.timetable.class_id if item.timetable else '' }}">
+                                <!-- 1. Date (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <span class="badge bg-light text-dark border fs-9 font-monospace py-0.5 px-1.5">
+                                        <i class="fa-regular fa-calendar me-1"></i>{{ item.date.strftime('%d %b %Y') if item.date else 'N/A' }}
+                                    </span>
+                                </td>
+
+                                <!-- 2. Period & Time (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <div class="fw-bold text-dark fs-8.5">Period {{ item.timetable.period_no or '1' }}</div>
+                                    <span class="text-muted fs-9 font-monospace">{{ item.timetable.start_time }}-{{ item.timetable.end_time }}</span>
+                                </td>
+
+                                <!-- 3. Class & Subject (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    <span class="fw-bold text-primary fs-8.5">{{ item.timetable.class_assigned.name if item.timetable and item.timetable.class_assigned else 'Class' }}</span>
+                                    <div class="text-dark fs-9 fw-semibold text-truncate" style="max-width: 160px;">{{ item.timetable.subject_assigned.name if item.timetable and item.timetable.subject_assigned else 'Subject' }}</div>
+                                </td>
+
+                                <!-- 4. Original Faculty (Compact) -->
+                                <td class="px-2.5 py-2 text-truncate" style="max-width: 140px;">
+                                    <span class="fw-semibold text-dark fs-8.5">{{ item.timetable.teacher_assigned.name if item.timetable and item.timetable.teacher_assigned else 'Original Faculty' }}</span>
+                                </td>
+
+                                <!-- 5. Reallocation Status (Compact Badge) -->
+                                <td class="px-2.5 py-2">
+                                    {% if item.is_cancelled %}
+                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fw-bold fs-9">
+                                        <i class="fa-solid fa-ban me-1"></i>CANCELLED
+                                    </span>
+                                    {% elif item.is_proxy %}
+                                    <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fw-bold fs-9">
+                                        <i class="fa-solid fa-user-shield me-1"></i>PROXY
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary rounded-pill px-2 py-0.5 fs-9">{{ item.resolved_status or 'NORMAL' }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 6. Assigned Proxy / Reason (Compact) -->
+                                <td class="px-2.5 py-2">
+                                    {% if item.is_cancelled %}
+                                    <span class="text-danger fw-semibold fs-9"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ item.cancellation_reason or 'Faculty Unavailable' }}</span>
+                                    {% elif item.is_proxy %}
+                                    <span class="text-success fw-bold fs-9"><i class="fa-solid fa-user-check me-1"></i>Prof. {{ item.substitute_teacher.name if item.substitute_teacher else 'Substitute' }}</span>
+                                    {% else %}
+                                    <span class="text-muted fs-9">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 7. Time Log -->
+                                <td class="px-2.5 py-2 text-muted font-monospace fs-9">
+                                    {{ item.proxy_assigned_at.strftime('%I:%M %p') if item.proxy_assigned_at else 'Auto' }}
+                                </td>
+
+                                <!-- 8. Manage (Compact Buttons) -->
+                                <td class="px-2.5 py-2 text-end text-nowrap">
+                                    {% if item.is_cancelled %}
+                                    <form method="POST" action="{{ url_for('main.restore_class_slot') }}" class="d-inline">
+                                        <input type="hidden" name="daily_schedule_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5 fw-bold fs-9 shadow-xs" title="Restore slot">
+                                            <i class="fa-solid fa-rotate-left me-1"></i> Restore
+                                        </button>
+                                    </form>
+                                    {% elif item.is_proxy %}
+                                    <form method="POST" action="{{ url_for('main.cancel_class_slot') }}" class="d-inline" onsubmit="return confirm('Cancel this proxy class?');">
+                                        <input type="hidden" name="daily_schedule_id" value="{{ item.id }}">
+                                        <input type="hidden" name="reason" value="Faculty Absent & Cancelled by Admin">
+                                        <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2 py-0.5 fw-bold fs-9 shadow-xs" title="Cancel class">
+                                            <i class="fa-solid fa-ban me-1"></i> Cancel
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center bg-light rounded-4 border">
+                    <i class="fa-solid fa-clock-rotate-left fs-3 text-muted mb-2 opacity-50"></i>
+                    <h6 class="fw-bold text-dark mb-1">No Reallocation History Found</h6>
+                    <p class="text-muted fs-9 mb-0">No past proxy allocations or cancellations match your filter criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter Action Needed Slots
+function filterSlotTable() {
+    var input = document.getElementById("slotSearchInput");
+    if (!input) return;
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#slotTable tbody tr.slot-row");
+    rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        row.style.display = text.indexOf(filter) > -1 ? "" : "none";
+    });
+}
+
+// Live Text Filter for History Table
+function filterHistoryTableLive() {
+    var input = document.getElementById("historySearchInput");
+    if (!input) return;
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#historyTable tbody tr.history-row");
+    var visibleCount = 0;
+    rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        if (text.indexOf(filter) > -1) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+    var countBadge = document.getElementById("historyCountBadge");
+    if (countBadge) countBadge.innerText = visibleCount;
+}
+
+// Automatically switch tab if URL hash or parameter indicates history
+document.addEventListener("DOMContentLoaded", function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var hash = window.location.hash;
+    if (urlParams.get("tab") === "history" || urlParams.get("history_date") || hash === "#history-log") {
+        var historyTabBtn = document.getElementById("history-log-tab");
+        if (historyTabBtn && typeof bootstrap !== 'undefined') {
+            var tab = new bootstrap.Tab(historyTabBtn);
+            tab.show();
+        }
+    }
+});
+</script>
+{% endblock %}

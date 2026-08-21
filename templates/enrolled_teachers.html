@@ -1,9 +1,115 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ENROLLED TEACHERS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Enrolled Teachers - SmartVision{% endblock %}
 {% block page_title %}Academic Faculty Register{% endblock %}
 
 {% block content %}
+<!-- Admin Teacher ID Management Section -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white overflow-hidden">
+    <div class="card-header bg-gradient bg-primary text-white p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-key fs-5"></i>
+            <div>
+                <h5 class="fw-bold mb-0">Issue & Manage Teacher IDs</h5>
+                <span class="fs-8 text-white-50">Generate unique codes required for teacher account registration</span>
+            </div>
+        </div>
+        <button class="btn btn-light btn-sm rounded-pill fw-semibold shadow-sm px-3" type="button" data-bs-toggle="collapse" data-bs-target="#issueTeacherIdForm">
+            <i class="fa-solid fa-plus me-1 text-primary"></i> Issue New Teacher ID
+        </button>
+    </div>
+    
+    <div class="card-body p-4">
+        <!-- Collapse Form for Generating Teacher ID -->
+        <div class="collapse mb-4" id="issueTeacherIdForm">
+            <div class="p-3.5 rounded-3 bg-light border">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-user-plus text-primary me-2"></i>Issue Teacher Registration Code</h6>
+                <form method="POST" action="{{ url_for('main.generate_teacher_id') }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            <label for="custom_id" class="form-label fw-semibold fs-8 text-muted mb-1">Custom Code (Optional - Auto-generated if left blank)</label>
+                            <input type="text" class="form-control form-control-sm text-uppercase" id="custom_id" name="custom_id" placeholder="e.g. TCH-849201">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold shadow-sm py-2">
+                                <i class="fa-solid fa-key me-1"></i> Generate & Issue Code
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Issued Teacher IDs Table -->
+        {% if issued_teacher_ids %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 fs-8">
+                <thead class="table-light">
+                    <tr>
+                        <th>Teacher ID Code</th>
+                        <th>Target Email</th>
+                        <th>Status</th>
+                        <th>Issued Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="issuedTeacherIdsTbody">
+                    {% for item in issued_teacher_ids %}
+                    <tr class="issued-teacher-id-row">
+                        <td>
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-7 px-2.5 py-1.5 border border-primary border-opacity-20 rounded-3">
+                                {{ item.teacher_id }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if item.email %}
+                                <span class="fw-semibold text-dark"><i class="fa-solid fa-envelope me-1 text-muted"></i>{{ item.email }}</span>
+                            {% else %}
+                                <span class="text-muted fst-italic">Any Teacher</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.is_used %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Used / Registered
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-2.5 py-1 rounded-pill">
+                                    <i class="fa-solid fa-clock me-1"></i>Unused (Pending Registration)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted fw-semibold">{{ item.created_at|to_ist }}</td>
+                        <td class="text-end">
+                            <form action="{{ url_for('main.revoke_teacher_id', id_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete / Revoke this issued Teacher Code?');">
+                                <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-2 rounded-2 fw-semibold">
+                                    <i class="fa-solid fa-trash me-1"></i> Revoke / Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Teacher ID Pagination Controls (Only visible when > 10 items) -->
+        <div id="teacherIdPaginationWrapper" class="d-none mt-3 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted fs-8 fw-semibold" id="teacherIdPageSummary"></span>
+            <ul class="pagination pagination-sm mb-0 rounded-pill gap-1" id="teacherIdPageList"></ul>
+        </div>
+        {% else %}
+        <div class="text-center py-3 text-muted fs-7">
+            <i class="fa-solid fa-key me-1"></i>No Teacher IDs issued yet. Click <strong>Issue New Teacher ID</strong> above to generate one.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-chalkboard-user text-primary me-2"></i>Enrolled Faculty Register</h4>
@@ -47,9 +153,9 @@
 </div>
 
 {% if teachers %}
-<div class="row g-4">
+<div class="row g-4" id="facultyGridContainer">
     {% for teacher in teachers %}
-    <div class="col-xl-3 col-lg-4 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6 faculty-card-item">
         <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white text-center d-flex flex-column">
             <!-- Faculty Photo -->
             <div class="mt-2 mb-3">
@@ -82,6 +188,10 @@
             <!-- Details Box -->
             <div class="p-3 bg-light rounded-3 text-start mb-3 fs-8 flex-grow-1">
                 <div class="mb-1.5">
+                    <span class="text-muted"><i class="fa-solid fa-building-user me-1.5 text-primary"></i>Department:</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary float-end fw-bold border border-primary border-opacity-20">{{ teacher.department or 'General' }}</span>
+                </div>
+                <div class="mb-1.5">
                     <span class="text-muted"><i class="fa-solid fa-id-badge me-1.5 text-primary"></i>Employee ID:</span>
                     <strong class="text-dark float-end">{{ teacher.emp_id or 'N/A' }}</strong>
                 </div>
@@ -94,6 +204,37 @@
                     <strong class="text-dark float-end">{{ teacher.mobile or 'N/A' }}</strong>
                 </div>
                 
+                <div class="mt-2 pt-2 border-top">
+                    <span class="text-muted d-block mb-1"><i class="fa-solid fa-graduation-cap me-1.5 text-info"></i>Expertise & Preferences:</span>
+                    <div class="d-flex flex-wrap gap-1 mb-1">
+                        {% if teacher.primary_subject %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary fs-9 px-2 py-0.5 rounded-pill" title="Primary Expertise"><i class="fa-solid fa-star me-1"></i>{{ teacher.primary_subject }}</span>
+                        {% endif %}
+                        {% if teacher.secondary_subject %}
+                        <span class="badge bg-info bg-opacity-10 text-info fs-9 px-2 py-0.5 rounded-pill" title="Secondary Preference"><i class="fa-solid fa-layer-group me-1"></i>{{ teacher.secondary_subject }}</span>
+                        {% endif %}
+                        {% if teacher.tertiary_subject %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary fs-9 px-2 py-0.5 rounded-pill" title="3rd Preference"><i class="fa-solid fa-bookmark me-1"></i>{{ teacher.tertiary_subject }}</span>
+                        {% endif %}
+                        {% if not teacher.primary_subject and not teacher.secondary_subject and not teacher.tertiary_subject %}
+                        <span class="text-muted fst-italic fs-9">No preferences set</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-2 border-top">
+                    <span class="text-muted d-block mb-1"><i class="fa-solid fa-user-shield me-1.5 text-warning"></i>Class Teacher Directorship:</span>
+                    {% if teacher.classes_directed %}
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for c in teacher.classes_directed %}
+                            <span class="badge bg-warning bg-opacity-10 text-dark fs-9 px-2 py-1 rounded-pill fw-bold"><i class="fa-solid fa-school me-1"></i>{{ c.name }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span class="text-muted fst-italic fs-9">Not a Class Teacher</span>
+                    {% endif %}
+                </div>
+
                 <div class="mt-2 pt-2 border-top">
                     <span class="text-muted d-block mb-1"><i class="fa-solid fa-book-bookmark me-1.5 text-primary"></i>Assigned Subjects:</span>
                     {% if teacher.subjects %}
@@ -108,8 +249,11 @@
                 </div>
             </div>
 
-            <!-- Action Button -->
+            <!-- Action Buttons -->
             <div class="mt-auto">
+                <button class="btn btn-sm btn-primary w-100 rounded-3 py-1.5 fw-semibold mb-1.5" data-bs-toggle="modal" data-bs-target="#assignWorkloadModal{{ teacher.id }}">
+                    <i class="fa-solid fa-sliders me-1"></i> Assign Workload & Classes
+                </button>
                 <form action="{{ url_for('main.delete_teacher', teacher_id=teacher.id) }}" 
                       method="POST" 
                       onsubmit="return confirm('Are you sure you want to remove {{ teacher.name }} from the faculty register?');">
@@ -120,8 +264,261 @@
             </div>
         </div>
     </div>
+
+    <!-- Unified Workload Assignment Modal for Teacher {{ teacher.id }} -->
+    <div class="modal fade" id="assignWorkloadModal{{ teacher.id }}" tabindex="-1" aria-labelledby="assignWorkloadModalLabel{{ teacher.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+                <div class="modal-header bg-gradient bg-primary text-white p-3.5">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="assignWorkloadModalLabel{{ teacher.id }}">
+                            <i class="fa-solid fa-sliders me-2"></i>Unified Workload Assignment: {{ teacher.name }}
+                        </h5>
+                        <span class="fs-8 text-white-50">Assign Class Teacher leadership & Subject teaching responsibilities across all classes</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <form method="POST" action="{{ url_for('main.assign_teacher_workload', teacher_id=teacher.id) }}">
+                    <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
+                        
+                        <!-- Teacher Summary & Expertise Header -->
+                        <div class="p-3 bg-light rounded-3 mb-4 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <strong class="text-dark fs-7 d-block mb-1">{{ teacher.name }} {% if teacher.emp_id %}({{ teacher.emp_id }}){% endif %}</strong>
+                                <div class="fs-8 text-muted">
+                                    Primary: <span class="fw-semibold text-primary me-2">{{ teacher.primary_subject or 'N/A' }}</span>
+                                    Secondary: <span class="fw-semibold text-info me-2">{{ teacher.secondary_subject or 'N/A' }}</span>
+                                    3rd: <span class="fw-semibold text-secondary">{{ teacher.tertiary_subject or 'N/A' }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fs-8">
+                                <i class="fa-solid fa-chalkboard-user me-1"></i>Active Faculty Member
+                            </span>
+                        </div>
+
+                        <!-- Section 0: Academic Department Assignment -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label for="dept_input_{{ teacher.id }}" class="form-label fw-bold text-dark fs-8 mb-1">
+                                <i class="fa-solid fa-building-user text-primary me-1.5"></i>Academic Department Assignment
+                            </label>
+                            <input type="text" class="form-control form-control-sm" id="dept_input_{{ teacher.id }}" name="department" value="{{ teacher.department or '' }}" placeholder="e.g. CSE, AI, AI/DS, AI/ML, ORACLE, MICROSOFT" list="teacher_dept_datalist">
+                            <datalist id="teacher_dept_datalist">
+                                <option value="CSE">CSE (Computer Science & Engineering)</option>
+                                <option value="AI">AI (Artificial Intelligence)</option>
+                                <option value="AI/DS">AI/DS (AI & Data Science)</option>
+                                <option value="AI/ML">AI/ML (AI & Machine Learning)</option>
+                                <option value="ORACLE">ORACLE (Database Systems)</option>
+                                <option value="MICROSOFT">MICROSOFT (Cloud Technologies)</option>
+                                <option value="IT">IT (Information Technology)</option>
+                                <option value="ECE">ECE (Electronics & Comm.)</option>
+                            </datalist>
+                        </div>
+
+                        <!-- Section A: Class Teacher Directorship -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="fa-solid fa-user-shield text-warning me-2"></i>1. Class Teacher Leadership (Select Classes)
+                            </h6>
+                            <div class="row g-2">
+                                {% for c in classes %}
+                                <div class="col-md-6">
+                                    <div class="p-2.5 rounded-3 border bg-white d-flex align-items-center justify-content-between">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="class_teacher_for" value="{{ c.id }}" id="ct_check_{{ teacher.id }}_{{ c.id }}" {% if c.class_teacher_id == teacher.id %}checked{% endif %}>
+                                            <label class="form-check-label fw-semibold fs-8 text-dark" for="ct_check_{{ teacher.id }}_{{ c.id }}">
+                                                {{ c.name }}
+                                            </label>
+                                        </div>
+                                        {% if c.class_teacher_id and c.class_teacher_id != teacher.id %}
+                                        <span class="fs-9 text-muted" title="Currently assigned to {{ c.class_teacher.name }}">
+                                            (Current: {{ c.class_teacher.name }})
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Section B: Subject Teaching Responsibilities -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">
+                                <i class="fa-solid fa-book-open text-primary me-2"></i>2. Subject Teaching Responsibilities (Select Subjects)
+                            </h6>
+                            {% if subjects %}
+                            <div class="row g-2">
+                                {% for sub in subjects %}
+                                <div class="col-md-6">
+                                    <div class="p-2.5 rounded-3 border bg-white d-flex align-items-center justify-content-between">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="subject_ids" value="{{ sub.id }}" id="sub_check_{{ teacher.id }}_{{ sub.id }}" {% if sub.teacher_id == teacher.id %}checked{% endif %}>
+                                            <label class="form-check-label fw-semibold fs-8 text-dark" for="sub_check_{{ teacher.id }}_{{ sub.id }}">
+                                                {{ sub.name }} <span class="badge bg-secondary bg-opacity-10 text-secondary ms-1 fs-9">{{ sub.class_assigned.name if sub.class_assigned else 'N/A' }}</span>
+                                            </label>
+                                        </div>
+                                        {% if sub.teacher_id and sub.teacher_id != teacher.id %}
+                                        <span class="fs-9 text-muted" title="Currently taught by {{ sub.teacher.name }}">
+                                            ({{ sub.teacher.name }})
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted fs-8">No active subjects created in the system yet.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Section C: Quick Add New Subject for this Teacher -->
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-2 fs-8"><i class="fa-solid fa-plus-circle text-success me-1.5"></i>Quick Add & Assign New Subject</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control form-control-sm" name="new_subject_name" placeholder="New Subject Name (e.g. Machine Learning)" list="modal_sub_cat_{{ teacher.id }}">
+                                    <datalist id="modal_sub_cat_{{ teacher.id }}">
+                                        {% for sname in all_subject_names %}
+                                        <option value="{{ sname }}"></option>
+                                        {% endfor %}
+                                    </datalist>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select form-select-sm" name="new_subject_class_id">
+                                        <option value="" selected>Select Class Level...</option>
+                                        {% for c in classes %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer bg-light p-3">
+                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="fa-solid fa-check me-1"></i> Save Workload & Assignments
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     {% endfor %}
 </div>
+
+<!-- Pagination Controls (Only visible when > 10 items) -->
+<div id="facultyPaginationWrapper" class="d-none mt-4 p-3 bg-white rounded-4 border shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="text-muted fs-8 fw-semibold" id="facultyPageSummary">
+        Showing 1 to 10 of {{ teachers|length }} faculty members
+    </div>
+    <nav aria-label="Faculty pagination">
+        <ul class="pagination pagination-sm mb-0 rounded-pill gap-1" id="facultyPaginationList"></ul>
+    </nav>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Paginate Issued Teacher IDs (10 per page if > 10)
+    setupGenericPagination({
+        items: Array.from(document.querySelectorAll('.issued-teacher-id-row')),
+        pageSize: 10,
+        wrapperId: 'teacherIdPaginationWrapper',
+        summaryId: 'teacherIdPageSummary',
+        listId: 'teacherIdPageList',
+        itemName: 'issued codes',
+        scrollTargetId: 'issueTeacherIdForm'
+    });
+
+    // 2. Paginate Faculty Cards (10 per page if > 10)
+    setupGenericPagination({
+        items: Array.from(document.querySelectorAll('.faculty-card-item')),
+        pageSize: 10,
+        wrapperId: 'facultyPaginationWrapper',
+        summaryId: 'facultyPageSummary',
+        listId: 'facultyPaginationList',
+        itemName: 'faculty members',
+        scrollTargetId: 'facultyGridContainer'
+    });
+
+    function setupGenericPagination(config) {
+        const { items, pageSize, wrapperId, summaryId, listId, itemName, scrollTargetId } = config;
+        const totalItems = items.length;
+        if (totalItems <= pageSize) return;
+
+        const wrapper = document.getElementById(wrapperId);
+        const list = document.getElementById(listId);
+        const summary = document.getElementById(summaryId);
+        if (!wrapper || !list || !summary) return;
+
+        wrapper.classList.remove('d-none');
+        const totalPages = Math.ceil(totalItems / pageSize);
+        let currentPage = 1;
+
+        function renderPage(page) {
+            currentPage = page;
+            const start = (page - 1) * pageSize;
+            const end = Math.min(start + pageSize, totalItems);
+
+            items.forEach((item, idx) => {
+                if (idx >= start && idx < end) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            summary.textContent = `Showing ${start + 1} to ${end} of ${totalItems} ${itemName}`;
+
+            // Build pagination buttons
+            let paginationHtml = '';
+            
+            // Prev button
+            paginationHtml += `
+                <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-3 fw-semibold" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage_${wrapperId}(${currentPage - 1})">
+                        <i class="fa-solid fa-chevron-left me-1"></i> Prev
+                    </button>
+                </li>
+            `;
+
+            for (let p = 1; p <= totalPages; p++) {
+                paginationHtml += `
+                    <li class="page-item ${p === currentPage ? 'active' : ''}">
+                        <button type="button" class="page-link rounded-pill px-3 fw-semibold ${p === currentPage ? 'fw-bold' : ''}" onclick="goToPage_${wrapperId}(${p})">
+                            ${p}
+                        </button>
+                    </li>
+                `;
+            }
+
+            // Next button
+            paginationHtml += `
+                <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <button type="button" class="page-link rounded-pill px-3 fw-semibold" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage_${wrapperId}(${currentPage + 1})">
+                        Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                    </button>
+                </li>
+            `;
+
+            list.innerHTML = paginationHtml;
+        }
+
+        window[`goToPage_${wrapperId}`] = function (p) {
+            if (p >= 1 && p <= totalPages) {
+                renderPage(p);
+                const target = document.getElementById(scrollTargetId);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
+
+        renderPage(1);
+    }
+});
+</script>
 {% else %}
 <div class="card p-5 border-0 shadow-sm rounded-4 text-center">
     <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">

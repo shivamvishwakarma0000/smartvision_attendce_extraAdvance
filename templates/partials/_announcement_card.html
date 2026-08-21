@@ -1,0 +1,60 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL -  ANNOUNCEMENT CARD VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+<div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border-left: 5px solid {% if ann.notice_type in ['Warning', 'RetentionAlert'] %}#f59e0b{% elif ann.notice_type == 'Urgent' %}#ef4444{% elif ann.notice_type == 'Circular' %}#8b5cf6{% else %}#3b82f6{% endif %} !important;">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge {% if ann.notice_type in ['Warning', 'RetentionAlert'] %}bg-warning text-dark{% elif ann.notice_type == 'Urgent' %}bg-danger text-white{% elif ann.notice_type == 'Circular' %}bg-purple text-white{% else %}bg-primary text-white{% endif %} px-3 py-1 rounded-pill fw-bold fs-9">
+                <i class="fa-solid {% if ann.notice_type in ['Warning', 'RetentionAlert'] %}fa-triangle-exclamation{% elif ann.notice_type == 'Urgent' %}fa-bell{% elif ann.notice_type == 'Circular' %}fa-file-lines{% else %}fa-bullhorn{% endif %} me-1"></i>
+                {{ ann.notice_type }}
+            </span>
+            <span class="badge bg-light text-muted border fs-9 rounded-pill">
+                Audience: <strong>{{ ann.target_role or 'ALL' }}</strong>
+            </span>
+            {% if ann.class_assigned %}
+            <span class="badge bg-info bg-opacity-10 text-info border fs-9 rounded-pill">
+                Class: {{ ann.class_assigned.name }}
+            </span>
+            {% endif %}
+            <h5 class="fw-bold text-dark mb-0 ms-1">{{ ann.title }}</h5>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted fs-9 font-monospace d-flex align-items-center">
+                <i class="fa-regular fa-clock me-1 text-muted"></i>{{ ann.created_at.strftime('%d %b %Y, %I:%M %p') }}
+            </span>
+
+            {% if current_user.role == 'admin' %}
+            <form method="POST" action="{{ url_for('main.delete_announcement', ann_id=ann.id) }}" onsubmit="return confirm('Permanently delete this announcement from the portal and all feeds?');" class="d-inline m-0 p-0">
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1 shadow-none" title="Delete Announcement">
+                    <i class="fa-solid fa-trash-can fs-9"></i> <span class="d-none d-sm-inline">Delete</span>
+                </button>
+            </form>
+            {% elif current_user.role == 'teacher' %}
+            <form method="POST" action="{{ url_for('teacher.delete_teacher_announcement', ann_id=ann.id) }}" onsubmit="return confirm('{% if ann.posted_by_role == 'admin' %}Remove this notice from your notice board?{% else %}Permanently delete this announcement?{% endif %}');" class="d-inline m-0 p-0">
+                <button type="submit" class="btn btn-sm btn-outline-danger border-0 bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1 fs-9 d-inline-flex align-items-center gap-1 shadow-none" title="Delete / Dismiss Notice">
+                    <i class="fa-solid fa-trash-can fs-9"></i> <span class="d-none d-sm-inline">Delete</span>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <p class="text-secondary fs-7 mb-3" style="white-space: pre-line;">{{ ann.content }}</p>
+
+    <div class="d-flex align-items-center justify-content-between border-top pt-2.5 mt-1 fs-8 text-muted flex-wrap gap-2">
+        <div>
+            {% if ann.posted_by_role == 'admin' %}
+            <i class="fa-solid fa-shield-halved text-danger me-1"></i>Published by: <strong>Administration</strong>
+            {% elif ann.teacher %}
+            <i class="fa-solid fa-chalkboard-user text-primary me-1"></i>Published by Faculty: <strong>{{ ann.teacher.name }}</strong>
+            {% else %}
+            <i class="fa-solid fa-user me-1"></i>Published by Faculty
+            {% endif %}
+        </div>
+        <div class="font-monospace fs-9">
+            ID: #ANN-{{ ann.id }}
+        </div>
+    </div>
+</div>

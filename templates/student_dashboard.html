@@ -1,252 +1,702 @@
-{% extends "base.html" %}
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - STUDENT DASHBOARD VIEW TEMPLATE #}
+{# ============================================================================== #}
 
-{% block title %}Student Dashboard - SmartVision{% endblock %}
-{% block page_title %}Student Analytics Portal{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Student Portal | Attendance Dashboard{% endblock %}
 
 {% block content %}
-{% if not student.class_id %}
-<div class="alert alert-info border-0 shadow-sm rounded-3 py-3 mb-4 fade-in">
-    <div class="d-flex align-items-center">
-        <i class="fa-solid fa-circle-info fs-4 me-3 text-primary"></i>
-        <div>
-            <h6 class="fw-bold mb-1">Registration Successful! Class Assignment Pending</h6>
-            Your account has been registered successfully. An administrator has not assigned you to a class yet. Please wait for the administrator to approve and assign your class.
-        </div>
-    </div>
-</div>
-{% endif %}
+<div class="container-fluid py-4">
 
-{% if pending_request %}
-<div class="alert alert-warning border-0 shadow-sm rounded-3 py-3 mb-4 fade-in" style="background-color: var(--warning-bg); color: var(--warning);">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
-            <h6 class="fw-bold mb-1"><i class="fa-solid fa-hourglass-half text-warning me-2"></i> Profile Update Request Pending Review</h6>
-            You have a pending profile change request submitted on <strong>{{ pending_request.created_at.strftime('%B %d, %Y') }}</strong>. Your changes will reflect once an administrator reviews and approves them.
-        </div>
-        <a href="{{ url_for('student.edit_profile') }}" class="btn btn-sm btn-warning text-dark fw-bold">View Request</a>
-    </div>
-</div>
-{% endif %}
-<!-- Top Row: Student Profile Overview -->
-<div class="row mb-4">
-    <div class="col-lg-4 mb-3">
-        <div class="card h-100 p-4 shadow-sm border-0 d-flex flex-column align-items-center justify-content-center text-center">
-            <div class="position-relative mb-3">
-                {% if student.image_filename %}
-                    <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
-                         class="rounded-circle shadow" 
-                         style="width: 140px; height: 140px; object-fit: cover; border: 4px solid var(--primary);">
-                {% else %}
-                    <div class="rounded-circle shadow bg-light d-flex align-items-center justify-content-center text-muted" 
-                          style="width: 140px; height: 140px; border: 4px solid var(--primary); font-size: 3rem;">
-                        <i class="fa-solid fa-graduation-cap"></i>
+    <!-- Header Welcome Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-white overflow-hidden rounded-4" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #06b6d4 100%);">
+                <div class="card-body p-4 position-relative">
+                    <div class="row align-items-center position-relative z-1">
+                        <div class="col-md-8 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
+                            <div class="position-relative me-sm-3.5 mb-2.5 mb-sm-0">
+                                {% if student.image_filename %}
+                                <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
+                                     class="rounded-circle shadow border border-2 border-white" 
+                                     style="width: 85px; height: 85px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold" 
+                                     style="width: 85px; height: 85px; font-size: 2.2rem;">
+                                    {{ student.name[0].upper() }}
+                                </div>
+                                {% endif %}
+                                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white px-1.5 py-0.5 fs-9 shadow-sm">
+                                    <i class="fas fa-check-circle me-1"></i>Enrolled
+                                </span>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5">
+                                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
+                                        <i class="fas fa-school me-1"></i> {{ student.class_assigned.name if student.class_assigned else 'Unassigned' }}
+                                    </span>
+                                    {% if student.roll_no %}
+                                    <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold fs-8 font-monospace">
+                                        <i class="fas fa-id-card me-1"></i>Roll: {{ student.roll_no }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <h3 class="fw-bold mb-1" style="font-size: 1.5rem;">Welcome, {{ student.name }}!</h3>
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white-75">
+                                    {% if student.enrollment_no %}<span><i class="fas fa-hashtag me-1 opacity-75"></i>Enrollment: <strong>{{ student.enrollment_no }}</strong></span>{% endif %}
+                                    {% if student.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{ student.mobile }}</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overall Attendance Gauge Badge -->
+                        <div class="col-md-4 text-center text-md-end">
+                            <div class="d-inline-block backdrop-blur rounded-4 p-3 border border-white border-opacity-25 shadow-sm text-center" style="background: rgba(255, 255, 255, 0.18) !important; color: #ffffff !important;">
+                                <span style="color: rgba(255, 255, 255, 0.85) !important;" class="fs-8 text-uppercase tracking-wider fw-semibold d-block mb-1">Overall Attendance</span>
+                                <h2 class="fw-extrabold mb-0 text-white" style="color: #ffffff !important; font-size: 2.2rem;">{{ overall_attendance_pct }}%</h2>
+                                <span class="badge {% if overall_attendance_pct >= 75 %}bg-success{% elif overall_attendance_pct >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %} px-2.5 py-1 rounded-pill fs-9 mt-1">
+                                    {% if overall_attendance_pct >= 75 %}<i class="fas fa-shield-check me-1"></i>Satisfactory (≥75%){% else %}<i class="fas fa-triangle-exclamation me-1"></i>Action Needed (<75%){% endif %}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
-            </div>
-            <h4 class="fw-bold mb-1 text-primary">{{ student.name }}</h4>
-            <span class="badge badge-attendance badge-present mb-3">Active Student</span>
-            
-            <div class="w-100 text-start mt-2 px-3 fs-7" style="font-size: 0.9rem;">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Class:</span>
-                    <strong class="text-dark">{{ student.class_assigned.name if student.class_assigned else 'Pending Assignment' }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Roll No:</span>
-                    <strong class="text-dark">{{ student.roll_no }}</strong>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Enrollment:</span>
-                    <strong class="text-dark">{{ student.enrollment_no }}</strong>
                 </div>
             </div>
-            
-            <a href="{{ url_for('student.edit_profile') }}" class="btn btn-sm btn-outline-primary mt-3">
-                Edit Profile Details
-            </a>
+        </div>
+    <!-- Cancelled Classes Today Notice Banner -->
+    {% if today_cancelled_classes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border-left: 5px solid #ef4444 !important;">
+                <div class="card-header bg-danger bg-opacity-10 border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="fw-bold text-danger fs-7 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-ban fs-5"></i> Academic Notice: Class Cancellation for Today ({{ today_cancelled_classes|length }})
+                    </span>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9">Notice from Administration</span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-2">
+                        {% for c_slot in today_cancelled_classes %}
+                        <div class="col-md-6">
+                            <div class="p-3 rounded-3 bg-light border border-danger border-opacity-25 d-flex align-items-start gap-3 h-100">
+                                <span class="rounded-circle bg-danger bg-opacity-10 text-danger p-2.5 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                    <i class="fa-solid fa-ban fs-6"></i>
+                                </span>
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">CANCELLED</span>
+                                        <span class="fw-bold text-dark fs-8">Period {{ c_slot.period }} ({{ c_slot.time_slot }})</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-0.5 fs-8">{{ c_slot.subject }}</h6>
+                                    <div class="fs-9 text-muted mb-1"><i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>Faculty: {{ c_slot.teacher }}</div>
+                                    <div class="fs-9 text-danger fw-semibold"><i class="fa-solid fa-circle-info me-1"></i>Reason: {{ c_slot.cancellation_reason or 'Faculty unavailable' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Class Teacher Notices & Announcements Widget -->
+    {% if class_notices %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: var(--bg-card); border-left: 4px solid #f59e0b !important;">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="fw-bold text-dark fs-7">
+                        <i class="fa-solid fa-bullhorn text-warning me-2"></i>Class Teacher Notices & Announcements ({{ class_notices|length }})
+                    </span>
+                    <a href="{{ url_for('student.notices') }}" class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 fw-bold fs-8">
+                        View All Notices <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-flex flex-column gap-2.5">
+                        {% for notice in class_notices[:2] %}
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+                                <span class="badge {% if notice.notice_type == 'RetentionAlert' %}bg-danger{% elif notice.notice_type == 'Warning' %}bg-warning text-dark{% else %}bg-primary{% endif %} px-2.5 py-1 rounded-pill fw-bold fs-9">
+                                    {{ notice.notice_type }}
+                                </span>
+                                <span class="text-muted fs-9 font-monospace"><i class="fa-regular fa-clock me-1"></i>{{ notice.created_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1 fs-8">{{ notice.title }}</h6>
+                            <p class="text-secondary fs-8 mb-1" style="white-space: pre-line;">{{ notice.content }}</p>
+                            <span class="fs-9 text-muted"><i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>Faculty: <strong>{{ notice.teacher.name if notice.teacher else 'Class Teacher' }}</strong></span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Time-Period Breakdown Cards (5 Columns Grid) -->
+    <div class="row g-3 mb-4">
+        <!-- Daily Attendance (CLICKABLE) -->
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card border-primary border-opacity-20 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center cursor-pointer hover-card" data-bs-toggle="modal" data-bs-target="#dailyAttendanceModal" style="cursor: pointer;">
+                <div class="card-body p-2">
+                    <div class="rounded-circle mx-auto mb-2 bg-primary bg-opacity-10 text-primary p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <span class="text-primary fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Daily (Today) <i class="fa-solid fa-up-right-from-square ms-0.5 fs-9"></i></span>
+                    <h5 class="fw-bold text-dark mb-1">{{ daily_stats.pct }}%</h5>
+                    <span class="fs-9 text-muted">{{ daily_stats.attended }}/{{ daily_stats.total }} Sessions</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary fs-9 mt-1 d-block">Click to View</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Attendance -->
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
+                <div class="card-body p-2">
+                    <div class="rounded-circle mx-auto mb-2 bg-info bg-opacity-10 text-info p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Weekly (This Week)</span>
+                    <h5 class="fw-bold text-dark mb-1">{{ weekly_stats.pct }}%</h5>
+                    <span class="fs-9 text-muted">{{ weekly_stats.attended }}/{{ weekly_stats.total }} Attended</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Attendance -->
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
+                <div class="card-body p-2">
+                    <div class="rounded-circle mx-auto mb-2 bg-warning bg-opacity-10 text-warning p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Monthly (This Month)</span>
+                    <h5 class="fw-bold text-dark mb-1">{{ monthly_stats.pct }}%</h5>
+                    <span class="fs-9 text-muted">{{ monthly_stats.attended }}/{{ monthly_stats.total }} Attended</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Semester Attendance -->
+        <div class="col-xl-3 col-md-6 col-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
+                <div class="card-body p-2">
+                    <div class="rounded-circle mx-auto mb-2 bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Semester To-Date</span>
+                    <h5 class="fw-bold text-dark mb-1">{{ semester_stats.pct }}%</h5>
+                    <span class="fs-9 text-muted">{{ semester_stats.attended }}/{{ semester_stats.total }} Total Classes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Missed Classes -->
+        <div class="col-xl-3 col-md-6 col-12">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
+                <div class="card-body p-2">
+                    <div class="rounded-circle mx-auto mb-2 bg-danger bg-opacity-10 text-danger p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+                        <i class="fas fa-user-clock"></i>
+                    </div>
+                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Missed Classes</span>
+                    <h5 class="fw-bold text-danger mb-1">{{ missed_classes }} Class{% if missed_classes != 1 %}es{% endif %}</h5>
+                    <span class="fs-9 text-muted">Out of {{ total_classes_conducted }} Total Conducted</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Stats Summary Cards -->
-    <div class="col-lg-8">
-        <div class="row h-100">
-            <!-- Total Subjects Card -->
-            <div class="col-md-6 mb-3">
-                <div class="card h-100 stat-card-gradient-primary border-0 p-4 shadow-sm">
-                    <h6 class="text-muted fw-semibold">Subjects Registered</h6>
-                    <h2 class="fw-bold mt-2 text-primary">{{ subject_stats|length }}</h2>
-                    <p class="text-muted fs-7 mb-0 mt-auto">Subjects currently active in your class curriculum.</p>
+    <!-- Charts Row: Overall Gauge + Subject Attendance Bar Chart -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Overall Attendance Doughnut -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+                <h6 class="fw-bold text-dark mb-3 fs-7"><i class="fas fa-chart-pie text-primary me-2"></i>Overall Attendance Status</h6>
+                <div class="d-flex align-items-center justify-content-center flex-grow-1" style="min-height: 220px;">
+                    <canvas id="overallGaugeChart" style="max-height: 200px; max-width: 200px;"></canvas>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mt-2 fs-8">
+                    <span class="text-success"><i class="fas fa-circle me-1"></i>Attended ({{ total_classes_attended }})</span>
+                    <span class="text-danger"><i class="fas fa-circle me-1"></i>Missed ({{ missed_classes }})</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Overall Attendance Percentage -->
-            {% set total_held = namespace(val=0) %}
-            {% set total_attended = namespace(val=0) %}
-            {% for name, stat in subject_stats.items() %}
-                {% set total_held.val = total_held.val + stat.total %}
-                {% set total_attended.val = total_attended.val + stat.present %}
-            {% endfor %}
-            
-            {% if total_held.val > 0 %}
-                {% set overall_pct = (total_attended.val / total_held.val) * 100 %}
-            {% else %}
-                {% set overall_pct = 0.0 %}
-            {% endif %}
+        <!-- Chart 2: Subject-Wise Attendance Bar Chart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
+                <h6 class="fw-bold text-dark mb-3 fs-7"><i class="fas fa-chart-bar text-primary me-2"></i>Subject-Wise Attendance Breakdown (%)</h6>
+                <div class="flex-grow-1" style="min-height: 220px;">
+                    <canvas id="subjectBarChart" style="max-height: 230px; width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            <div class="col-md-6 mb-3">
-                <div class="card h-100 {% if overall_pct >= 75 %}stat-card-gradient-success{% else %}stat-card-gradient-warning{% endif %} border-0 p-4 shadow-sm">
-                    <h6 class="text-muted fw-semibold">Overall Attendance</h6>
-                    <h2 class="fw-bold mt-2 {% if overall_pct >= 75 %}text-success{% else %}text-warning{% endif %}">
-                        {{ overall_pct|round(2) }}%
-                    </h2>
-                    <div class="progress mt-3 mb-2" style="height: 6px;">
-                        <div class="progress-bar {% if overall_pct >= 75 %}bg-success{% else %}bg-warning{% endif %}" 
-                             role="progressbar" 
-                             style="width: {{ overall_pct }}%" 
-                             aria-valuenow="{{ overall_pct }}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100"></div>
+    <!-- TODAY'S SCHEDULED TIMETABLE & ATTENDANCE STATUS MONITOR -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                <div class="card-header bg-gradient bg-primary text-white p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-calendar-day fs-5"></i>
+                        <h6 class="fw-bold mb-0">Class Schedule & Attendance Status Monitor ({% if student.class_assigned %}Class {{ student.class_assigned.name }}{% else %}Class {{ student.class_id or '7CSE4' }}{% endif %})</h6>
                     </div>
-                    <span class="text-muted fs-7">
-                        Attended {{ total_attended.val }} out of {{ total_held.val }} sessions. 
-                        {% if overall_pct < 75 %}
-                            <strong class="text-danger">Below 75% criteria!</strong>
-                        {% else %}
-                            <strong class="text-success">Good standing.</strong>
-                        {% endif %}
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-1.5 fs-8 font-monospace fw-bold">
+                        <i class="fa-solid fa-clock me-1"></i>Max 6 Slots / Day
                     </span>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
+                <div class="card-body p-3.5">
+                    <!-- Student Day Filter Pills -->
+                    <ul class="nav nav-pills mb-3 gap-2 fs-8" id="studentScheduleTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active bg-primary text-white rounded-pill px-3 py-1 fw-bold" id="studentTabToday" onclick="filterStudentSchedule('{{ current_day_name }}', this)">
+                                <i class="fa-solid fa-star me-1"></i>Today ({{ current_day_name }})
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill px-3 py-1 fw-bold text-dark border" onclick="filterStudentSchedule('all', this)">
+                                All Week
+                            </button>
+                        </li>
+                        {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill px-3 py-1 fw-semibold text-dark" onclick="filterStudentSchedule('{{ d }}', this)">
+                                {{ d }}
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
 
-<!-- Attendance Chart & Subject List -->
-<div class="row mb-4">
-    <!-- Chart -->
-    <div class="col-lg-7 mb-3">
-        <div class="card p-4 shadow-sm border-0 h-100">
-            <h5 class="fw-bold mb-3 text-dark">Subject Attendance Chart</h5>
-            <div style="height: 320px; position: relative;">
-                <canvas id="attendanceChart"></canvas>
+                    {% if full_student_timetable %}
+                    <div class="row g-3" id="studentScheduleGrid">
+                        {% for slot_item in full_student_timetable %}
+                        <div class="col-xl-4 col-md-6 student-slot-card" data-day="{{ slot_item.day }}">
+                            <div class="p-3 rounded-4 border h-100 d-flex flex-column justify-content-between {% if slot_item.is_cancelled %}bg-danger bg-opacity-10 border-danger border-opacity-50{% elif slot_item.is_proxy %}bg-primary bg-opacity-10 border-primary border-opacity-50{% else %}bg-light border-light-subtle{% endif %}">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
+                                            <span class="badge {% if slot_item.is_cancelled %}bg-danger{% else %}bg-primary{% endif %} bg-opacity-10 text-{% if slot_item.is_cancelled %}danger{% else %}primary{% endif %} border border-{% if slot_item.is_cancelled %}danger{% else %}primary{% endif %} border-opacity-20 px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                Period {{ slot_item.period }}
+                                            </span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-dark px-2 py-0.5 rounded-pill fs-9 fw-semibold">
+                                                {{ slot_item.day }} {% if slot_item.date_str %}({{ slot_item.date_str }}){% endif %}
+                                            </span>
+                                            {% if slot_item.is_proxy %}
+                                            <span class="badge bg-info text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                <i class="fa-solid fa-user-shield me-1"></i>Proxy
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-0 fs-7 {% if slot_item.is_cancelled %}text-decoration-line-through opacity-75{% endif %}">{{ slot_item.subject }}</h6>
+                                        <span class="fs-8 text-muted d-block mt-0.5">
+                                            <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>
+                                            {% if slot_item.is_proxy %}
+                                            <strong>Prof. {{ slot_item.proxy_teacher_name }}</strong> <small class="text-muted">(Proxy for {{ slot_item.teacher }})</small>
+                                            {% else %}
+                                            {{ slot_item.teacher }}
+                                            {% endif %}
+                                        </span>
+                                        {% if slot_item.is_cancelled %}
+                                        <span class="fs-9 text-danger fw-semibold d-block mt-1">
+                                            <i class="fa-solid fa-circle-info me-1"></i>{{ slot_item.cancellation_reason or 'Cancelled by Admin' }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="badge bg-{{ slot_item.status_class }} text-white px-2.5 py-1.5 rounded-pill fs-8 shadow-xs">
+                                        <i class="fa-solid {{ slot_item.status_icon }} me-1"></i>{{ slot_item.status_label }}
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between pt-2 border-top fs-8 text-muted">
+                                    <span><i class="fa-solid fa-clock text-primary me-1"></i>{{ slot_item.time_slot }}</span>
+                                    <span><i class="fa-solid fa-door-open me-1"></i>{{ slot_item.room_number }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fa-solid fa-calendar-check fs-3 mb-1 text-primary opacity-50"></i>
+                        <p class="mb-0 fw-semibold fs-8">No lectures scheduled in the timetable yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Subject Wise Breakdown list -->
-    <div class="col-lg-5 mb-3">
-        <div class="card p-4 shadow-sm border-0 h-100" style="max-height: 388px; overflow-y: auto;">
-            <h5 class="fw-bold mb-3 text-dark">Subject Breakdown</h5>
-            <div class="list-group list-group-flush">
-                {% for subject, stat in subject_stats.items() %}
-                <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center">
+
+    <script>
+        function filterStudentSchedule(day, btn) {
+            const tabs = document.querySelectorAll('#studentScheduleTabs .nav-link');
+            tabs.forEach(t => t.classList.remove('active', 'bg-primary', 'text-white'));
+            btn.classList.add('active', 'bg-primary', 'text-white');
+
+            const cards = document.querySelectorAll('.student-slot-card');
+            cards.forEach(card => {
+                if (day === 'all' || card.dataset.day === day) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const tBtn = document.getElementById('studentTabToday');
+            if (tBtn) filterStudentSchedule('{{ current_day_name }}', tBtn);
+        });
+    </script>
+
+
+
+    <!-- Past Attendance History & Daily Session Logs Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
                     <div>
-                        <h6 class="fw-bold mb-1">{{ subject }}</h6>
-                        <span class="text-muted fs-7" style="font-size: 0.8rem;">Prof: {{ stat.teacher }}</span>
+                        <h6 class="fw-bold mb-0 text-dark fs-7">
+                            <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Attendance History & Daily Session Logs
+                        </h6>
+                        <span class="fs-8 text-muted">Viewing same-day attendance sessions by default. Filter by date or view full history.</span>
                     </div>
-                    <div class="text-end">
-                        <span class="badge {% if stat.percentage >= 75 %}badge-present{% else %}badge-absent{% endif %} mb-1">
-                            {{ stat.percentage }}%
-                        </span>
-                        <div class="text-muted fs-7" style="font-size: 0.8rem;">{{ stat.present }}/{{ stat.total }} attended</div>
+
+                    <!-- Filter Mode Controls -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="btn-group btn-group-sm p-1 bg-light rounded-pill border" role="group">
+                            <button type="button" class="btn btn-primary rounded-pill px-3 py-1 fw-bold fs-8" id="btnFilterToday" onclick="setStudentHistoryMode('today')">
+                                <i class="fa-solid fa-star me-1 text-warning"></i> Today's Sessions
+                            </button>
+                            <button type="button" class="btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8" id="btnFilterAll" onclick="setStudentHistoryMode('all')">
+                                <i class="fa-solid fa-list-ul me-1"></i> All History
+                            </button>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
+                            <input type="date" id="studentDateFilter" class="form-control form-control-sm border-0 bg-transparent px-2.5 py-1 fw-bold text-dark fs-8" value="{{ today }}" style="width: 135px;" onchange="setStudentHistoryMode('custom', this.value)" title="Select specific date">
+                        </div>
                     </div>
                 </div>
-                {% else %}
-                <p class="text-center text-muted my-4">No subjects registered yet.</p>
-                {% endfor %}
+
+                <div class="table-responsive rounded-3 border">
+                    <table class="table table-hover align-middle mb-0 fs-8 w-100" id="studentHistoryTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Subject</th>
+                                <th>Assigned Teacher</th>
+                                <th>Attendance Status</th>
+                                <th class="text-end">Discrepancy Report</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if records %}
+                                {% for r in records %}
+                                {% set sess = r.session %}
+                                {% set record_date = sess.date if sess else (r.marked_at.date() if r.marked_at else None) %}
+                                <tr class="student-history-row" data-date="{{ record_date.strftime('%Y-%m-%d') if record_date else '' }}">
+                                    <td>
+                                        <div class="fw-bold text-dark"><i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ record_date.strftime('%b %d, %Y') if record_date else 'N/A' }}</div>
+                                        <span class="fs-9 text-muted font-monospace"><i class="fa-solid fa-clock me-1"></i>{{ r.marked_at.strftime('%I:%M %p') if r.marked_at else (sess.start_time if sess else 'Recorded') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                            {{ sess.subject.name if (sess and sess.subject) else 'Subject' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-dark fw-semibold fs-8"><i class="fa-solid fa-chalkboard-user me-1 text-muted"></i>{{ sess.teacher.name if (sess and sess.teacher) else 'Faculty' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if r.status.upper() == 'PRESENT' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill fw-bold fs-8 border border-success border-opacity-25">
+                                                <i class="fa-solid fa-circle-check me-1"></i>Present
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill fw-bold fs-8 border border-danger border-opacity-25">
+                                                <i class="fa-solid fa-circle-xmark me-1"></i>Absent
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if r.status.upper() == 'ABSENT' %}
+                                            <button type="button" class="btn btn-xs btn-outline-warning py-1 px-2.5 rounded-pill fw-bold" onclick="openDiscrepancyModal('{{ r.session.id if r.session else '' }}', '{{ (r.session.subject.name if (r.session and r.session.subject) else 'Lecture')|escape }}')">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Discrepancy
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted fs-9"><i class="fa-solid fa-check me-1 text-success"></i>Verified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                            <tr id="historyNoDataRow" class="d-none">
+                                <td colspan="5" class="text-center py-4 text-muted fs-8">
+                                    <i class="fa-solid fa-calendar-xmark me-1 text-muted fs-5 d-block mb-1 opacity-50"></i>
+                                    No attendance session records found for this date.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Attendance Log History -->
-<div class="card p-4 shadow-sm border-0">
-    <h5 class="fw-bold mb-3 text-dark">Detailed Attendance Log</h5>
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Subject Name</th>
-                    <th>Teacher Name</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for record in records %}
-                <tr>
-                    <td class="fw-semibold">{{ record.date.strftime('%B %d, %Y') }}</td>
-                    <td class="text-muted">{{ record.time_marked if record.time_marked else '--' }}</td>
-                    <td>{{ record.subject.name }}</td>
-                    <td>{{ record.subject.teacher.name if record.subject.teacher else 'No Teacher' }}</td>
-                    <td>
-                        <span class="badge badge-attendance {% if record.status == 'Present' %}badge-present{% else %}badge-absent{% endif %}">
-                            {{ record.status }}
-                        </span>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="text-center text-muted py-4">No attendance records have been registered for you yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+    <script>
+        const studentTodayDateStr = '{{ today }}';
 
-<!-- Chart.js Logic -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('attendanceChart').getContext('2d');
-    const subjectNames = {{ subject_names | tojson }};
-    const attendanceData = {{ attendance_percentages | tojson }};
+        function setStudentHistoryMode(mode, customDate) {
+            const btnToday = document.getElementById('btnFilterToday');
+            const btnAll = document.getElementById('btnFilterAll');
+            const dateInput = document.getElementById('studentDateFilter');
+            const rows = document.querySelectorAll('.student-history-row');
+            const noDataRow = document.getElementById('historyNoDataRow');
 
-    if (subjectNames.length === 0) {
-        ctx.font = "16px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("No subjects registered yet.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-        return;
-    }
+            let targetDate = '';
+            if (mode === 'today') {
+                targetDate = studentTodayDateStr;
+                if (btnToday) { btnToday.className = 'btn btn-primary rounded-pill px-3 py-1 fw-bold fs-8'; }
+                if (btnAll) { btnAll.className = 'btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8'; }
+                if (dateInput) dateInput.value = studentTodayDateStr;
+            } else if (mode === 'all') {
+                targetDate = '';
+                if (btnToday) { btnToday.className = 'btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8'; }
+                if (btnAll) { btnAll.className = 'btn btn-primary rounded-pill px-3 py-1 fw-bold fs-8'; }
+                if (dateInput) dateInput.value = '';
+            } else if (mode === 'custom') {
+                targetDate = customDate || (dateInput ? dateInput.value : '');
+                if (btnToday) { btnToday.className = 'btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8'; }
+                if (btnAll) { btnAll.className = 'btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8'; }
+            }
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: subjectNames,
-            datasets: [{
-                label: 'Attendance %',
-                data: attendanceData,
-                backgroundColor: 'rgba(99, 102, 241, 0.65)',
-                borderColor: 'rgba(99, 102, 241, 1)',
-                borderWidth: 1.5,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
+            let visibleCount = 0;
+            rows.forEach(r => {
+                if (!targetDate || r.dataset.date === targetDate) {
+                    r.style.display = '';
+                    visibleCount++;
+                } else {
+                    r.style.display = 'none';
                 }
-            },
-            plugins: {
-                legend: {
-                    display: false
+            });
+
+            if (noDataRow) {
+                if (visibleCount === 0) {
+                    noDataRow.classList.remove('d-none');
+                } else {
+                    noDataRow.classList.add('d-none');
                 }
             }
         }
-    });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Default to today's sessions only on load
+            setStudentHistoryMode('today');
+        });
+    </script>
+</div>
+
+<!-- Chart.js Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Overall Attendance Doughnut Chart
+    const ctxGauge = document.getElementById('overallGaugeChart');
+    if (ctxGauge) {
+        new Chart(ctxGauge, {
+            type: 'doughnut',
+            data: {
+                labels: ['Attended', 'Missed'],
+                datasets: [{
+                    data: [{{ total_classes_attended }}, {{ missed_classes }}],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // 2. Subject-wise Bar Chart
+    const ctxBar = document.getElementById('subjectBarChart');
+    if (ctxBar) {
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: {{ subject_names | tojson }},
+                datasets: [{
+                    label: 'Attendance %',
+                    data: {{ attendance_percentages | tojson }},
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 8,
+                    barThickness: 28
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + '%'; }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
 });
+</script>
+
+<!-- DAILY ATTENDANCE BREAKDOWN & DISCREPANCY REPORTING MODAL -->
+<div class="modal fade" id="dailyAttendanceModal" tabindex="-1" aria-labelledby="dailyAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-gradient bg-primary text-white border-0 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-calendar-day fs-5"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="dailyAttendanceModalLabel">Today's Class Attendance Breakdown</h5>
+                        <span class="fs-9 text-white-50">Detailed session-by-session status for today</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="p-3 mb-4 rounded-3 bg-light border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="fw-bold text-dark d-block">Overall Daily Attendance: {{ daily_stats.pct }}%</span>
+                        <span class="fs-9 text-muted">{{ daily_stats.attended }} out of {{ daily_stats.total }} sessions attended today</span>
+                    </div>
+                    <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8"><i class="fa-solid fa-clock me-1"></i> IST UTC+5:30</span>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check text-primary me-2"></i>Class Schedule & Attendance Status</h6>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 fs-8 border rounded-3">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Subject & Faculty</th>
+                                <th>Time Window</th>
+                                <th>Attendance Status</th>
+                                <th class="text-end">Discrepancy Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if daily_timetable_status %}
+                                {% for item in daily_timetable_status %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-bold text-dark d-block">{{ item.subject }}</span>
+                                        <span class="fs-9 text-muted"><i class="fa-solid fa-chalkboard-user me-1"></i>{{ item.teacher }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace">
+                                            {{ item.time_slot }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ item.status_class }} bg-opacity-10 text-{{ item.status_class }} px-2.5 py-1 rounded-pill fw-bold border border-{{ item.status_class }} border-opacity-25">
+                                            <i class="fa-solid {{ item.status_icon }} me-1"></i>{{ item.status_label }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.status_label == 'Absent' %}
+                                            <button type="button" class="btn btn-xs btn-outline-warning py-1 px-2.5 rounded-pill fw-bold" onclick="openDiscrepancyModal('{{ item.session_id or '' }}', '{{ item.subject|escape }}')">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Report Discrepancy
+                                            </button>
+                                        {% elif item.status_label == 'Present' %}
+                                            <span class="text-muted fs-9"><i class="fa-solid fa-check me-1 text-success"></i>Verified</span>
+                                        {% else %}
+                                            <span class="text-muted fs-9">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted fst-italic">
+                                        No specific lecture sessions recorded for today.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-0 py-2.5">
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Attendance Discrepancy Modal -->
+<div class="modal fade" id="reportDiscrepancyModal" tabindex="-1" aria-labelledby="reportDiscrepancyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-warning text-dark border-0 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="reportDiscrepancyModalLabel">Report Attendance Discrepancy</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('student.report_discrepancy') }}">
+                <input type="hidden" name="session_id" id="discrepancySessionId">
+                <div class="modal-body p-4">
+                    <p class="fs-8 text-muted mb-3">If you were marked <strong>ABSENT</strong> by mistake, submit your explanation below for your subject teacher to review and update your status to <strong>PRESENT</strong>.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark fs-8">Lecture Session</label>
+                        <input type="text" id="discrepancySubjectName" class="form-control form-control-sm bg-light fw-bold text-dark" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="discrepancyReason" class="form-label fw-bold text-dark fs-8">Reason / Explanation <span class="text-danger">*</span></label>
+                        <textarea name="reason" id="discrepancyReason" class="form-control" rows="3" required placeholder="e.g. Was present in class, camera missed face recognition scan during lecture."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 py-2.5">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark btn-sm rounded-pill px-4 fw-bold shadow-xs">
+                        <i class="fa-solid fa-paper-plane me-1"></i>Send Request to Teacher
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDiscrepancyModal(sessionId, subjectName) {
+        document.getElementById('discrepancySessionId').value = sessionId;
+        document.getElementById('discrepancySubjectName').value = subjectName;
+        const modal = new bootstrap.Modal(document.getElementById('reportDiscrepancyModal'));
+        modal.show();
+    }
 </script>
 {% endblock %}

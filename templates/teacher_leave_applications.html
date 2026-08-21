@@ -1,0 +1,296 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER LEAVE APPLICATIONS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Faculty Leave Applications - SmartVision{% endblock %}
+{% block page_title %}Faculty Leave Applications & Approval Portal{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <!-- Header Banner -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning">
+                        <i class="fa-solid fa-umbrella-beach fs-3"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Faculty Leave Applications Portal</h4>
+                        <p class="text-muted mb-0 fs-8">Apply for official faculty leaves and track real-time approval status from Administration.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-warning rounded-pill px-4 py-2 fw-bold text-dark shadow-sm fs-8" data-bs-toggle="modal" data-bs-target="#applyLeaveModal">
+                    <i class="fa-solid fa-plus me-1.5"></i>Apply New Leave
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Received Proxy Attendance Transfers Notification Banner (On Leave Applications Portal) -->
+    {% if received_proxy_transfers %}
+    <div class="card border-0 shadow-sm rounded-4 bg-white border-start border-4 border-success p-4 mb-4">
+        <div class="card-header bg-white border-0 p-0 mb-3 d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0 text-success">
+                <i class="fa-solid fa-user-check me-2"></i>Proxy Class Attendance Received While You Were On Leave
+            </h5>
+            <span class="badge bg-success rounded-pill px-3 py-1 fs-8">{{ received_proxy_transfers|length }} Received</span>
+        </div>
+        <div class="d-flex flex-column gap-3">
+            {% for transfer in received_proxy_transfers %}
+            <div class="p-3 bg-light rounded-4 border position-relative d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <!-- Top Right Cross (Cancel/Dismiss Log) -->
+                <form method="POST" action="{{ url_for('teacher.dismiss_proxy_transfer', transfer_id=transfer.id) }}" style="position: absolute; top: 8px; right: 12px; z-index: 105;">
+                    <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0 fs-5 text-decoration-none fw-bold" title="Cancel / Dismiss Log" style="line-height: 1;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </form>
+
+                <div class="pe-4" style="flex: 1; min-width: 280px;">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="fw-bold text-dark fs-7">
+                            <i class="fa-solid fa-user-tie text-primary me-1"></i>Substitute Teacher: {{ transfer.substitute_teacher.name if transfer.substitute_teacher else 'Substitute' }}
+                        </span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border fs-9">
+                            {{ transfer.subject.name if transfer.subject else 'Subject' }} ({{ transfer.class_assigned.name if transfer.class_assigned else 'Class' }})
+                        </span>
+                    </div>
+                    <span class="fs-8 text-muted fw-semibold d-block mb-2">
+                        <i class="fa-solid fa-clock me-1 text-secondary"></i>Slot: {{ transfer.time_slot }} | Date: {{ transfer.date.strftime('%B %d, %Y') }}
+                    </span>
+
+                    <!-- Editable Present Roll Numbers Form -->
+                    <form method="POST" action="{{ url_for('teacher.update_proxy_rolls', transfer_id=transfer.id) }}" class="d-flex align-items-center gap-2 bg-white p-2 rounded-3 border">
+                        <span class="fs-8 text-dark fw-bold font-monospace text-nowrap">
+                            <i class="fa-solid fa-user-check text-success me-1"></i>Present Roll Numbers:
+                        </span>
+                        <input type="text" name="present_rolls" id="rolls_input_{{ transfer.id }}"
+                               class="form-control form-control-sm fw-bold font-monospace text-primary border-0 bg-light fs-8 px-2"
+                               value="{{ transfer.present_rolls.replace(' ', '') }}"
+                               placeholder="e.g. 1,67,85">
+                        <button type="submit" class="btn btn-sm btn-outline-primary px-2.5 py-1 fs-9 fw-bold text-nowrap" title="Save edited rolls">
+                            <i class="fa-solid fa-check me-1"></i>Save
+                        </button>
+                    </form>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 fw-bold fs-8"
+                            onclick="const r = document.getElementById('rolls_input_{{ transfer.id }}').value.replace(/\s+/g, ''); navigator.clipboard.writeText(r); alert('Copied roll numbers: ' + r);">
+                        <i class="fa-solid fa-copy me-1"></i>Copy Rolls
+                    </button>
+                    <form method="POST" action="{{ url_for('teacher.apply_proxy_rolls', transfer_id=transfer.id) }}"
+                          onsubmit="this.appendChild(document.getElementById('rolls_input_{{ transfer.id }}').cloneNode(true));">
+                        <button type="submit" class="btn btn-success btn-sm px-3 rounded-3 fw-bold shadow-sm fs-8 text-nowrap">
+                            <i class="fa-solid fa-check-double me-1"></i>Apply to My Real Session
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active & Pending Leave Requests Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h6 class="fw-bold text-dark mb-0 fs-7">
+                <i class="fa-solid fa-clock-rotate-left text-warning me-2"></i>Active & Pending Leave Applications ({{ active_leaves|length }})
+            </h6>
+            <span class="fs-9 text-muted">Showing active pending and current/upcoming approved leave requests</span>
+        </div>
+
+        {% if active_leaves %}
+        <div class="rounded-3 border overflow-hidden">
+            <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                <thead class="table-light text-nowrap">
+                    <tr>
+                        <th style="width: 25%;">Date Duration</th>
+                        <th style="width: 12%;">Leave Type</th>
+                        <th style="width: 28%;">Reason / Explanation</th>
+                        <th style="width: 20%;">Assigned Substitute</th>
+                        <th class="text-end" style="width: 15%;">Approval Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in active_leaves %}
+                    <tr>
+                        <td class="fw-bold text-dark text-nowrap">
+                            <i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ l.date_from.strftime('%b %d, %Y') }} — {{ l.date_to.strftime('%b %d, %Y') }}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary bg-opacity-10 text-dark border fs-9 fw-bold">
+                                {{ l.leave_type or 'FULL DAY' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="p-2 bg-light rounded-3 text-dark border fs-8 fst-italic shadow-2xs" style="word-break: break-word;">
+                                "{{ l.reason or 'No reason provided' }}"
+                            </div>
+                        </td>
+                        <td>
+                            {% if l.substitute_teacher %}
+                            <div class="fw-bold text-dark fs-8">
+                                <i class="fa-solid fa-user-check me-1 text-info"></i>{{ l.substitute_teacher.name }}
+                            </div>
+                            <span class="fs-9 text-muted d-block"><i class="fa-solid fa-phone me-1 text-success"></i>{{ l.substitute_teacher.mobile or 'No Phone' }}</span>
+                            {% else %}
+                            <span class="text-muted fs-9 fst-italic">Auto / Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end text-nowrap">
+                            {% if l.status == 'APPROVED' %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-1.5 rounded-pill fw-bold border border-success border-opacity-25 fs-8">
+                                <i class="fa-solid fa-circle-check me-1"></i>APPROVED BY ADMIN
+                            </span>
+                            {% elif l.status == 'REJECTED' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1.5 rounded-pill fw-bold border border-danger border-opacity-25 fs-8">
+                                <i class="fa-solid fa-circle-xmark me-1"></i>REJECTED BY ADMIN
+                            </span>
+                            {% else %}
+                            <span class="badge bg-warning bg-opacity-15 text-dark px-3 py-1.5 rounded-pill fw-bold border border-warning border-opacity-30 fs-8">
+                                <i class="fa-solid fa-clock me-1"></i>PENDING ADMIN APPROVAL
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted fs-8">
+            <i class="fa-solid fa-calendar-check text-success fs-1 d-block mb-2"></i>
+            <p class="mb-0 fw-semibold text-dark fs-7">No Active or Pending Leave Applications</p>
+            <span class="fs-9 text-muted">Click <strong>Apply New Leave</strong> to submit a new leave request.</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Collapsible Past Leaves History -->
+    {% if past_leaves %}
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-0 fs-7">
+                    <i class="fa-solid fa-box-archive text-secondary me-2"></i>Past Leave History ({{ past_leaves|length }})
+                </h6>
+                <span class="fs-9 text-muted">Historical leave records and archived responses</span>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-bold fs-8" type="button" data-bs-toggle="collapse" data-bs-target="#pastLeaveHistoryCollapse">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i>Toggle Leave History
+            </button>
+        </div>
+
+        <div class="collapse mt-3" id="pastLeaveHistoryCollapse">
+            <div class="rounded-3 border overflow-hidden">
+                <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                    <thead class="table-light text-nowrap">
+                        <tr>
+                            <th style="width: 25%;">Date Duration</th>
+                            <th style="width: 12%;">Leave Type</th>
+                            <th style="width: 28%;">Reason / Explanation</th>
+                            <th style="width: 20%;">Assigned Substitute</th>
+                            <th class="text-end" style="width: 15%;">Approval Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for l in past_leaves %}
+                        <tr>
+                            <td class="fw-bold text-dark text-nowrap">
+                                <i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ l.date_from.strftime('%b %d, %Y') }} — {{ l.date_to.strftime('%b %d, %Y') }}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary bg-opacity-10 text-dark border fs-9 fw-bold">
+                                    {{ l.leave_type or 'FULL DAY' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="fst-italic text-secondary fs-8">"{{ l.reason or 'No reason provided' }}"</span>
+                            </td>
+                            <td>
+                                {% if l.substitute_teacher %}
+                                <div class="fw-bold text-dark fs-8">
+                                    <i class="fa-solid fa-user-check me-1 text-info"></i>{{ l.substitute_teacher.name }}
+                                </div>
+                                <span class="fs-9 text-muted d-block"><i class="fa-solid fa-phone me-1 text-success"></i>{{ l.substitute_teacher.mobile or 'No Phone' }}</span>
+                                {% else %}
+                                <span class="text-muted fs-9 fst-italic">Auto / Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                {% if l.status == 'APPROVED' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-9">
+                                    <i class="fa-solid fa-circle-check me-1"></i>APPROVED
+                                </span>
+                                {% elif l.status == 'REJECTED' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-9">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i>REJECTED
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning bg-opacity-15 text-dark px-2.5 py-1 rounded-pill fw-bold border border-warning border-opacity-30 fs-9">
+                                    <i class="fa-solid fa-clock me-1"></i>PENDING
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Apply for Leave Modal -->
+<div class="modal fade" id="applyLeaveModal" tabindex="-1" aria-labelledby="applyLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-gradient bg-warning text-dark p-3.5">
+                <h5 class="modal-title fw-bold" id="applyLeaveModalLabel">
+                    <i class="fa-solid fa-paper-plane me-2"></i>Apply for Faculty Leave
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('teacher.apply_leave') }}">
+                <div class="modal-body p-4">
+                    <p class="text-muted fs-8 mb-3">Submit your leave request. Upon admin approval, your scheduled slots for affected dates will reflect leave status.</p>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="date_from" class="form-label fw-semibold fs-8 text-dark">Date From <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="date_to" class="form-label fw-semibold fs-8 text-dark">Date To <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="leave_type" class="form-label fw-semibold fs-8 text-dark">Leave Type</label>
+                        <select class="form-select form-select-sm" id="leave_type" name="leave_type">
+                            <option value="FULL" selected>FULL DAY LEAVE</option>
+                            <option value="HALF (MORNING)">HALF DAY (MORNING SESSION)</option>
+                            <option value="HALF (AFTERNOON)">HALF DAY (AFTERNOON SESSION)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="leave_reason" class="form-label fw-semibold fs-8 text-dark">Reason / Explanation</label>
+                        <textarea class="form-control form-control-sm" id="leave_reason" name="reason" rows="3" placeholder="e.g. Medical emergency, Family event, Conference attendance" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">Submit Leave Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

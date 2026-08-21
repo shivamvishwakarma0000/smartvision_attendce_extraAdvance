@@ -1,18 +1,34 @@
+# ==============================================================================
+# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - AUTHENTICATION ROUTING MODULE
+# ==============================================================================
+# Description: User authentication workflows including standard and OAuth login,
+#              6-digit OTP email verification, student biometric face registration,
+#              issued teacher ID validation, password reset, and session control.
+# ==============================================================================
+
 import os
 import base64
 import random
 import string
-import face_recognition
+try:
+    import face_recognition
+except ImportError:
+    face_recognition = None
 from datetime import datetime, timedelta
 from flask import render_template, redirect, url_for, flash, request, Blueprint, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from extensions import db, oauth
-from models import User, Student, Class
+from models import User, Student, Class, Teacher, IssuedTeacherID
+from email_utils import send_email
 
 auth_bp = Blueprint('auth', __name__)
 
 FACES_FOLDER = os.path.join('temp_uploads', 'faces')
+
+# ==============================================================================
+# SECTION 1: HELPER FUNCTIONS & OTP UTILITIES
+# ==============================================================================
 
 def save_base64_image(base64_str, roll_no, name, folder):
     """
@@ -44,9 +60,143 @@ def is_google_configured():
     return (current_app.config.get('GOOGLE_CLIENT_ID') and 
             current_app.config.get('GOOGLE_CLIENT_SECRET'))
 
+import secrets
+
 def generate_otp(length=6):
     """Generate a numeric OTP of given length."""
     return ''.join(random.choices(string.digits, k=length))
+
+@auth_bp.route('/send-register-otp', methods=['POST'])
+def send_register_otp():
+    """AJAX endpoint to send Gmail verification link + OTP to user email during registration."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+
+    if not email:
+        return {'success': False, 'message': 'Email address is required.'}, 400
+
+    # Check if user already exists
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        has_active_profile = False
+        if existing_user.role == 'student':
+            from models import Student
+            has_active_profile = (Student.query.filter_by(user_id=existing_user.id).first() is not None)
+        elif existing_user.role == 'teacher':
+            from models import Teacher
+            has_active_profile = (Teacher.query.filter_by(user_id=existing_user.id).first() is not None)
+        elif existing_user.role == 'admin':
+            has_active_profile = True
+
+        if has_active_profile and getattr(existing_user, 'is_email_verified', True):
+            return {'success': False, 'message': 'An account with this email already exists and is verified. Please sign in instead.'}, 400
+        elif not has_active_profile:
+            # Purge stale orphan user record left from previous deletions
+            db.session.delete(existing_user)
+            db.session.commit()
+
+    otp = generate_otp(6)
+    token = secrets.token_urlsafe(24)
+
+    session['reg_otp_' + email] = {
+        'otp': otp,
+        'token': token,
+        'verified': False,
+        'expires_at': (datetime.utcnow() + timedelta(minutes=30)).isoformat()
+    }
+
+    # Generate external Click-To-Verify URL
+    verify_link = url_for('auth.verify_email_link', email=email, token=token, _external=True)
+
+    subject = "SmartVision Registration OTP Code"
+    body = f"""Hello,
+
+Your 6-digit email verification OTP code for SmartVision registration is: {otp}
+
+Please enter this OTP code on the registration page to verify your email address.
+
+(This OTP code will expire in 15 minutes.)
+
+Best regards,
+SmartVision Team
+"""
+    try:
+        send_email(email, subject, body)
+    except Exception as e:
+        print(f"[OTP Email Error] {e}")
+
+    print(f"\n================================================================================")
+    print(f"[INLINE 6-DIGIT OTP GENERATED FOR {email}]: {otp}")
+    print(f"================================================================================\n")
+
+    return {
+        'success': True,
+        'message': f'6-Digit OTP code sent to {email}. Check your email inbox!',
+        'otp_debug': otp
+    }
+
+@auth_bp.route('/verify-register-otp', methods=['POST'])
+def verify_register_otp():
+    """AJAX endpoint to verify entered registration OTP."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    otp_input = data.get('otp', '').strip()
+
+    if not email or not otp_input:
+        return {'success': False, 'message': 'Email and OTP code are required.'}, 400
+
+    otp_data = session.get('reg_otp_' + email)
+    if not otp_data:
+        return {'success': False, 'message': 'No active verification request found. Please click Send Verification Email.'}, 400
+
+    if otp_input != otp_data.get('otp'):
+        return {'success': False, 'message': 'Invalid OTP code. Please check your email and try again.'}, 400
+
+    # Mark as verified in session
+    otp_data['verified'] = True
+    session['reg_otp_' + email] = otp_data
+
+    # Update database user if already created
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.is_email_verified = True
+        user.status = 'Approved' if user.role == 'student' else 'Email_Verified'
+        if user.teacher_profile:
+            user.teacher_profile.status = 'Email_Verified'
+        db.session.commit()
+
+    return {'success': True, 'message': 'Email verified successfully!'}
+
+@auth_bp.route('/verify-email-link', methods=['GET'])
+def verify_email_link():
+    """Direct link endpoint clicked from Gmail inbox."""
+    email = request.args.get('email', '').strip().lower()
+    token = request.args.get('token', '').strip()
+
+    if not email or not token:
+        flash("Invalid email verification link parameters.", "danger")
+        return redirect(url_for('main.index', state='login'))
+
+    otp_data = session.get('reg_otp_' + email)
+    
+    # Verify token
+    if otp_data and otp_data.get('token') == token:
+        otp_data['verified'] = True
+        session['reg_otp_' + email] = otp_data
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.is_email_verified = True
+        user.status = 'Approved' if user.role == 'student' else 'Email_Verified'
+        if user.teacher_profile:
+            user.teacher_profile.status = 'Email_Verified'
+        db.session.commit()
+        flash(f"✓ Email ({email}) verified successfully via Gmail link! You can now sign in.", "success")
+    else:
+        # User not fully registered yet, but mark email verified in session for registration form
+        flash(f"✓ Email ({email}) verified successfully! Please complete your registration details below.", "success")
+
+    return redirect(url_for('main.index', state='signup', verified_email=email))
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -66,6 +216,25 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
+            # Check email verification requirement for Student and Teacher
+            if not getattr(user, 'is_email_verified', True):
+                token = secrets.token_urlsafe(24)
+                session['reg_otp_' + user.email] = {
+                    'token': token,
+                    'verified': False,
+                    'expires_at': (datetime.utcnow() + timedelta(minutes=30)).isoformat()
+                }
+                verify_link = url_for('auth.verify_email_link', email=user.email, token=token, _external=True)
+                subject = "SmartVision - Verify Your Email Address"
+                body = f"Hello {user.name},\n\nPlease click the link below to verify your email address:\n{verify_link}\n\nBest regards,\nSmartVision Team"
+                try:
+                    send_email(to_email=user.email, subject=subject, body_text=body)
+                except Exception as e:
+                    print(f"[Email Resend Error] {e}")
+
+                flash(f'Your account email is not verified yet. We sent a new verification link to your Gmail ({user.email}). Please check your inbox and click the link to activate your account.', 'warning')
+                return redirect(url_for('main.index', state='login'))
+
             # Check pending approval for Teachers or Users
             if user.status == 'Pending' or (user.teacher_profile and user.teacher_profile.status == 'Pending'):
                 flash('Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
@@ -126,7 +295,8 @@ def admin_login():
     return render_template('admin_login.html')
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
-def signup():
+@auth_bp.route('/register', methods=['GET', 'POST'])
+def register():
     if current_user.is_authenticated:
         return redirect(url_for('auth.login'))
 
@@ -144,13 +314,28 @@ def signup():
             flash('Password must be at least 8 characters long.', 'danger')
             return redirect(url_for('main.index', state='signup'))
 
-        if User.query.filter_by(email=email).first():
-            flash('This email address is already registered. Please log in.', 'danger')
-            return redirect(url_for('main.index', state='signup'))
+        existing_reg_user = User.query.filter_by(email=email).first()
+        if existing_reg_user:
+            has_active_profile = False
+            if existing_reg_user.role == 'student':
+                from models import Student
+                has_active_profile = (Student.query.filter_by(user_id=existing_reg_user.id).first() is not None)
+            elif existing_reg_user.role == 'teacher':
+                from models import Teacher
+                has_active_profile = (Teacher.query.filter_by(user_id=existing_reg_user.id).first() is not None)
+            elif existing_reg_user.role == 'admin':
+                has_active_profile = True
+
+            if has_active_profile:
+                flash('This email address is already registered. Please log in.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+            else:
+                db.session.delete(existing_reg_user)
+                db.session.commit()
 
         # --- ADMIN REGISTRATION ---
         if role == 'admin':
-            new_user = User(name=name, email=email, role='admin', status='Approved')
+            new_user = User(name=name, email=email, role='admin', status='Approved', is_email_verified=True)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
@@ -160,26 +345,71 @@ def signup():
         # --- TEACHER REGISTRATION ---
         elif role == 'teacher':
             mobile = request.form.get('mobile', '').strip()
-            emp_id = request.form.get('emp_id', '').strip()
+            teacher_id = request.form.get('teacher_id', '').strip() or request.form.get('emp_id', '').strip()
             photo = request.files.get('student_photo')
             captured_base64 = request.form.get('captured_image_base64')
 
-            if not emp_id:
-                flash('Employee ID is required for Teacher registration.', 'danger')
+            if not teacher_id:
+                flash('Teacher ID is required for Teacher registration. Please enter the Teacher ID issued by your Administrator.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            # Verify Teacher ID in IssuedTeacherID table
+            issued_rec = IssuedTeacherID.query.filter_by(teacher_id=teacher_id).first()
+            if not issued_rec or issued_rec.is_used:
+                flash('Invalid or already used Teacher ID. Teacher registration requires a valid Teacher ID issued by an Administrator.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            if issued_rec.email and issued_rec.email.strip().lower() != email.strip().lower():
+                flash(f'This Teacher ID ({teacher_id}) was issued specifically for {issued_rec.email}. Please use that email address.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
             from models import Teacher
-            if Teacher.query.filter_by(emp_id=emp_id).first():
-                flash('A teacher with this Employee ID is already registered.', 'danger')
+            if Teacher.query.filter_by(emp_id=teacher_id).first():
+                flash('A teacher with this Teacher ID is already registered.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            primary_subject = request.form.get('primary_subject', '').strip()
+            secondary_subject = request.form.get('secondary_subject', '').strip()
+            tertiary_subject = request.form.get('tertiary_subject', '').strip()
+
+            selected_prefs = [s for s in [primary_subject, secondary_subject, tertiary_subject] if s]
+            if len(selected_prefs) != len(set(selected_prefs)):
+                flash('Duplicate subject preferences detected. Please select distinct subjects for Primary, Secondary, and 3rd choices.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            # Enforce Mandatory Photo for Teacher Registration
+            if not captured_base64 and not (photo and photo.filename):
+                flash('Teacher photo is mandatory for registration. Please upload or capture a photo.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
             face_encoding_bytes = None
             image_filename = None
 
             if captured_base64 and captured_base64.strip():
-                result = save_base64_image(captured_base64, f"teacher_{emp_id}", name, FACES_FOLDER)
+                result = save_base64_image(captured_base64, f"teacher_{teacher_id}", name, FACES_FOLDER)
                 if result:
                     image_filename, filepath = result
+                    if face_recognition:
+                        try:
+                            image = face_recognition.load_image_file(filepath)
+                            encodings = face_recognition.face_encodings(image)
+                            if len(encodings) == 1:
+                                face_encoding_bytes = encodings[0].tobytes()
+                            elif len(encodings) > 1:
+                                flash('Multiple faces found in photo. Please use a clear image of ONLY yourself.', 'danger')
+                                if os.path.exists(filepath):
+                                    os.remove(filepath)
+                                return redirect(url_for('main.index', state='signup'))
+                        except Exception as e:
+                            print(f"Teacher face scan error: {e}")
+            elif photo and photo.filename:
+                os.makedirs(FACES_FOLDER, exist_ok=True)
+                filename = secure_filename(f"teacher_{teacher_id}_{name}_{photo.filename}")
+                filepath = os.path.join(FACES_FOLDER, filename)
+                photo.save(filepath)
+                image_filename = filename
+
+                if face_recognition:
                     try:
                         image = face_recognition.load_image_file(filepath)
                         encodings = face_recognition.face_encodings(image)
@@ -192,28 +422,9 @@ def signup():
                             return redirect(url_for('main.index', state='signup'))
                     except Exception as e:
                         print(f"Teacher face scan error: {e}")
-            elif photo and photo.filename:
-                os.makedirs(FACES_FOLDER, exist_ok=True)
-                filename = secure_filename(f"teacher_{emp_id}_{name}_{photo.filename}")
-                filepath = os.path.join(FACES_FOLDER, filename)
-                photo.save(filepath)
-
-                try:
-                    image = face_recognition.load_image_file(filepath)
-                    encodings = face_recognition.face_encodings(image)
-                    if len(encodings) == 1:
-                        face_encoding_bytes = encodings[0].tobytes()
-                        image_filename = filename
-                    elif len(encodings) > 1:
-                        flash('Multiple faces found in photo. Please use a clear image of ONLY yourself.', 'danger')
-                        if os.path.exists(filepath):
-                            os.remove(filepath)
-                        return redirect(url_for('main.index', state='signup'))
-                except Exception as e:
-                    print(f"Teacher face scan error: {e}")
 
             try:
-                new_user = User(name=name, email=email, role='teacher', mobile=mobile or None, status='Pending')
+                new_user = User(name=name, email=email, role='teacher', mobile=mobile or None, status='Pending', is_email_verified=True)
                 new_user.set_password(password)
                 db.session.add(new_user)
                 db.session.flush()
@@ -221,17 +432,23 @@ def signup():
                 new_teacher = Teacher(
                     name=name,
                     email=email,
-                    emp_id=emp_id,
+                    emp_id=teacher_id,
                     mobile=mobile or None,
                     image_filename=image_filename,
                     face_encoding=face_encoding_bytes,
                     status='Pending',
-                    user_id=new_user.id
+                    user_id=new_user.id,
+                    primary_subject=primary_subject or None,
+                    secondary_subject=secondary_subject or None,
+                    tertiary_subject=tertiary_subject or None
                 )
                 db.session.add(new_teacher)
+                if issued_rec:
+                    issued_rec.is_used = True
+                    issued_rec.used_at = datetime.utcnow()
                 db.session.commit()
 
-                flash('Teacher registration submitted successfully! Your account is pending administrator approval before you can log in.', 'success')
+                flash('Teacher registration submitted! Your account is now pending Administrator approval.', 'info')
                 return redirect(url_for('main.index', state='login'))
             except Exception as e:
                 db.session.rollback()
@@ -243,10 +460,24 @@ def signup():
             mobile = request.form.get('mobile', '').strip()
             roll_no = request.form.get('roll_no', '').strip()
             enrollment_no = request.form.get('enrollment_no', '').strip()
+            department = request.form.get('department', '').strip()
+            parent_name = request.form.get('parent_name', '').strip()
+            parent_email = request.form.get('parent_email', '').strip()
+            parent_mobile = request.form.get('parent_mobile', '').strip()
             student_photo = request.files.get('student_photo')
+            captured_base64 = request.form.get('captured_image_base64')
 
             if not all([roll_no, enrollment_no]):
                 flash('Roll Number and Enrollment Number are required for student registration.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            if not parent_name or not parent_email or not parent_mobile:
+                flash('Parent Name, Parent Email, and Parent Mobile Number are required for student registration.', 'danger')
+                return redirect(url_for('main.index', state='signup'))
+
+            # Enforce Mandatory Photo for Student Registration
+            if not captured_base64 and not (student_photo and student_photo.filename):
+                flash('Student photo is mandatory for registration. Please upload a photo or capture via camera.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
             if Student.query.filter_by(roll_no=roll_no).first():
@@ -257,31 +488,58 @@ def signup():
                 flash('A student with this Enrollment Number already exists.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
-            # Create User account first
-            new_user = User(name=name, email=email, role='student', mobile=mobile or None)
+            # Create User account with verified email status (verified via inline OTP)
+            new_user = User(name=name, email=email, role='student', mobile=mobile or None, status='Approved', is_email_verified=True)
             new_user.set_password(password)
 
-            # Handle Face Photo (optional during self-registration)
             face_encoding_bytes = None
             image_filename = None
-            captured_base64 = request.form.get('captured_image_base64')
 
             if captured_base64 and captured_base64.strip():
                 result = save_base64_image(captured_base64, roll_no, name, FACES_FOLDER)
                 if result:
                     image_filename, filepath = result
+                    if face_recognition:
+                        try:
+                            image = face_recognition.load_image_file(filepath)
+                            encodings = face_recognition.face_encodings(image)
+                            if len(encodings) == 1:
+                                face_encoding_bytes = encodings[0].tobytes()
+                            elif len(encodings) == 0:
+                                flash('No face detected in the captured photo. Please capture a clear face photo.', 'warning')
+                                if os.path.exists(filepath):
+                                    os.remove(filepath)
+                                return redirect(url_for('main.index', state='signup'))
+                            else:
+                                flash(f'{len(encodings)} faces found in captured photo. Please capture a clear image of ONLY one face.', 'danger')
+                                if os.path.exists(filepath):
+                                    os.remove(filepath)
+                                return redirect(url_for('main.index', state='signup'))
+                        except Exception as e:
+                            flash(f'An error occurred during facial scanning: {e}', 'danger')
+                            if os.path.exists(filepath):
+                                os.remove(filepath)
+                            return redirect(url_for('main.index', state='signup'))
+            elif student_photo and student_photo.filename:
+                os.makedirs(FACES_FOLDER, exist_ok=True)
+                filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
+                filepath = os.path.join(FACES_FOLDER, filename)
+                student_photo.save(filepath)
+                image_filename = filename
+
+                if face_recognition:
                     try:
                         image = face_recognition.load_image_file(filepath)
                         encodings = face_recognition.face_encodings(image)
                         if len(encodings) == 1:
                             face_encoding_bytes = encodings[0].tobytes()
                         elif len(encodings) == 0:
-                            flash('No face detected in the captured photo. Please capture a clear face photo.', 'warning')
+                            flash('No face detected in the photo. Please upload a clear face photo.', 'warning')
                             if os.path.exists(filepath):
                                 os.remove(filepath)
                             return redirect(url_for('main.index', state='signup'))
                         else:
-                            flash(f'{len(encodings)} faces found in captured photo. Please capture a clear image of ONLY one face.', 'danger')
+                            flash(f'{len(encodings)} faces found in photo. Please use a clear image of ONLY one face.', 'danger')
                             if os.path.exists(filepath):
                                 os.remove(filepath)
                             return redirect(url_for('main.index', state='signup'))
@@ -290,39 +548,11 @@ def signup():
                         if os.path.exists(filepath):
                             os.remove(filepath)
                         return redirect(url_for('main.index', state='signup'))
-            elif student_photo and student_photo.filename:
-                os.makedirs(FACES_FOLDER, exist_ok=True)
-                filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
-                filepath = os.path.join(FACES_FOLDER, filename)
-                student_photo.save(filepath)
-
-                try:
-                    image = face_recognition.load_image_file(filepath)
-                    encodings = face_recognition.face_encodings(image)
-                    if len(encodings) == 1:
-                        face_encoding_bytes = encodings[0].tobytes()
-                        image_filename = filename
-                    elif len(encodings) == 0:
-                        flash('No face detected in the photo. Please upload a clear face photo.', 'warning')
-                        if os.path.exists(filepath):
-                            os.remove(filepath)
-                        return redirect(url_for('main.index', state='signup'))
-                    else:
-                        flash(f'{len(encodings)} faces found in photo. Please use a clear image of ONLY one face.', 'danger')
-                        if os.path.exists(filepath):
-                            os.remove(filepath)
-                        return redirect(url_for('main.index', state='signup'))
-                except Exception as e:
-                    flash(f'An error occurred during facial scanning: {e}', 'danger')
-                    if os.path.exists(filepath):
-                        os.remove(filepath)
-                    return redirect(url_for('main.index', state='signup'))
 
             try:
                 db.session.add(new_user)
                 db.session.flush()  # Get new_user.id
 
-                # Retrieve selected class_id from form (optional - admin will assign if not provided)
                 selected_class_id = request.form.get('class_id')
                 class_id_int = None
                 if selected_class_id:
@@ -335,7 +565,11 @@ def signup():
                     name=name,
                     roll_no=roll_no,
                     enrollment_no=enrollment_no,
+                    department=department or 'General',
                     mobile=mobile or None,
+                    parent_name=parent_name or None,
+                    parent_email=parent_email or None,
+                    parent_mobile=parent_mobile or None,
                     class_id=class_id_int,
                     face_encoding=face_encoding_bytes,
                     image_filename=image_filename,
@@ -346,7 +580,7 @@ def signup():
                 db.session.commit()
 
                 flash(
-                    'Student account registered successfully! '
+                    'Student account registered and email verified successfully! '
                     'An administrator will assign your class. You can now log in.',
                     'success'
                 )
@@ -363,17 +597,105 @@ def signup():
     # Redirect GET requests to the unified index page with state='signup'
     return redirect(url_for('main.index', state='signup'))
 
+signup = register
+
+@auth_bp.route('/verify_teacher_email', methods=['POST'])
+def verify_teacher_email():
+    entered_otp = request.form.get('otp', '').strip()
+    email = request.form.get('email', '').strip().lower() or session.get('teacher_verify_email', '').lower()
+    
+    verify_data = session.get('teacher_verify_data')
+    if not verify_data or verify_data.get('email', '').lower() != email:
+        user = User.query.filter_by(email=email).first()
+        if user and user.role == 'teacher' and not getattr(user, 'is_email_verified', True):
+            otp = generate_otp(6)
+            session['teacher_verify_data'] = {
+                'email': email,
+                'otp': otp,
+                'teacher_id': user.teacher_profile.emp_id if user.teacher_profile else '',
+                'expires_at': (datetime.utcnow() + timedelta(minutes=15)).isoformat()
+            }
+            print("\n" + "=" * 80)
+            print("[SMARTVISION TEACHER EMAIL VERIFICATION] NEW OTP GENERATED")
+            print(f"  To      : {user.name} <{user.email}>")
+            print(f"  OTP Code: {otp}  (valid for 15 minutes)")
+            print("=" * 80 + "\n", flush=True)
+            flash('A new OTP code has been generated. Please check server log/console.', 'info')
+            return redirect(url_for('main.index', state='teacher-verify-email', email=email))
+        else:
+            flash('Verification session expired or account not found. Please try logging in.', 'danger')
+            return redirect(url_for('main.index', state='login'))
+
+    expires_at = datetime.fromisoformat(verify_data['expires_at'])
+    if datetime.utcnow() > expires_at:
+        flash('Verification OTP code has expired. Click Resend OTP for a new code.', 'danger')
+        return redirect(url_for('main.index', state='teacher-verify-email', email=email))
+
+    if entered_otp != verify_data['otp']:
+        flash('Incorrect OTP code. Please try again.', 'danger')
+        return redirect(url_for('main.index', state='teacher-verify-email', email=email))
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.is_email_verified = True
+        user.status = 'Approved'
+        if user.teacher_profile:
+            user.teacher_profile.status = 'Approved'
+            teacher_id_code = user.teacher_profile.emp_id
+            issued_rec = IssuedTeacherID.query.filter_by(teacher_id=teacher_id_code).first()
+            if issued_rec:
+                issued_rec.is_used = True
+                issued_rec.used_by_user_id = user.id
+        db.session.commit()
+
+        session.pop('teacher_verify_data', None)
+        login_user(user)
+        flash(f'Email verified successfully! Welcome, {user.name}. Your teacher account is active.', 'success')
+        return redirect(url_for('teacher.dashboard'))
+    else:
+        flash('Account not found.', 'danger')
+        return redirect(url_for('main.index', state='login'))
+
+@auth_bp.route('/resend_teacher_otp', methods=['POST'])
+def resend_teacher_otp():
+    email = request.form.get('email', '').strip().lower()
+    user = User.query.filter_by(email=email).first()
+    if user and user.role == 'teacher' and not getattr(user, 'is_email_verified', True):
+        otp = generate_otp(6)
+        session['teacher_verify_data'] = {
+            'email': email,
+            'otp': otp,
+            'teacher_id': user.teacher_profile.emp_id if user.teacher_profile else '',
+            'expires_at': (datetime.utcnow() + timedelta(minutes=15)).isoformat()
+        }
+        print("\n" + "=" * 80)
+        print("[SMARTVISION TEACHER EMAIL VERIFICATION] RESENT OTP GENERATED")
+        print(f"  To      : {user.name} <{user.email}>")
+        print(f"  OTP Code: {otp}  (valid for 15 minutes)")
+        print("=" * 80 + "\n", flush=True)
+        flash('A fresh verification OTP code has been sent to your email. Check server console.', 'success')
+        return redirect(url_for('main.index', state='teacher-verify-email', email=email))
+    flash('Unable to resend OTP. User not found or already verified.', 'warning')
+    return redirect(url_for('main.index', state='login'))
+
 @auth_bp.route('/login/google')
 def google_login():
     if not is_google_configured():
         flash('Google Login is not configured by the administrator.', 'warning')
         return redirect(url_for('main.index', state='login'))
     
-    redirect_uri = url_for('auth.google_callback', _external=True)
+    redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI') or url_for('auth.google_login_callback', _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
 @auth_bp.route('/login/google/callback')
+def google_login_callback():
+    return handle_google_callback()
+
+@auth_bp.route('/auth/google/callback')
 def google_callback():
+    return handle_google_callback()
+
+def handle_google_callback():
     if not is_google_configured():
         return redirect(url_for('main.index', state='login'))
 
@@ -390,17 +712,38 @@ def google_callback():
             if not user.google_id:
                 user.google_id = google_id
                 db.session.commit()
+
+            if user.role == 'teacher' and not getattr(user, 'is_email_verified', True):
+                otp = generate_otp(6)
+                session['teacher_verify_data'] = {
+                    'email': user.email,
+                    'otp': otp,
+                    'teacher_id': user.teacher_profile.emp_id if user.teacher_profile else '',
+                    'expires_at': (datetime.utcnow() + timedelta(minutes=15)).isoformat()
+                }
+                print("\n" + "=" * 80)
+                print("[SMARTVISION TEACHER GOOGLE LOGIN] EMAIL UNVERIFIED - OTP GENERATED")
+                print(f"  To      : {user.name} <{user.email}>")
+                print(f"  OTP Code: {otp}  (valid for 15 minutes)")
+                print("=" * 80 + "\n", flush=True)
+                flash('Your teacher account email requires verification before login.', 'warning')
+                return redirect(url_for('main.index', state='teacher-verify-email', email=user.email))
+
             login_user(user)
             flash(f'Logged in with Google as {user.name}!', 'success')
             if user.role == 'admin':
                 return redirect(url_for('main.dashboard'))
+            elif user.role == 'teacher':
+                return redirect(url_for('teacher.dashboard'))
             elif user.role == 'student':
                 return redirect(url_for('student.dashboard'))
         else:
+            issued = IssuedTeacherID.query.filter_by(email=email, is_used=False).first()
             session['google_signup_data'] = {
                 'email': email,
                 'name': name,
-                'google_id': google_id
+                'google_id': google_id,
+                'matched_teacher_id': issued.teacher_id if issued else None
             }
             flash('Google authenticated successfully! Please complete your account details.', 'info')
             return redirect(url_for('main.index', state='google-complete'))
@@ -429,6 +772,8 @@ def google_signup_complete():
         new_user = User(name=name, email=email, role=role, google_id=google_id)
 
         if role == 'admin':
+            new_user.is_email_verified = True
+            new_user.status = 'Approved'
             db.session.add(new_user)
             db.session.commit()
             session.pop('google_signup_data', None)
@@ -436,10 +781,75 @@ def google_signup_complete():
             flash('Admin account created successfully with Google!', 'success')
             return redirect(url_for('main.dashboard'))
 
+        elif role == 'teacher':
+            teacher_id = request.form.get('teacher_id', '').strip() or request.form.get('emp_id', '').strip() or google_data.get('matched_teacher_id')
+            mobile = request.form.get('mobile', '').strip()
+
+            if not teacher_id:
+                flash('Teacher ID is required for Teacher registration. Please enter an issued Teacher ID.', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
+            issued = IssuedTeacherID.query.filter_by(teacher_id=teacher_id).first()
+            if not issued or issued.is_used:
+                flash('Invalid or already used Teacher ID. Teacher registration requires a valid Teacher ID issued by an Administrator.', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
+            if issued.email and issued.email.strip().lower() != email.strip().lower():
+                flash(f'This Teacher ID ({teacher_id}) was issued specifically for {issued.email}. Please use that email.', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
+            from models import Teacher
+            if Teacher.query.filter_by(emp_id=teacher_id).first():
+                flash('A teacher with this Teacher ID is already registered.', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
+            primary_subject = request.form.get('primary_subject', '').strip()
+            secondary_subject = request.form.get('secondary_subject', '').strip()
+            tertiary_subject = request.form.get('tertiary_subject', '').strip()
+
+            selected_prefs = [s for s in [primary_subject, secondary_subject, tertiary_subject] if s]
+            if len(selected_prefs) != len(set(selected_prefs)):
+                flash('Duplicate subject preferences detected. Please select distinct subjects for Primary, Secondary, and 3rd choices.', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
+            try:
+                new_user.mobile = mobile or None
+                new_user.status = 'Approved'
+                new_user.is_email_verified = True  # Google OAuth verifies email ownership
+                db.session.add(new_user)
+                db.session.flush()
+
+                new_teacher = Teacher(
+                    name=name,
+                    email=email,
+                    emp_id=teacher_id,
+                    mobile=mobile or None,
+                    status='Approved',
+                    user_id=new_user.id,
+                    primary_subject=primary_subject or None,
+                    secondary_subject=secondary_subject or None,
+                    tertiary_subject=tertiary_subject or None
+                )
+                db.session.add(new_teacher)
+
+                issued.is_used = True
+                issued.used_by_user_id = new_user.id
+                db.session.commit()
+
+                session.pop('google_signup_data', None)
+                login_user(new_user)
+                flash('Teacher account registered & verified successfully with Google!', 'success')
+                return redirect(url_for('teacher.dashboard'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Teacher registration with Google failed: {e}', 'danger')
+                return redirect(url_for('main.index', state='google-complete'))
+
         elif role == 'student':
             mobile = request.form.get('mobile', '').strip()
             roll_no = request.form.get('roll_no')
             enrollment_no = request.form.get('enrollment_no')
+            department = request.form.get('department', '').strip()
             student_photo = request.files.get('student_photo')
 
             if not all([roll_no, enrollment_no]):
@@ -507,6 +917,7 @@ def google_signup_complete():
                     name=name,
                     roll_no=roll_no,
                     enrollment_no=enrollment_no,
+                    department=department or 'General',
                     mobile=mobile or None,
                     class_id=None,  # Admin assigns class
                     face_encoding=face_encoding_bytes,

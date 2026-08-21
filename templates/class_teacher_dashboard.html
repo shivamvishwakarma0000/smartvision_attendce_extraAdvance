@@ -1,0 +1,162 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - CLASS TEACHER DASHBOARD VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Class Teacher Dashboard - SmartVision{% endblock %}
+{% block page_title %}Dedicated Class Management Portal ({{ directed_class.name }}){% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+    <!-- Header Stats Banner -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 text-white overflow-hidden" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div>
+                            <span style="background: rgba(255, 255, 255, 0.22) !important; color: #ffffff !important;" class="badge backdrop-blur px-3 py-1 rounded-pill fs-8 fw-semibold mb-2">
+                                <i class="fa-solid fa-user-shield me-1.5"></i>Official Class Teacher Portal
+                            </span>
+                            <h3 class="fw-extrabold mb-1" style="font-size: 1.8rem;">Class: {{ directed_class.name }}</h3>
+                            <p class="text-white-75 mb-0 fs-8">Direct Management Hub for Enrolled Students, Attendance Warnings & Parent Communications</p>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <div style="background: rgba(255, 255, 255, 0.18) !important; color: #ffffff !important;" class="backdrop-blur px-3.5 py-2 rounded-3 text-center border border-white border-opacity-20">
+                                <span style="color: rgba(255, 255, 255, 0.85) !important;" class="fs-9 d-block text-uppercase fw-semibold">Enrolled Students</span>
+                                <h4 class="fw-bold mb-0 text-white" style="color: #ffffff !important;">{{ students|length }}</h4>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.18) !important; color: #ffffff !important;" class="backdrop-blur px-3.5 py-2 rounded-3 text-center border border-white border-opacity-20">
+                                <span style="color: rgba(255, 255, 255, 0.85) !important;" class="fs-9 d-block text-uppercase fw-semibold">Class Avg %</span>
+                                <h4 class="fw-bold mb-0 text-warning" style="color: #fbbf24 !important;">{{ class_avg_pct }}%</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview & Retention Alerts -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-3 mb-lg-0">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>Class Retention Risk Cases</h6>
+                {% if class_retention_students %}
+                <div class="alert alert-danger p-3 rounded-3 mb-0 fs-8">
+                    <strong class="d-block mb-1"><i class="fa-solid fa-circle-exclamation me-1"></i> {{ class_retention_students|length }} Student(s) At Risk!</strong>
+                    Absent for 5 consecutive academic days. Direct parent contact is strongly advised.
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-success fs-8">
+                    <i class="fa-solid fa-circle-check fs-2 text-success mb-2 d-block"></i>
+                    All students in {{ directed_class.name }} are maintaining regular attendance.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-bullhorn text-warning me-2"></i>Class Notice Board</h6>
+                    <p class="text-muted fs-8 mb-3">Broadcast announcements and attendance warnings to students of {{ directed_class.name }}.</p>
+                </div>
+                <a href="{{ url_for('teacher.announcements') }}" class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-xs">
+                    <i class="fa-solid fa-arrow-up-right-from-square me-1.5"></i> Open Notice Board
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Class Roster & Parent Contact Hub -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+                <div class="card-header bg-white border-0 pt-3.5 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0 fs-7"><i class="fa-solid fa-users text-primary me-2"></i>Enrolled Students & Parent Contact Hub</h6>
+                    <span class="badge bg-light text-dark border px-3 py-1 rounded-pill fs-8">{{ student_stats|length }} Students Registered</span>
+                </div>
+                <div class="card-body px-4 py-3">
+                    {% if student_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Roll No</th>
+                                    <th>Enrollment No</th>
+                                    <th>Attendance %</th>
+                                    <th>Parent Name</th>
+                                    <th>Parent Email</th>
+                                    <th>Parent Phone</th>
+                                    <th class="text-end">Direct Communication Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in student_stats %}
+                                {% set st = stat.student %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if st.image_filename %}
+                                            <img src="{{ url_for('main.uploaded_face', filename=st.image_filename) }}" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                                <i class="fa-solid fa-user"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong class="text-dark d-block mb-0">{{ st.name }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border font-monospace px-2.5 py-1 fs-8">{{ st.roll_no }}</span></td>
+                                    <td class="text-muted font-monospace">{{ st.enrollment_no }}</td>
+                                    <td>
+                                        <span class="badge {% if stat.pct >= 75 %}bg-success{% elif stat.pct >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %} px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                            {{ stat.pct }}%
+                                        </span>
+                                    </td>
+                                    <td><span class="fw-semibold text-dark fs-8"><i class="fa-solid fa-user me-1 text-secondary"></i>{{ stat.parent_name }}</span></td>
+                                    <td><span class="text-muted fs-8"><i class="fa-solid fa-envelope me-1 text-primary"></i>{{ stat.parent_email }}</span></td>
+                                    <td><span class="text-dark fw-semibold font-monospace fs-8"><i class="fa-solid fa-phone me-1 text-success"></i>{{ stat.parent_phone }}</span></td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1.5">
+                                            <!-- WhatsApp Action -->
+                                            {% if st.mobile %}
+                                            <a href="https://api.whatsapp.com/send?phone={{ st.mobile|replace('+', '')|replace(' ', '') }}&text={{ ('SmartVision Class Teacher Notice for ' ~ st.name ~ ' (Roll: ' ~ st.roll_no ~ '): Attendance is currently at ' ~ stat.pct ~ '%.')|urlencode }}" 
+                                               target="_blank" class="btn btn-xs btn-outline-success py-1 px-2.5 rounded-2" title="Send WhatsApp Message">
+                                                <i class="fa-brands fa-whatsapp me-1"></i>WhatsApp
+                                            </a>
+                                            <a href="tel:{{ st.mobile }}" class="btn btn-xs btn-outline-primary py-1 px-2 rounded-2" title="Call Parent">
+                                                <i class="fa-solid fa-phone me-1"></i>Call
+                                            </a>
+                                            {% endif %}
+
+                                            <!-- Email Action -->
+                                            {% if stat.parent_email != 'N/A' %}
+                                            <a href="mailto:{{ stat.parent_email }}?subject={{ ('SmartVision Attendance Notice for ' ~ st.name)|urlencode }}&body={{ ('Dear Parent, This is a notice from Class Teacher regarding ' ~ st.name ~ '. Current Attendance: ' ~ stat.pct ~ '%.')|urlencode }}" 
+                                               class="btn btn-xs btn-outline-dark py-1 px-2 rounded-2" title="Send Email">
+                                                <i class="fa-solid fa-envelope me-1"></i>Email
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">No students enrolled in {{ directed_class.name }} yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

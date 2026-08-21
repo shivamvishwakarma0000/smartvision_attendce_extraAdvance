@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER REPORTS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends 'base.html' %}
 
 {% block title %}Teacher Portal | Reports{% endblock %}
@@ -62,14 +66,16 @@
                     </thead>
                     <tbody>
                         {% for r in records %}
+                        {% set sess_date = r.session.date if r.session else (r.marked_at.date() if r.marked_at else 'N/A') %}
+                        {% set sub_obj = r.session.subject if r.session else None %}
                         <tr>
-                            <td>{{ r.date.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ r.time_marked or 'N/A' }}</td>
+                            <td>{{ sess_date.strftime('%Y-%m-%d') if sess_date != 'N/A' else 'N/A' }}</td>
+                            <td>{{ r.session.start_time if (r.session and r.session.start_time) else (r.marked_at.strftime('%H:%M') if r.marked_at else 'N/A') }}</td>
                             <td class="fw-bold text-dark">{{ r.student.name if r.student else 'N/A' }}</td>
                             <td>{{ r.student.roll_no if r.student else 'N/A' }}</td>
-                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">{{ r.student.class_assigned.name if r.student and r.student.class_assigned else 'N/A' }}</span></td>
-                            <td><span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">{{ r.subject.name if r.subject else 'N/A' }}</span></td>
-                            <td><span class="badge bg-success px-3 py-2 rounded-pill">Present</span></td>
+                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">{{ r.student.class_assigned.name if (r.student and r.student.class_assigned) else 'N/A' }}</span></td>
+                            <td><span class="badge bg-info bg-opacity-10 text-info px-3 py-2 rounded-pill">{{ sub_obj.name if sub_obj else 'N/A' }}</span></td>
+                            <td><span class="badge {% if r.status == 'PRESENT' %}bg-success{% else %}bg-danger{% endif %} px-3 py-2 rounded-pill">{{ r.status }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>

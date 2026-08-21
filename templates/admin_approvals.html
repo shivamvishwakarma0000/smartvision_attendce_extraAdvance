@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ADMIN APPROVALS VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Pending Approvals - SmartVision{% endblock %}
@@ -71,7 +75,169 @@
 </div>
 {% endif %}
 
-<!-- Section 2: Student Change Requests -->
+<!-- Section 2: Teacher Leave Approvals Queue -->
+<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-minus me-2 text-warning"></i> Teacher Leave Approvals & Substitute Assignment</h4>
+        <span class="badge bg-warning text-dark py-2 px-3 fs-7 rounded-pill">
+            {{ pending_leaves|length }} Pending Leave Requests
+        </span>
+    </div>
+    <p class="text-muted mb-0">Approve teacher leaves and optionally assign substitute teachers for affected timetable slots.</p>
+</div>
+
+{% if pending_leaves %}
+<div class="row g-4 mb-5">
+    {% for leave in pending_leaves %}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-clock me-2 text-primary"></i>{{ leave.teacher.name }}</h5>
+                    <span class="badge bg-secondary rounded-pill px-3 py-1 fs-9">{{ leave.leave_type }} DAY LEAVE</span>
+                </div>
+                <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fs-8">PENDING</span>
+            </div>
+
+            <div class="bg-light p-3 rounded-3 mb-3 fs-8">
+                <div class="mb-1"><span class="text-muted">Date Range:</span> <strong class="text-dark">{{ leave.date_from.strftime('%b %d, %Y') }} to {{ leave.date_to.strftime('%b %d, %Y') }}</strong></div>
+                <div><span class="text-muted">Reason:</span> <span class="text-dark fw-semibold">{{ leave.reason or 'Not specified' }}</span></div>
+            </div>
+
+            <form action="{{ url_for('main.handle_leave_approval', leave_id=leave.id, action='approve') }}" method="POST" class="mb-2">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold fs-8 text-dark">Assign Substitute Teacher (Optional):</label>
+                    <select name="substitute_teacher_id" class="form-select form-select-sm">
+                        <option value="">No Substitute (Flag as Uncovered Leave Slot)</option>
+                        {% for t in all_teachers %}
+                        {% if t.id != leave.teacher_id %}
+                        <option value="{{ t.id }}">{{ t.name }} ({{ t.emp_id or 'Faculty' }})</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm flex-grow-1 fw-bold rounded-3">
+                        <i class="fa-solid fa-check me-1"></i> Approve Leave
+                    </button>
+                    <button type="submit" formaction="{{ url_for('main.handle_leave_approval', leave_id=leave.id, action='reject') }}" class="btn btn-outline-danger btn-sm flex-grow-1 rounded-3">
+                        <i class="fa-solid fa-xmark me-1"></i> Reject Leave
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-4 border-0 shadow-sm rounded-4 mb-4 text-center">
+    <p class="text-muted mb-0"><i class="fa-solid fa-circle-check text-success me-2"></i>No pending teacher leave applications.</p>
+</div>
+{% endif %}
+
+<!-- Section 2.5: Emergency Proxy & Class Reallocation Desk (Uninformed / Without-Leave Teacher Absence Assignment) -->
+<div class="card p-4 shadow-sm border-0 mb-4 fade-in" id="emergencyProxyDeskSection" style="border-left: 5px solid #ef4444 !important; background: #ffffff;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9 animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i> DIRECT WORKLOAD ASSIGNMENT
+                </span>
+                <h4 class="fw-bold text-dark mb-0">Emergency Proxy Desk (Without Prior Leave / Uninformed Absences)</h4>
+            </div>
+            <p class="text-muted mb-0 fs-8">Directly allocate substitute teachers for absent faculty who did not apply for leave, or cancel classes when no proxy is free.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if emergency_desk %}
+            <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold fs-8 shadow-xs">
+                <i class="fa-solid fa-user-xmark me-1"></i> {{ emergency_desk.total_absent_count }} Absent Faculty
+            </span>
+            <span class="badge bg-warning bg-opacity-10 text-dark rounded-pill px-3 py-1.5 fw-bold fs-8 border border-warning">
+                <i class="fa-solid fa-clock me-1"></i> {{ emergency_desk.unresolved_slots_count }} Unassigned
+            </span>
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1.5 fw-bold fs-8 border border-success border-opacity-25">
+                <i class="fa-solid fa-user-shield me-1"></i> {{ emergency_desk.proxy_slots_count }} Proxy Assigned
+            </span>
+            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1.5 fw-bold fs-8 border">
+                <i class="fa-solid fa-ban me-1"></i> {{ emergency_desk.cancelled_slots_count }} Cancelled
+            </span>
+            {% endif %}
+            <a href="{{ url_for('main.emergency_proxy_desk') }}" class="btn btn-sm btn-danger rounded-pill px-4 py-2 fw-bold fs-8 shadow-xs">
+                <i class="fa-solid fa-user-shield me-1.5"></i> Open Emergency Proxy Desk & History ({{ emergency_desk.affected_slots|length if emergency_desk else 0 }}) →
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3: Attendance Correction Requests -->
+<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-file-signature me-2 text-danger"></i> Attendance Correction Requests</h4>
+        <span class="badge bg-danger text-white py-2 px-3 fs-7 rounded-pill">
+            {{ pending_corrections|length }} Pending Corrections
+        </span>
+    </div>
+    <p class="text-muted mb-0">Review locked session correction requests submitted by faculty.</p>
+</div>
+
+{% if pending_corrections %}
+<div class="row g-4 mb-5">
+    {% for corr in pending_corrections %}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1"><i class="fa-solid fa-calendar-day me-2 text-danger"></i>Session #{{ corr.session_id }} Correction</h5>
+                    <span class="fs-8 text-muted">Submitted by {{ corr.requester.name }}</span>
+                </div>
+                <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fs-8">PENDING</span>
+            </div>
+
+            <div class="bg-light p-3 rounded-3 mb-3 fs-8">
+                <div class="mb-1"><span class="text-muted">Subject & Class:</span> <strong class="text-dark">{{ corr.session.subject.name }} ({{ corr.session.class_assigned.name }})</strong></div>
+                <div class="mb-1"><span class="text-muted">Session Date:</span> <strong class="text-dark">{{ corr.session.date.strftime('%B %d, %Y') }}</strong></div>
+                <div><span class="text-muted">Reason:</span> <span class="text-dark fw-semibold">{{ corr.reason }}</span></div>
+            </div>
+
+            <form action="{{ url_for('main.handle_correction_approval', req_id=corr.id, action='approve') }}" method="POST">
+                <div class="row g-2 mb-3">
+                    <div class="col-7">
+                        <label class="form-label fw-semibold fs-8 text-dark">Target Student:</label>
+                        <select name="student_id" class="form-select form-select-sm" required>
+                            {% for st in corr.session.class_assigned.students %}
+                            <option value="{{ st.id }}">{{ st.name }} (Roll: {{ st.roll_no }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label fw-semibold fs-8 text-dark">New Status:</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="PRESENT" selected>PRESENT</option>
+                            <option value="ABSENT">ABSENT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm flex-grow-1 fw-bold rounded-3">
+                        <i class="fa-solid fa-check me-1"></i> Approve Correction
+                    </button>
+                    <button type="submit" formaction="{{ url_for('main.handle_correction_approval', req_id=corr.id, action='reject') }}" class="btn btn-outline-danger btn-sm flex-grow-1 rounded-3">
+                        <i class="fa-solid fa-xmark me-1"></i> Reject
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-4 border-0 shadow-sm rounded-4 mb-4 text-center">
+    <p class="text-muted mb-0"><i class="fa-solid fa-circle-check text-success me-2"></i>No pending attendance correction requests.</p>
+</div>
+{% endif %}
+
+<!-- Section 4: Student Change Requests -->
 <div class="card p-4 shadow-sm border-0 mb-4 fade-in">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-shield me-2 text-primary"></i> Student Profile Change Requests</h4>
@@ -110,6 +276,10 @@
                     <div class="fw-semibold text-dark">{{ req.student.name }}</div>
                 </div>
                 <div class="mb-2">
+                    <span class="text-muted fs-8">Academic Department:</span>
+                    <div class="fw-semibold text-dark"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ req.student.department or (req.student.class_assigned.department if req.student.class_assigned else 'General') }}</span></div>
+                </div>
+                <div class="mb-2">
                     <span class="text-muted fs-8">Class Level:</span>
                     <div class="fw-semibold text-dark">{{ req.student.class_assigned.name if req.student.class_assigned else 'N/A' }}</div>
                 </div>
@@ -146,6 +316,12 @@
                     <span class="text-muted fs-8">Requested Name:</span>
                     <div class="fw-bold {% if req.new_name != req.student.name %}text-success{% else %}text-dark{% endif %}">
                         {{ req.new_name }}
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted fs-8">Requested Department:</span>
+                    <div class="fw-bold {% if req.new_department != req.student.department %}text-success{% else %}text-dark{% endif %}">
+                        <span class="badge bg-primary text-white fw-bold">{{ req.new_department or 'N/A' }}</span>
                     </div>
                 </div>
                 <div class="mb-2">

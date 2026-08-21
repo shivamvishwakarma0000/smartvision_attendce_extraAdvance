@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TAKE ATTENDANCE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Take Attendance - SmartVision{% endblock %}
@@ -39,33 +43,41 @@
                 
                 <!-- 3. Photo Input Mode and Selection -->
                 <div class="mb-4">
-                    <label class="form-label fw-semibold mb-2">3. Classroom Group Photo(s)</label>
+                    <label class="form-label fw-semibold mb-2 fs-7 text-dark">3. Classroom Group Photo(s)</label>
                     
                     <!-- Mode Selector Tab -->
-                    <div class="d-flex gap-2 mb-3 bg-light p-1 rounded-3 border">
-                        <button type="button" class="btn btn-sm btn-primary w-50 py-1.5" id="btn-local-mode-attendance" onclick="window.setAttendanceMode('local')" style="font-size: 0.85rem;">
-                            <i class="fa-solid fa-image me-1"></i> Local File(s)
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-primary w-50 py-1.5" id="btn-camera-mode-attendance" onclick="window.setAttendanceMode('camera')" style="font-size: 0.85rem;">
-                            <i class="fa-solid fa-camera me-1"></i> Camera Capture
-                        </button>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold fs-8 d-flex align-items-center justify-content-center shadow-sm" id="btn-local-mode-attendance" onclick="window.setAttendanceMode('local')">
+                                <i class="fa-solid fa-image me-2"></i> Local File(s)
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-primary w-100 py-2.5 rounded-3 fw-bold fs-8 d-flex align-items-center justify-content-center" id="btn-camera-mode-attendance" onclick="window.setAttendanceMode('camera')">
+                                <i class="fa-solid fa-camera me-2"></i> Camera Capture
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Local File Input Container -->
                     <div id="file-input-container-attendance">
-                        <div class="attendance-upload-container">
-                            <span class="fs-1 d-block mb-2 text-primary"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                            <h6 class="fw-bold mb-1">Click to Upload Group Images</h6>
-                            <span class="text-muted fs-7 mb-3 d-block">You can select multiple photos at once</span>
-                            <input type="file" class="form-control" id="group_photo" name="group_photo" accept="image/*" multiple required>
+                        <div class="p-4 p-md-5 text-center bg-white rounded-4 border border-2 border-primary" style="border-style: dashed !important; border-color: #4f46e5 !important; background: #faf5ff;">
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                                <i class="fa-solid fa-cloud-arrow-up text-primary fs-2"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">Click to Upload Group Images</h5>
+                            <p class="text-muted fs-8 mb-4">You can select multiple photos at once</p>
+                            <div class="d-flex justify-content-center">
+                                <input type="file" class="form-control" id="group_photo" name="group_photo" accept="image/*" multiple required style="max-width: 380px;">
+                            </div>
                         </div>
                     </div>
 
                     <!-- In-App Camera Section -->
-                    <div id="camera-section-attendance" class="d-none border p-3 rounded-3 bg-light text-center" style="background: rgba(0,0,0,0.03); border-color: rgba(99,102,241,0.15) !important;">
+                    <div id="camera-section-attendance" class="d-none border p-3 rounded-4 bg-light text-center" style="background: rgba(0,0,0,0.03); border-color: rgba(99,102,241,0.15) !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fs-7 text-muted fw-bold"><i class="fa-solid fa-circle-play text-success me-1"></i> Live Camera Preview</span>
-                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2" onclick="window.toggleAttendanceCameraDirection()" style="font-size: 0.75rem;">
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2.5 rounded-pill" onclick="window.toggleAttendanceCameraDirection()" style="font-size: 0.75rem;">
                                 <i class="fa-solid fa-arrows-rotate me-1"></i> Flip Camera
                             </button>
                         </div>
@@ -97,7 +109,7 @@
                         <canvas id="canvas-attendance" class="d-none"></canvas>
                         
                         <div class="d-flex justify-content-center mb-3">
-                            <button type="button" class="btn btn-primary btn-sm px-4 py-2" onclick="window.captureAttendancePhoto()">
+                            <button type="button" class="btn btn-primary btn-sm px-4 py-2 rounded-pill fw-bold" onclick="window.captureAttendancePhoto()">
                                 <i class="fa-solid fa-camera me-1"></i> Capture Photo
                             </button>
                         </div>
@@ -115,8 +127,8 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary w-100 py-2.5 shadow">
-                    Mark Attendance & Match Faces
+                <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold fs-7 shadow-sm mt-3" style="background: #4f46e5; border-color: #4f46e5;">
+                    <i class="fa-solid fa-bolt me-1.5"></i> Mark Attendance & Match Faces
                 </button>
             </form>
         </div>
@@ -398,9 +410,8 @@ window.startAttendanceCamera = async function() {
         attendanceStream = stream;
         if (video) {
             video.srcObject = stream;
-            video.onloadedmetadata = () => {
-                window.startLiveDetectionLoop();
-            };
+            try { video.play(); } catch(e) {}
+            window.startLiveDetectionLoop();
         }
     } catch (err) {
         console.error("Camera access error:", err);
@@ -463,7 +474,7 @@ window.startLiveDetectionLoop = function() {
         } finally {
             isDetectingLive = false;
         }
-    }, 700);
+    }, 350);
 };
 
 window.stopLiveDetectionLoop = function() {
@@ -491,7 +502,14 @@ window.renderLiveDetectionOverlay = function(data, video, canvas) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const countEl = document.getElementById('live-face-count');
-    if (countEl) countEl.textContent = data.total_faces || 0;
+    if (countEl) {
+        countEl.textContent = data.total_faces || 0;
+        if (data.total_faces > 0) {
+            countEl.className = 'text-success fw-bold';
+        } else {
+            countEl.className = 'text-warning fw-bold';
+        }
+    }
 
     const popupEl = document.getElementById('live-recognized-popup');
     const studentsListEl = document.getElementById('live-students-list');

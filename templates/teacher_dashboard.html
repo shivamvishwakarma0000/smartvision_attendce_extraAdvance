@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - TEACHER DASHBOARD VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends 'base.html' %}
 
 {% block title %}Teacher Portal | Dashboard{% endblock %}
@@ -7,29 +11,35 @@
     <!-- Header Welcome Banner with Faculty Image -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden rounded-4" style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #0d9488 100%);">
+            <div class="card border-0 shadow-sm bg-gradient-primary text-white overflow-hidden rounded-4"
+                style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #0d9488 100%);">
                 <div class="card-body p-4 position-relative">
                     <div class="row align-items-center position-relative z-1">
                         <!-- Faculty Image & Profile Info -->
-                        <div class="col-md-8 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
+                        <div
+                            class="col-lg-7 col-md-6 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
                             <div class="position-relative me-sm-3.5 mb-2.5 mb-sm-0">
                                 {% if teacher.image_filename %}
-                                <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}" 
-                                     class="rounded-circle shadow border border-2 border-white" 
-                                     style="width: 85px; height: 85px; object-fit: cover;">
+                                <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}"
+                                    class="rounded-circle shadow border border-2 border-white"
+                                    style="width: 85px; height: 85px; object-fit: cover;">
                                 {% else %}
-                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold" 
-                                     style="width: 85px; height: 85px; font-size: 2.2rem;">
+                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold"
+                                    style="width: 85px; height: 85px; font-size: 2.2rem;">
                                     {{ teacher.name[0] }}
                                 </div>
                                 {% endif %}
-                                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white px-1.5 py-0.5 fs-9 shadow-sm" title="Active Faculty Profile">
+                                <span
+                                    class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white px-1.5 py-0.5 fs-9 shadow-sm"
+                                    title="Active Faculty Profile">
                                     <i class="fas fa-check-circle me-1"></i>Verified
                                 </span>
                             </div>
                             <div>
-                                <div class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5">
-                                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
+                                <div
+                                    class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5">
+                                    <span
+                                        class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
                                         <i class="fas fa-chalkboard-user me-1"></i> Faculty Portal
                                     </span>
                                     {% if teacher.emp_id %}
@@ -38,209 +48,1319 @@
                                     </span>
                                     {% endif %}
                                 </div>
-                                <h3 class="fw-bold mb-1" style="font-size: 1.5rem;">Welcome Back, {{ teacher.name }}!</h3>
-                                
-                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white-75">
-                                    {% if teacher.email %}<span><i class="fas fa-envelope me-1 opacity-75"></i>{{ teacher.email }}</span>{% endif %}
-                                    {% if teacher.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{ teacher.mobile }}</span>{% endif %}
+                                <h3 class="fw-bold mb-1" style="font-size: 1.5rem;">Welcome Back, {{ teacher.name }}!
+                                </h3>
+
+                                <div
+                                    class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white-75">
+                                    {% if teacher.email %}<span><i class="fas fa-envelope me-1 opacity-75"></i>{{
+                                        teacher.email }}</span>{% endif %}
+                                    {% if teacher.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{
+                                        teacher.mobile }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Quick Action Button -->
-                        <div class="col-md-4 text-center text-md-end">
-                            <a href="{{ url_for('teacher.take_attendance') }}" class="btn btn-light px-3.5 py-2.5 rounded-3 shadow-sm fw-bold text-primary fs-8">
-                                <i class="fas fa-camera text-primary me-1.5"></i>Take Class Attendance
+                        <!-- Quick Action Buttons -->
+                        <div
+                            class="col-lg-5 col-md-6 text-center text-md-end d-flex flex-nowrap gap-2 justify-content-center justify-content-md-end align-items-center">
+                            <a href="{{ url_for('teacher.leave_applications') }}"
+                                class="btn btn-warning px-3.5 py-2 rounded-pill shadow-sm fw-bold text-dark fs-8 text-nowrap">
+                                <i class="fas fa-umbrella-beach me-1.5"></i>Apply for Leave
+                            </a>
+                            <a href="#teacherDailyGeoCard" onclick="document.getElementById('teacherDailyGeoCard').scrollIntoView({behavior: 'smooth'});"
+                                class="btn btn-light text-primary px-3.5 py-2 rounded-pill shadow-sm fw-bold fs-8 text-nowrap">
+                                <i class="fas fa-camera-retro me-1.5 text-primary"></i>Self Attendance
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
+        <!-- TEACHER DAILY GEOLOCATION + FACE RECOGNITION ATTENDANCE MODULE -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden" id="teacherDailyGeoCard">
+                    <div class="card-header bg-gradient bg-primary text-white p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-white bg-opacity-20 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                <i class="fa-solid fa-camera-retro fs-6 text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Teacher Daily Attendance (Geo + Face Recognition)</h6>
+                                <span class="fs-9 text-white-75">Date: <strong id="geoTodayDate">Today</strong></span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-white text-primary rounded-pill px-3 py-1.5 fs-8 font-monospace fw-bold" id="geoOfficeBadge">
+                                <i class="fa-solid fa-building me-1"></i>Office: Admin Office (50m Radius)
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Geofence Proximity Status Banner -->
+                    <div class="px-3.5 py-2.5 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" id="geoProximityBanner">
+                        <div class="d-flex align-items-center gap-2 fs-8" id="geoProximityStatus">
+                            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                            <span class="text-muted fw-semibold">Checking GPS proximity to office...</span>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-xs rounded-pill px-2.5" onclick="checkTeacherLiveLocation()">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i>Refresh GPS Location
+                        </button>
+                    </div>
+
+                    <div class="card-body p-3.5">
+                        <div class="row g-3 align-items-stretch">
+                            <!-- Morning Check-In Box -->
+                            <div class="col-md-5">
+                                <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="fw-bold text-dark fs-8"><i class="fa-solid fa-sun text-warning me-1.5"></i>Morning Check-In</span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-0.5 rounded-pill fs-9" id="morningTimeWindow">08:00 AM - 11:00 AM</span>
+                                        </div>
+                                        <div class="mb-3" id="morningStatusContainer">
+                                            <span class="badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill" id="morningBadge">
+                                                <i class="fa-solid fa-circle-question me-1"></i>Not Marked
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs" id="btnMarkMorning" onclick="openTeacherCameraModal('morning')">
+                                        <i class="fa-solid fa-camera me-1.5"></i>Open Camera & Check-In
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Evening Check-Out Box -->
+                            <div class="col-md-5">
+                                <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="fw-bold text-dark fs-8"><i class="fa-solid fa-moon text-info me-1.5"></i>Evening Check-Out</span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-muted px-2 py-0.5 rounded-pill fs-9" id="eveningTimeWindow">04:00 PM - 07:00 PM</span>
+                                        </div>
+                                        <div class="mb-3" id="eveningStatusContainer">
+                                            <span class="badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill" id="eveningBadge">
+                                                <i class="fa-solid fa-circle-question me-1"></i>Not Marked
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-info text-white btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs" id="btnMarkEvening" onclick="openTeacherCameraModal('evening')">
+                                        <i class="fa-solid fa-camera me-1.5"></i>Open Camera & Check-Out
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Overall Status Summary Box -->
+                            <div class="col-md-2">
+                                <div class="p-3 rounded-3 border bg-primary bg-opacity-10 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+                                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold mb-1">Today's Status</span>
+                                    <h6 class="fw-bold fs-7 mb-2 text-primary" id="geoOverallStatus">Pending</h6>
+                                    <div class="fs-9 text-muted font-monospace" id="geoLateBadge">
+                                        <i class="fa-solid fa-shield-check me-1"></i>Geo + Face Verified
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WEBRTC TEACHER FACE SCANNER MODAL (AUTO-DETECTING BIOMETRICS) -->
+        <div class="modal fade" id="teacherFaceCamModal" tabindex="-1" aria-labelledby="teacherFaceCamModalLabel" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                    <div class="modal-header bg-dark text-white p-3 border-0 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-primary bg-opacity-20 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fa-solid fa-face-viewfinder text-primary fs-6"></i>
+                            </div>
+                            <div>
+                                <h6 class="modal-title fw-bold mb-0" id="teacherFaceCamModalLabel">AI Face Attendance Scanner</h6>
+                                <span class="fs-9 text-white-50" id="cameraSessionLabel">Morning Check-In Session</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="stopTeacherCamera()"></button>
+                    </div>
+                    <div class="modal-body p-3 bg-black text-center position-relative">
+                        <!-- Camera Viewport & Live Stream -->
+                        <div class="position-relative d-inline-block rounded-4 overflow-hidden border border-secondary shadow-sm" style="width: 100%; max-width: 440px; height: 330px; background: #0f172a;" id="camViewport">
+                            <video id="teacherCameraVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
+                            <canvas id="teacherCameraCanvas" style="display: none;"></canvas>
+
+                            <!-- Animated Scanning Beam -->
+                            <div class="position-absolute top-0 start-0 w-100" id="cameraScanBeam" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #3b82f6, transparent); box-shadow: 0 0 15px #3b82f6; animation: scanBeamMotion 2.2s infinite ease-in-out; pointer-events: none;"></div>
+
+                            <!-- High-Tech Face Alignment Oval Overlay -->
+                            <div id="camFaceOvalGuide" class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 190px; height: 250px; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 25px rgba(59, 130, 246, 0.4); animation: pulseFaceScanner 2s infinite ease-in-out; transition: all 0.3s ease;">
+                                <div id="camFaceOvalBadge" class="position-absolute top-0 start-50 translate-middle-x badge bg-primary bg-opacity-75 text-white fs-9 px-2 py-0.5 rounded-pill mt-1">
+                                    <i class="fa-solid fa-eye me-1"></i>Align Face Here
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Status & Auto-Detection Indicator -->
+                        <div class="mt-2.5 p-2 rounded-3 bg-dark text-white-75 fs-8 d-flex align-items-center justify-content-between" id="camGpsStatus">
+                            <span id="camAutoScanStatus">
+                                <span class="spinner-grow spinner-grow-sm text-info me-1" role="status"></span>
+                                <strong class="text-info">Auto-Scanning:</strong> Look at the camera
+                            </span>
+                            <span class="badge bg-success bg-opacity-20 text-success fs-9 border border-success border-opacity-25">
+                                <i class="fa-solid fa-location-dot me-1"></i><span id="camDistanceDisplay">In Geofence</span>
+                            </span>
+                        </div>
+
+                        <!-- Error/Warning Display Box -->
+                        <div class="alert alert-danger fs-8 py-2 px-3 mt-2 rounded-3 d-none text-start" id="camErrorAlert"></div>
+                    </div>
+                    <div class="modal-footer bg-dark border-0 p-3 d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill text-white" onclick="switchTeacherCamera()">
+                            <i class="fa-solid fa-camera-rotate me-1"></i>Flip Camera
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" id="btnCaptureAndSubmit" onclick="captureTeacherFaceAndSubmit(false)">
+                            <i class="fa-solid fa-bolt me-1.5"></i>Capture Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Received Proxy Attendance Transfers Notification Banner -->
+        {% if received_proxy_transfers %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 bg-white border-start border-4 border-success p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div>
+                            <span class="badge bg-success text-white mb-1 fs-9">Proxy Attendance Received</span>
+                            <h6 class="fw-bold text-dark mb-1">
+                                <i class="fa-solid fa-bell text-success me-2"></i>Proxy rolls shared by substitute teacher inside the app
+                            </h6>
+                            <span class="fs-8 text-muted">Review and click 'Apply' to automatically mark attendance for your session.</span>
+                        </div>
+                        <a href="{{ url_for('teacher.proxy_classes') }}" class="btn btn-success rounded-3 px-3 py-2 fw-bold fs-8 shadow-xs">
+                            <i class="fa-solid fa-eye me-1"></i>View & Apply Proxy Attendance ({{ received_proxy_transfers_count }})
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Teaching Expertise & Preferences Banner/Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-info bg-opacity-10 text-info p-3 d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; font-size: 1.3rem;">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1">Teaching Expertise & Preferences</h6>
+                                <div class="d-flex align-items-center gap-2 flex-wrap fs-8">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1 rounded-pill">
+                                        <i class="fa-solid fa-star me-1 text-primary"></i>Primary: <strong>{{
+                                            teacher.primary_subject or 'Not Specified' }}</strong>
+                                    </span>
+                                    <span class="badge bg-info bg-opacity-10 text-info px-2.5 py-1 rounded-pill">
+                                        <i class="fa-solid fa-layer-group me-1 text-info"></i>Secondary: <strong>{{
+                                            teacher.secondary_subject or 'Not Specified' }}</strong>
+                                    </span>
+                                    <span
+                                        class="badge bg-secondary bg-opacity-10 text-secondary px-2.5 py-1 rounded-pill">
+                                        <i class="fa-solid fa-bookmark me-1 text-secondary"></i>3rd Choice: <strong>{{
+                                            teacher.tertiary_subject or 'Not Specified' }}</strong>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold"
+                            data-bs-toggle="modal" data-bs-target="#editPreferencesModal">
+                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit Preferences
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards (4 Columns Grid) -->
+        <div class="row g-3 mb-4">
+            <!-- Card 1: Assigned Subjects -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
+                    <div class="card-body p-2 d-flex align-items-center">
+                        <div class="rounded-3 p-2.5 me-3 bg-primary bg-opacity-10 text-primary fs-4 d-flex align-items-center justify-content-center"
+                            style="width: 44px; height: 44px;">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div>
+                            <span
+                                class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Assigned
+                                Subjects</span>
+                            <div class="d-flex align-items-baseline">
+                                <h5 class="fw-bold mb-0 text-dark me-2">{{ subjects|length }}</h5>
+                                <span class="fs-8 text-muted">Subject Register{% if subjects|length != 1 %}s{% endif
+                                    %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Directed Classes -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
+                    <div class="card-body p-2 d-flex align-items-center">
+                        <div class="rounded-3 p-2.5 me-3 bg-success bg-opacity-10 text-success fs-4 d-flex align-items-center justify-content-center"
+                            style="width: 44px; height: 44px;">
+                            <i class="fas fa-chalkboard-user"></i>
+                        </div>
+                        <div>
+                            <span
+                                class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Directed
+                                Classes</span>
+                            <div class="d-flex align-items-baseline">
+                                <h5 class="fw-bold mb-0 text-dark me-2">{{ directed_classes|length }}</h5>
+                                <span class="fs-8 text-muted">As Class Teacher</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Class Directorship Badge -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
+                    <div class="card-body p-2 d-flex align-items-center">
+                        <div class="rounded-3 p-2.5 me-3 bg-warning bg-opacity-10 text-warning fs-4 d-flex align-items-center justify-content-center"
+                            style="width: 44px; height: 44px;">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Class
+                                Directorship</span>
+                            <div class="d-flex align-items-baseline">
+                                {% if directed_classes %}
+                                <h5 class="fw-bold mb-0 text-primary" style="font-size: 0.95rem;">{{
+                                    directed_classes|map(attribute='name')|join(', ') }}</h5>
+                                {% else %}
+                                <span class="fs-8 text-muted fw-semibold">Unassigned</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Today's Date -->
+            <div class="col-lg-3 col-md-6">
+                <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
+                    <div class="card-body p-2 d-flex align-items-center">
+                        <div class="rounded-3 p-2.5 me-3 bg-info bg-opacity-10 text-info fs-4 d-flex align-items-center justify-content-center"
+                            style="width: 44px; height: 44px;">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div>
+                            <span
+                                class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Today's
+                                Date</span>
+                            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">{{ today }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subjects & Attendance Summary Table (Full Width Single-Frame View) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div
+                        class="card-header bg-white border-0 pt-3.5 px-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0 text-dark fs-7"><i class="fas fa-layer-group text-primary me-2"></i>My
+                            Subjects & Attendance Summary</h6>
+                        <a href="{{ url_for('teacher.view_reports') }}"
+                            class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fs-8 fw-semibold">View All
+                            Reports</a>
+                    </div>
+                    <div class="card-body px-4 py-3">
+                        {% if subject_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 fs-8 w-100">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Subject Name</th>
+                                        <th>Assigned Class</th>
+                                        <th>Enrolled Students</th>
+                                        <th>Sessions Held</th>
+                                        <th>Today's Present</th>
+                                        <th>Average %</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in subject_stats %}
+                                    <tr>
+                                        <td class="fw-bold text-dark"><i class="fas fa-book text-primary me-1.5"></i>{{
+                                            stat.subject.name }}</td>
+                                        <td><span
+                                                class="badge bg-secondary bg-opacity-10 text-secondary px-2.5 py-1 rounded-pill fw-semibold fs-8">{{
+                                                stat.class_name }}</span></td>
+                                        <td><span class="fw-semibold text-dark"><i
+                                                    class="fas fa-user-graduate me-1 text-muted"></i>{{
+                                                stat.total_students }}</span></td>
+                                        <td>{{ stat.total_sessions }}</td>
+                                        <td>
+                                            <span
+                                                class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                                {{ stat.today_present }} / {{ stat.total_students }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="me-2 fw-bold text-dark">{{ stat.avg_attendance }}%</span>
+                                                <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
+                                                    <div class="progress-bar {% if stat.avg_attendance >= 75 %}bg-success{% elif stat.avg_attendance >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                        role="progressbar" style="width: {{ stat.avg_attendance }}%">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ url_for('teacher.take_attendance') }}"
+                                                class="btn btn-xs btn-primary rounded-2 px-2.5 py-1 fw-bold fs-8">
+                                                <i class="fas fa-camera me-1"></i>Mark
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-book-open text-muted fs-3 mb-2"></i>
+                            <h6 class="text-muted fw-bold fs-8 mb-1">No subjects currently assigned.</h6>
+                            <p class="text-muted fs-8 mb-0">Please contact your department administrator to assign
+                                subjects to your profile.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Weekly & Today's Teaching Schedule Matrix -->
+        <div class="row mb-4" id="teacherScheduleSection">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark fs-7">
+                                <i class="fa-solid fa-calendar-days text-primary me-2"></i>Faculty Teaching Schedule &
+                                Attendance Matrix
+                            </h6>
+                            <span class="fs-8 text-muted">View allocated lectures day-by-day. Attendance is enabled only
+                                for today's classes ({{ today_name }}).</span>
+                        </div>
+                        <span
+                            class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1.5 fs-8 fw-bold">
+                            <i class="fa-solid fa-calendar-day me-1"></i>Today is {{ today_name }}
+                        </span>
+                    </div>
+
+                    {% if weekly_timetable_schedule %}
+                    <!-- Day Filter Nav Pills -->
+                    <ul class="nav nav-pills mb-3 gap-2 fs-8" id="teacherScheduleTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active bg-primary text-white rounded-pill px-3 py-1 fw-bold"
+                                id="tabToday" onclick="filterTeacherSchedule('{{ today_name }}', this)">
+                                <i class="fa-solid fa-star me-1"></i>Today ({{ today_name }})
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill px-3 py-1 fw-bold text-dark border"
+                                onclick="filterTeacherSchedule('all', this)">
+                                All Days Schedule ({{ weekly_timetable_schedule|length }})
+                            </button>
+                        </li>
+                        {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+                        <li class="nav-item">
+                            <button class="nav-link rounded-pill px-3 py-1 fw-semibold text-dark"
+                                onclick="filterTeacherSchedule('{{ d }}', this)">
+                                {{ d }}
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="row g-3" id="teacherScheduleGrid">
+                        {% for item in weekly_timetable_schedule %}
+                        <div class="col-md-6 col-lg-4 teacher-slot-card" data-day="{{ item.day }}">
+                            <div
+                                class="p-3 rounded-3 border {% if item.is_today and item.is_cancelled %}border-danger bg-danger bg-opacity-10{% else %}bg-light{% endif %} h-100 position-relative d-flex flex-column justify-content-between">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                                        <span
+                                            class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                            <i class="fa-solid fa-school me-1"></i>{{ item.class_name }}
+                                        </span>
+                                        <div class="d-flex align-items-center gap-1">
+                                            {% if item.is_today and item.is_cancelled %}
+                                            <span class="badge bg-danger text-white px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                <i class="fa-solid fa-ban me-1"></i>Cancelled
+                                            </span>
+                                            {% elif item.is_proxy %}
+                                            <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold border border-warning">
+                                                <i class="fa-solid fa-user-shield me-1"></i>Proxy Class
+                                            </span>
+                                            {% endif %}
+                                            <span
+                                                class="badge {% if item.is_today and item.is_cancelled %}bg-secondary{% else %}bg-indigo-600{% endif %} text-white px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                Period {{ item.period }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-0.5 fs-7 {% if item.is_today and item.is_cancelled %}text-decoration-line-through text-muted{% endif %}">{{ item.subject_name }}</h6>
+                                    {% if item.is_proxy %}
+                                    <div class="fs-9 text-muted mb-1.5"><i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>Substitute for: <strong>{{ item.original_teacher_name }}</strong></div>
+                                    {% endif %}
+                                    <div class="d-flex align-items-center justify-content-between text-muted fs-8 mb-3">
+                                        <span><i class="fa-solid fa-clock me-1 text-muted"></i>{{ item.start_time }} –
+                                            {{ item.end_time }}</span>
+                                        <span><i class="fa-solid fa-location-dot me-1 text-primary"></i>{{
+                                            item.room_number }}</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    {% if item.is_today and item.is_cancelled %}
+                                    <div class="px-2.5 py-2 rounded-2 bg-danger bg-opacity-15 text-danger border border-danger border-opacity-30 fs-8 fw-bold">
+                                        <div class="d-flex align-items-center justify-content-between mb-0.5">
+                                            <span><i class="fa-solid fa-ban me-1"></i>Class Cancelled</span>
+                                            <span class="badge bg-danger text-white fs-9 rounded-pill">Cancelled</span>
+                                        </div>
+                                        <div class="fs-9 text-dark fw-normal text-truncate" title="{{ item.cancellation_reason or 'Lecture Cancelled for Today' }}">
+                                            Reason: {{ item.cancellation_reason or 'Faculty Absent & No Proxy Available' }}
+                                        </div>
+                                    </div>
+                                    {% elif item.is_today and item.can_take_attendance %}
+                                    <a href="{{ url_for('teacher.take_attendance', subject_id=item.slot.subject_id, slot_id=item.slot.id) }}"
+                                        class="btn btn-sm btn-primary w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs">
+                                        <i class="fa-solid fa-camera me-1"></i>Take Attendance Now
+                                    </a>
+                                    {% elif item.is_today and item.attendance_marked %}
+                                    <div
+                                        class="d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded-2 bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 fw-bold">
+                                        <span class="text-nowrap"><i class="fa-solid fa-circle-check me-1"></i>Attendance Marked Today</span>
+                                        {% if item.completed_session_id %}
+                                        <a href="{{ url_for('teacher.take_attendance', session_id=item.completed_session_id) }}" class="btn btn-xs btn-success text-white rounded-2 px-2 py-0.5 fs-9 fw-bold text-nowrap ms-1" title="Edit Session Attendance">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    {% elif item.is_today and item.not_started_yet %}
+                                    <button
+                                        class="btn btn-sm btn-warning bg-opacity-10 text-dark w-100 py-1.5 fs-8 rounded-2 border border-warning border-opacity-25 fw-semibold"
+                                        disabled title="Attendance opens at {{ item.start_time }}">
+                                        <i class="fa-solid fa-clock me-1 text-warning"></i>Starts at {{ item.start_time
+                                        }}
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-light text-muted w-100 py-1.5 fs-8 rounded-2 border"
+                                        disabled>
+                                        <i class="fa-solid fa-lock me-1"></i>Scheduled for {{ item.day }}
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted fs-8">
+                        <i class="fa-solid fa-calendar-check text-muted fs-3 d-block mb-1 opacity-50"></i>
+                        No official timetable lectures allocated to your profile yet.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function filterTeacherSchedule(day, btn) {
+                const tabs = document.querySelectorAll('#teacherScheduleTabs .nav-link');
+                tabs.forEach(t => t.classList.remove('active', 'bg-primary', 'text-white'));
+                btn.classList.add('active', 'bg-primary', 'text-white');
+
+                const cards = document.querySelectorAll('.teacher-slot-card');
+                cards.forEach(card => {
+                    if (day === 'all' || card.dataset.day === day) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const todayBtn = document.getElementById('tabToday');
+                if (todayBtn) {
+                    filterTeacherSchedule('{{ today_name }}', todayBtn);
+                }
+            });
+        </script>
+
+        <!-- Today's Session Logs (Moved from Admin to Teacher Dashboard) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark fs-7"><i
+                                class="fa-solid fa-list-check text-primary me-2"></i>Today's Session Logs ({{ today }})
+                        </h6>
+                        <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">{{ todays_attendance_log|length }}
+                            Sessions Marked Today</span>
+                    </div>
+
+                    {% if todays_attendance_log %}
+                    <div class="row g-3">
+                        {% for log_item in todays_attendance_log %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="p-3 rounded-3 border bg-light h-100 shadow-xs">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold text-primary mb-0 fs-8">{{ log_item.title }}</h6>
+                                        <span class="fs-9 text-muted fw-semibold d-block"><i
+                                                class="fa-solid fa-clock me-1 text-secondary"></i>{{ log_item.slot_label
+                                            }}</span>
+                                    </div>
+                                    <span
+                                        class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold fs-8 border border-success border-opacity-25">
+                                        {{ log_item.present_count }} Present
+                                    </span>
+                                </div>
+
+                                <div class="bg-white p-2.5 rounded-3 border mb-3 fs-8">
+                                    <span class="text-muted d-block mb-1 fs-9 fw-semibold"><i
+                                            class="fa-solid fa-user-check me-1 text-success"></i>Present Roll
+                                        Numbers:</span>
+                                    <div class="text-dark fw-bold font-monospace fs-8"
+                                        style="word-break: break-all; max-height: 60px; overflow-y: auto;">
+                                        {{ log_item.present_rolls_str }}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-1.5">
+                                    <button type="button"
+                                        class="btn btn-xs btn-success flex-fill py-1.5 rounded-3 fw-bold fs-8"
+                                        onclick="navigator.clipboard.writeText('{{ log_item.present_rolls_str }}'); alert('Copied roll numbers to clipboard!');">
+                                        <i class="fa-solid fa-copy me-1"></i>Copy Rolls
+                                    </button>
+                                    <a href="https://api.whatsapp.com/send?text=Attendance%20Marked%20for%20{{ log_item.title|urlencode }}%20({{ log_item.slot_label|urlencode }})%20on%20{{ today }}:%0APresent%20Rolls:%20{{ log_item.present_rolls_str|urlencode }}"
+                                        target="_blank"
+                                        class="btn btn-xs btn-outline-success flex-fill py-1.5 rounded-3 fw-bold fs-8">
+                                        <i class="fa-brands fa-whatsapp me-1"></i>WhatsApp
+                                    </a>
+                                    <a href="{{ url_for('teacher.take_attendance', session_id=log_item.session.id) }}"
+                                        class="btn btn-xs btn-outline-primary flex-fill py-1.5 rounded-3 fw-bold fs-8">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i>Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted fs-8">
+                        <i class="fa-solid fa-calendar-xmark text-muted fs-3 d-block mb-2"></i>
+                        No attendance sessions marked yet today. Use the <strong>Take Class Attendance</strong> button
+                        above to take attendance.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+
+
+
+    </div>
+
+    <!-- Edit Preferences Modal -->
+    <div class="modal fade" id="editPreferencesModal" tabindex="-1" aria-labelledby="editPreferencesModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-gradient bg-primary text-white p-3.5">
+                    <h5 class="modal-title fw-bold" id="editPreferencesModalLabel">
+                        <i class="fa-solid fa-graduation-cap me-2"></i>Edit Teaching Expertise & Preferences
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('teacher.update_preferences') }}">
+                    <div class="modal-body p-4">
+                        <p class="text-muted fs-7 mb-3">Select your preferred teaching subjects. Preferences are stored
+                            permanently and used for faculty recommendations.</p>
+
+                        <div class="mb-3">
+                            <label for="edit_primary_sub" class="form-label fw-semibold fs-8 text-dark">Primary Subject
+                                Expertise</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_primary_sub"
+                                name="primary_subject" value="{{ teacher.primary_subject or '' }}"
+                                placeholder="e.g. Artificial Intelligence" list="modal_subject_catalog">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_secondary_sub" class="form-label fw-semibold fs-8 text-dark">Secondary
+                                Subject Preference</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_secondary_sub"
+                                name="secondary_subject" value="{{ teacher.secondary_subject or '' }}"
+                                placeholder="e.g. Python Programming" list="modal_subject_catalog">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_tertiary_sub" class="form-label fw-semibold fs-8 text-dark">3rd Preferred
+                                Subject</label>
+                            <input type="text" class="form-control form-control-sm" id="edit_tertiary_sub"
+                                name="tertiary_subject" value="{{ teacher.tertiary_subject or '' }}"
+                                placeholder="e.g. Data Structures" list="modal_subject_catalog">
+                        </div>
+
+                        <datalist id="modal_subject_catalog">
+                            {% for sname in all_subject_names %}
+                            <option value="{{ sname }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="modal-footer bg-light p-3">
+                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                            class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold shadow-sm">Save
+                            Preferences</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Quick Stats Cards (4 Columns Grid) -->
-    <div class="row g-3 mb-4">
-        <!-- Card 1: Assigned Subjects -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
-                <div class="card-body p-2 d-flex align-items-center">
-                    <div class="rounded-3 p-2.5 me-3 bg-primary bg-opacity-10 text-primary fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                        <i class="fas fa-book-open"></i>
-                    </div>
-                    <div>
-                        <span class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Assigned Subjects</span>
-                        <div class="d-flex align-items-baseline">
-                            <h5 class="fw-bold mb-0 text-dark me-2">{{ subjects|length }}</h5>
-                            <span class="fs-8 text-muted">Subject Register{% if subjects|length != 1 %}s{% endif %}</span>
-                        </div>
-                    </div>
+    <!-- Apply for Leave Modal -->
+    <div class="modal fade" id="applyLeaveModal" tabindex="-1" aria-labelledby="applyLeaveModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-gradient bg-warning text-dark p-3.5">
+                    <h5 class="modal-title fw-bold" id="applyLeaveModalLabel">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Apply for Faculty Leave
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-        </div>
+                <form method="POST" action="{{ url_for('teacher.apply_leave') }}">
+                    <div class="modal-body p-4">
+                        <p class="text-muted fs-8 mb-3">Submit your leave request. Upon admin approval, your scheduled
+                            slots for affected dates will reflect leave status.</p>
 
-        <!-- Card 2: Directed Classes -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
-                <div class="card-body p-2 d-flex align-items-center">
-                    <div class="rounded-3 p-2.5 me-3 bg-success bg-opacity-10 text-success fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                        <i class="fas fa-chalkboard-user"></i>
-                    </div>
-                    <div>
-                        <span class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Directed Classes</span>
-                        <div class="d-flex align-items-baseline">
-                            <h5 class="fw-bold mb-0 text-dark me-2">{{ directed_classes|length }}</h5>
-                            <span class="fs-8 text-muted">As Class Teacher</span>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="date_from" class="form-label fw-semibold fs-8 text-dark">Date From <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" id="date_from" name="date_from"
+                                    required>
+                            </div>
+                            <div class="col-6">
+                                <label for="date_to" class="form-label fw-semibold fs-8 text-dark">Date To <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" id="date_to" name="date_to"
+                                    required>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Card 3: Class Directorship Badge -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
-                <div class="card-body p-2 d-flex align-items-center">
-                    <div class="rounded-3 p-2.5 me-3 bg-warning bg-opacity-10 text-warning fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <div>
-                        <span class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Class Directorship</span>
-                        <div class="d-flex align-items-baseline">
-                            {% if directed_classes %}
-                            <h5 class="fw-bold mb-0 text-primary" style="font-size: 0.95rem;">{{ directed_classes|map(attribute='name')|join(', ') }}</h5>
+                        <div class="mb-3">
+                            <label for="leave_type" class="form-label fw-semibold fs-8 text-dark">Leave Type</label>
+                            <select class="form-select form-select-sm" id="leave_type" name="leave_type">
+                                <option value="FULL" selected>FULL DAY LEAVE</option>
+                                <option value="HALF">HALF DAY LEAVE</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="leave_reason" class="form-label fw-semibold fs-8 text-dark">Reason</label>
+                            <textarea class="form-control form-control-sm" id="leave_reason" name="reason" rows="2"
+                                placeholder="e.g. Medical emergency, Conference attendance"></textarea>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark fs-8 mb-0"><i
+                                        class="fa-solid fa-clock-rotate-left me-1 text-primary"></i> My Leave
+                                    Applications History</h6>
+                                <span class="badge bg-secondary rounded-pill px-2 py-0.5 fs-9">{{ my_leaves|length }}
+                                    Requests</span>
+                            </div>
+                            {% if my_leaves %}
+                            <div class="table-responsive rounded-2 border" style="max-height: 170px; overflow-y: auto;">
+                                <table class="table table-sm table-hover fs-9 align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Dates</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Substitute</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for l in my_leaves %}
+                                        <tr>
+                                            <td>{{ l.date_from.strftime('%b %d') }} – {{ l.date_to.strftime('%b %d, %Y')
+                                                }}</td>
+                                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{
+                                                    l.leave_type }}</span></td>
+                                            <td>
+                                                {% if l.status == 'APPROVED' %}
+                                                <span class="badge bg-success bg-opacity-10 text-success"><i
+                                                        class="fa-solid fa-check me-1"></i>Approved</span>
+                                                {% elif l.status == 'REJECTED' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger"><i
+                                                        class="fa-solid fa-xmark me-1"></i>Rejected</span>
+                                                {% else %}
+                                                <span class="badge bg-warning bg-opacity-15 text-dark"><i
+                                                        class="fa-solid fa-clock me-1"></i>Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if l.substitute_teacher %}
+                                                <span class="text-primary fw-semibold"><i
+                                                        class="fa-solid fa-user-check me-1"></i>{{
+                                                    l.substitute_teacher.name }}</span>
+                                                {% else %}
+                                                <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                             {% else %}
-                            <span class="fs-8 text-muted fw-semibold">Unassigned</span>
+                            <p class="text-muted fs-9 mb-0">No leave applications submitted yet.</p>
                             {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 4: Today's Date -->
-        <div class="col-lg-3 col-md-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100 p-2.5 bg-white">
-                <div class="card-body p-2 d-flex align-items-center">
-                    <div class="rounded-3 p-2.5 me-3 bg-info bg-opacity-10 text-info fs-4 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-                        <i class="fas fa-calendar-day"></i>
+                    <div class="modal-footer bg-light p-3">
+                        <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3"
+                            data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit"
+                            class="btn btn-sm btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm">Submit
+                            Application</button>
                     </div>
-                    <div>
-                        <span class="text-muted fs-8 text-uppercase tracking-wider fw-semibold d-block mb-0.5">Today's Date</span>
-                        <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.05rem;">{{ today }}</h5>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Subjects & Attendance Summary Table (Full Width Single-Frame View) -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-0 pt-3.5 px-4 pb-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark fs-7"><i class="fas fa-layer-group text-primary me-2"></i>My Subjects & Attendance Summary</h6>
-                    <a href="{{ url_for('teacher.view_reports') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fs-8 fw-semibold">View All Reports</a>
-                </div>
-                <div class="card-body px-4 py-3">
-                    {% if subject_stats %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 fs-8 w-100">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Subject Name</th>
-                                    <th>Assigned Class</th>
-                                    <th>Enrolled Students</th>
-                                    <th>Sessions Held</th>
-                                    <th>Today's Present</th>
-                                    <th>Average %</th>
-                                    <th class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for stat in subject_stats %}
-                                <tr>
-                                    <td class="fw-bold text-dark"><i class="fas fa-book text-primary me-1.5"></i>{{ stat.subject.name }}</td>
-                                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2.5 py-1 rounded-pill fw-semibold fs-8">{{ stat.class_name }}</span></td>
-                                    <td><span class="fw-semibold text-dark"><i class="fas fa-user-graduate me-1 text-muted"></i>{{ stat.total_students }}</span></td>
-                                    <td>{{ stat.total_sessions }}</td>
-                                    <td>
-                                        <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold fs-8">
-                                            {{ stat.today_present }} / {{ stat.total_students }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <span class="me-2 fw-bold text-dark">{{ stat.avg_attendance }}%</span>
-                                            <div class="progress flex-grow-1" style="height: 6px; min-width: 60px;">
-                                                <div class="progress-bar {% if stat.avg_attendance >= 75 %}bg-success{% elif stat.avg_attendance >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                                     role="progressbar" style="width: {{ stat.avg_attendance }}%"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{{ url_for('teacher.take_attendance') }}" class="btn btn-xs btn-primary rounded-2 px-2.5 py-1 fw-bold fs-8">
-                                            <i class="fas fa-camera me-1"></i>Mark
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-book-open text-muted fs-3 mb-2"></i>
-                        <h6 class="text-muted fw-bold fs-8 mb-1">No subjects currently assigned.</h6>
-                        <p class="text-muted fs-8 mb-0">Please contact your department administrator to assign subjects to your profile.</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+<script>
+    let teacherActiveOffice = null;
+    let teacherActiveSettings = null;
+    let currentCameraStream = null;
+    let activeCameraSessionType = 'morning';
+    let currentFacingMode = 'user';
+    let currentTeacherGps = null;
 
-    <!-- Recent Attendance Logs -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-0 pt-3.5 px-4 pb-0 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0 text-dark fs-7"><i class="fas fa-history text-primary me-2"></i>Recent Class Attendance Activity</h6>
-                </div>
-                <div class="card-body px-4 py-3">
-                    {% if recent_records %}
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 fs-8">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Student Name</th>
-                                    <th>Roll Number</th>
-                                    <th>Subject</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for record in recent_records %}
-                                <tr>
-                                    <td><i class="fas fa-calendar me-1 text-muted"></i>{{ record.date.strftime('%Y-%m-%d') }}</td>
-                                    <td><i class="fas fa-clock me-1 text-muted"></i>{{ record.time_marked or 'N/A' }}</td>
-                                    <td class="fw-bold text-dark">{{ record.student.name if record.student else 'N/A' }}</td>
-                                    <td><span class="badge bg-light text-dark border px-2 py-1 fs-8">{{ record.student.roll_no if record.student else 'N/A' }}</span></td>
-                                    <td><span class="badge bg-info bg-opacity-10 text-info px-2.5 py-1 rounded-pill fw-semibold fs-8">{{ record.subject.name if record.subject else 'N/A' }}</span></td>
-                                    <td><span class="badge bg-success px-2.5 py-1 rounded-pill fs-8"><i class="fas fa-check me-1"></i>Present</span></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted py-4 text-center mb-0 fs-8">No recent attendance records found.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+    document.addEventListener("DOMContentLoaded", function () {
+        fetchTeacherGeoStatus();
+    });
+
+    function calculateClientHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const dPhi = (lat2 - lat1) * Math.PI / 180;
+        const dLam = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam/2) * Math.sin(dLam/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function checkTeacherLiveLocation() {
+        const statusEl = document.getElementById('geoProximityStatus');
+        if (!navigator.geolocation) {
+            statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>Geolocation not supported by this browser.`;
+            return;
+        }
+
+        statusEl.innerHTML = `<span class="spinner-border spinner-border-sm text-primary me-1.5" role="status"></span><span class="text-primary fw-semibold">Acquiring live GPS location...</span>`;
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                currentTeacherGps = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy
+                };
+
+                if (teacherActiveOffice) {
+                    const dist = calculateClientHaversine(pos.coords.latitude, pos.coords.longitude, teacherActiveOffice.latitude, teacherActiveOffice.longitude);
+                    currentTeacherGps.distance = dist;
+
+                    if (dist <= teacherActiveOffice.allowed_radius) {
+                        statusEl.innerHTML = `<span class="badge bg-success text-white me-1.5 px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i>Inside Office Geofence</span><span class="text-success fw-bold">${Math.round(dist)}m from ${teacherActiveOffice.name} (Face Camera Unlocked)</span>`;
+                    } else {
+                        statusEl.innerHTML = `<span class="badge bg-danger text-white me-1.5 px-2 py-1"><i class="fa-solid fa-circle-xmark me-1"></i>Outside Office Geofence</span><span class="text-danger fw-semibold">${Math.round(dist)}m away from ${teacherActiveOffice.name} (Allowed: ${teacherActiveOffice.allowed_radius}m)</span>`;
+                    }
+                } else {
+                    statusEl.innerHTML = `<span class="text-success fw-semibold"><i class="fa-solid fa-location-dot me-1"></i>GPS Acquired (Accuracy: ${Math.round(pos.coords.accuracy)}m)</span>`;
+                }
+            },
+            err => {
+                statusEl.innerHTML = `<span class="text-danger fw-semibold"><i class="fa-solid fa-triangle-exclamation me-1"></i>GPS Error: ${err.message}. Please enable location permissions in browser.</span>`;
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    function fetchTeacherGeoStatus() {
+        fetch('/teacher_attendance/status')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+                teacherActiveOffice = data.office;
+                teacherActiveSettings = data.settings;
+
+                document.getElementById('geoTodayDate').textContent = data.date;
+                document.getElementById('geoOfficeBadge').innerHTML = `<i class="fa-solid fa-building me-1"></i>Office: ${data.office.name} (${data.office.allowed_radius}m Radius)`;
+                document.getElementById('morningTimeWindow').textContent = `${data.settings.morning_start} - ${data.settings.morning_deadline}`;
+                document.getElementById('eveningTimeWindow').textContent = `${data.settings.evening_start} - ${data.settings.evening_end}`;
+
+                const mBadge = document.getElementById('morningBadge');
+                const btnM = document.getElementById('btnMarkMorning');
+                const mornGraceMins = data.settings.grace_period_mins || 60;
+
+                if (data.attendance.check_in_at) {
+                    mBadge.className = "badge bg-success text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Checked In at ${data.attendance.check_in_at} (${data.attendance.check_in_distance}m) ${data.attendance.check_in_face_verified ? '<span class="ms-1 text-warning"><i class="fa-solid fa-shield-check"></i> Face Verified</span>' : ''}`;
+                    btnM.disabled = true;
+                    btnM.className = "btn btn-success btn-sm rounded-pill fw-bold w-100 py-2 disabled";
+                    btnM.innerHTML = `<i class="fa-solid fa-check-double me-1.5"></i>Morning Marked`;
+                } else if (isTimeAfterWindow(data.settings.morning_deadline, mornGraceMins)) {
+                    mBadge.className = "badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.innerHTML = `<i class="fa-solid fa-clock-rotate-left me-1"></i>Window Closed`;
+                    btnM.disabled = true;
+                    btnM.className = "btn btn-secondary btn-sm rounded-pill fw-bold w-100 py-2 disabled";
+                    btnM.innerHTML = `<i class="fa-solid fa-ban me-1.5"></i>Out of Time (Closed)`;
+                } else if (isTimeAfterWindow(data.settings.morning_deadline, 0)) {
+                    mBadge.className = "badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Late Window Active`;
+                    btnM.disabled = false;
+                    btnM.className = "btn btn-warning text-dark btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";
+                    btnM.innerHTML = `<i class="fa-solid fa-camera me-1.5"></i>Check-In (Late Grace)`;
+                } else {
+                    mBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.innerHTML = `<i class="fa-solid fa-clock me-1"></i>Not Marked`;
+                    btnM.disabled = false;
+                    btnM.className = "btn btn-primary btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";
+                    btnM.innerHTML = `<i class="fa-solid fa-camera me-1.5"></i>Open Camera & Check-In`;
+                }
+
+                const eBadge = document.getElementById('eveningBadge');
+                const btnE = document.getElementById('btnMarkEvening');
+                if (data.attendance.check_out_at) {
+                    eBadge.className = "badge bg-info text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Checked Out at ${data.attendance.check_out_at} (${data.attendance.check_out_distance}m) ${data.attendance.check_out_face_verified ? '<span class="ms-1 text-warning"><i class="fa-solid fa-shield-check"></i> Face Verified</span>' : ''}`;
+                    btnE.disabled = true;
+                    btnE.className = "btn btn-info text-white btn-sm rounded-pill fw-bold w-100 py-2 disabled";
+                    btnE.innerHTML = `<i class="fa-solid fa-check-double me-1.5"></i>Evening Marked`;
+                } else if (isTimeAfterWindow(data.settings.evening_end, 60)) {
+                    eBadge.className = "badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.innerHTML = `<i class="fa-solid fa-clock-rotate-left me-1"></i>Window Closed`;
+                    btnE.disabled = true;
+                    btnE.className = "btn btn-secondary btn-sm rounded-pill fw-bold w-100 py-2 disabled";
+                    btnE.innerHTML = `<i class="fa-solid fa-ban me-1.5"></i>Out of Time (Closed)`;
+                } else {
+                    eBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.innerHTML = `<i class="fa-solid fa-clock me-1"></i>Not Marked`;
+                    btnE.disabled = false;
+                    btnE.className = "btn btn-info text-white btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";
+                    btnE.innerHTML = `<i class="fa-solid fa-camera me-1.5"></i>Open Camera & Check-Out`;
+                }
+
+                const st = data.attendance.status || 'Pending';
+                const stEl = document.getElementById('geoOverallStatus');
+                stEl.textContent = st;
+                if (st === 'Present') stEl.className = "fw-bold fs-7 mb-2 text-success";
+                else if (st === 'Half Day') stEl.className = "fw-bold fs-7 mb-2 text-warning";
+                else if (st === 'Absent') stEl.className = "fw-bold fs-7 mb-2 text-danger";
+                else if (st === 'Approved Leave') stEl.className = "fw-bold fs-7 mb-2 text-info";
+                else stEl.className = "fw-bold fs-7 mb-2 text-primary";
+
+                // Check live GPS location
+                checkTeacherLiveLocation();
+            })
+            .catch(err => console.error("Error loading geolocation status:", err));
+    }
+
+    let autoScanInterval = null;
+    let isAutoScanBusy = false;
+    let isAttendanceCompleted = false;
+
+    function parseTimeStrToMinutes(targetTimeStr) {
+        if (!targetTimeStr) return null;
+        const parts = targetTimeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+        if (!parts) return null;
+        let h = parseInt(parts[1], 10);
+        const m = parseInt(parts[2], 10);
+        const ampm = parts[3] ? parts[3].toUpperCase() : null;
+        if (ampm === 'PM' && h < 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        return h * 60 + m;
+    }
+
+    function formatMinutesToTime(totalMins) {
+        let h = Math.floor(totalMins / 60) % 24;
+        let m = totalMins % 60;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+
+    function isTimeBeforeWindow(targetTimeStr) {
+        const targetMin = parseTimeStrToMinutes(targetTimeStr);
+        if (targetMin === null) return false;
+        const now = new Date();
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+        return currentMin < targetMin;
+    }
+
+    function isTimeAfterWindow(targetTimeStr, extraGraceMins = 0) {
+        const targetMin = parseTimeStrToMinutes(targetTimeStr);
+        if (targetMin === null) return false;
+        const cutoffMin = targetMin + extraGraceMins;
+        const now = new Date();
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+        return currentMin > cutoffMin;
+    }
+
+    function openTeacherCameraModal(sessionType) {
+        activeCameraSessionType = sessionType;
+        document.getElementById('cameraSessionLabel').textContent = sessionType === 'morning' ? 'Morning Check-In Verification' : 'Evening Check-Out Verification';
+        document.getElementById('camErrorAlert').classList.add('d-none');
+        document.getElementById('camErrorAlert').textContent = '';
+        isAttendanceCompleted = false;
+
+        // 1. Timing Window Validation (Cannot open before scheduled start or after late cutoff)
+        if (sessionType === 'morning' && teacherActiveSettings) {
+            if (isTimeBeforeWindow(teacherActiveSettings.morning_start)) {
+                alert(`❌ Timing Window Restricted\n\nMorning Check-In is restricted before scheduled hours.\nAllowed Window starts at ${teacherActiveSettings.morning_start}.\n\nPlease return during the morning check-in session.`);
+                return;
+            }
+            const graceMins = teacherActiveSettings.grace_period_mins || 60;
+            if (isTimeAfterWindow(teacherActiveSettings.morning_deadline, graceMins)) {
+                const deadlineMin = parseTimeStrToMinutes(teacherActiveSettings.morning_deadline);
+                const cutoffStr = deadlineMin !== null ? formatMinutesToTime(deadlineMin + graceMins) : 'Deadline';
+                alert(`❌ Timing Window Closed\n\nMorning Check-In is closed.\nAllowed Window was ${teacherActiveSettings.morning_start} - ${cutoffStr} (including 1-hour late grace period).\n\nAttendance can no longer be recorded.`);
+                return;
+            }
+        }
+
+        if (sessionType === 'evening' && teacherActiveSettings) {
+            if (isTimeBeforeWindow(teacherActiveSettings.evening_start)) {
+                alert(`❌ Timing Window Restricted\n\nEvening Check-Out is restricted before scheduled hours.\nAllowed Window: ${teacherActiveSettings.evening_start} - ${teacherActiveSettings.evening_end}\n\nPlease return during the evening check-out session.`);
+                return;
+            }
+            if (isTimeAfterWindow(teacherActiveSettings.evening_end, 30)) {
+                const endMin = parseTimeStrToMinutes(teacherActiveSettings.evening_end);
+                const cutoffStr = endMin !== null ? formatMinutesToTime(endMin + 30) : 'End Time';
+                alert(`❌ Timing Window Closed & Locked\n\nEvening Check-Out is closed.\nAllowed Window was ${teacherActiveSettings.evening_start} - ${teacherActiveSettings.evening_end} (including 30-minute relaxation until ${cutoffStr}).\n\nAttendance is now locked and will be recorded as Half Day.`);
+                return;
+            }
+        }
+
+        // 2. Strict Geolocation Gate: Verify teacher is physically inside office geofence before opening camera
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser/device.");
+            return;
+        }
+
+        // Always request high-accuracy fresh GPS
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                currentTeacherGps = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy
+                };
+                if (teacherActiveOffice) {
+                    currentTeacherGps.distance = calculateClientHaversine(pos.coords.latitude, pos.coords.longitude, teacherActiveOffice.latitude, teacherActiveOffice.longitude);
+                }
+                verifyAndShowCameraModal(sessionType);
+            },
+            err => {
+                alert(`❌ Location Permission Required\n\nPlease allow GPS location access in your browser to verify you are in the office geo area.\nError: ${err.message}`);
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    }
+
+    function verifyAndShowCameraModal(sessionType) {
+        if (!currentTeacherGps || !teacherActiveOffice || currentTeacherGps.distance > teacherActiveOffice.allowed_radius) {
+            const dist = currentTeacherGps && currentTeacherGps.distance !== undefined ? Math.round(currentTeacherGps.distance) : 'Unknown';
+            const maxRad = teacherActiveOffice ? teacherActiveOffice.allowed_radius : 50;
+            const officeName = teacherActiveOffice ? teacherActiveOffice.name : 'Office';
+            alert(`❌ Geolocation Restricted: Not in Geo Area\n\nYou are not in the office geo area (${dist}m away from ${officeName}, Allowed Radius: ${maxRad}m).\n\nYou must be physically present inside the office area to open the camera and mark attendance.`);
+            return;
+        }
+
+        const camModalEl = document.getElementById('teacherFaceCamModal');
+        const modal = new bootstrap.Modal(camModalEl);
+        modal.show();
+
+        startTeacherCamera();
+    }
+
+    function startTeacherCamera() {
+        stopTeacherCamera();
+        isAttendanceCompleted = false;
+        isAutoScanBusy = false;
+
+        // Reset Oval Guide UI
+        const oval = document.getElementById('camFaceOvalGuide');
+        if (oval) {
+            oval.style.borderColor = 'rgba(59, 130, 246, 0.85)';
+            oval.style.boxShadow = '0 0 25px rgba(59, 130, 246, 0.4)';
+        }
+        const ovalBadge = document.getElementById('camFaceOvalBadge');
+        if (ovalBadge) {
+            ovalBadge.className = 'position-absolute top-0 start-50 translate-middle-x badge bg-primary bg-opacity-75 text-white fs-9 px-2 py-0.5 rounded-pill mt-1';
+            ovalBadge.innerHTML = '<i class="fa-solid fa-eye me-1"></i>Align Face Here';
+        }
+        const statusEl = document.getElementById('camAutoScanStatus');
+        if (statusEl) {
+            statusEl.innerHTML = '<span class="spinner-grow spinner-grow-sm text-info me-1" role="status"></span><strong class="text-info">Auto-Scanning:</strong> Look at the camera';
+        }
+
+        const video = document.getElementById('teacherCameraVideo');
+        const constraints = {
+            video: {
+                facingMode: currentFacingMode,
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        };
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    currentCameraStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    updateCameraDistanceDisplay();
+
+                    // Start Hands-Free AI Auto-Scanner Loop
+                    video.onplaying = () => {
+                        startAutoFaceScanner();
+                    };
+                })
+                .catch(err => {
+                    console.error("Camera access error:", err);
+                    const alertEl = document.getElementById('camErrorAlert');
+                    alertEl.textContent = "Camera permission denied or camera not found. Please allow camera access in your browser settings.";
+                    alertEl.classList.remove('d-none');
+                });
+        } else {
+            alert("Camera is not supported on this browser/device.");
+        }
+    }
+
+    function stopTeacherCamera() {
+        if (autoScanInterval) {
+            clearInterval(autoScanInterval);
+            autoScanInterval = null;
+        }
+        if (currentCameraStream) {
+            currentCameraStream.getTracks().forEach(track => track.stop());
+            currentCameraStream = null;
+        }
+        const video = document.getElementById('teacherCameraVideo');
+        if (video) video.srcObject = null;
+        isAutoScanBusy = false;
+    }
+
+    function switchTeacherCamera() {
+        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        startTeacherCamera();
+    }
+
+    function updateCameraDistanceDisplay() {
+        const distEl = document.getElementById('camDistanceDisplay');
+        if (navigator.geolocation && teacherActiveOffice) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    currentTeacherGps = {
+                        latitude: pos.coords.latitude,
+                        longitude: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy
+                    };
+                    const dist = calculateClientHaversine(pos.coords.latitude, pos.coords.longitude, teacherActiveOffice.latitude, teacherActiveOffice.longitude);
+                    distEl.textContent = `${Math.round(dist)}m from ${teacherActiveOffice.name}`;
+                },
+                err => {
+                    distEl.textContent = "GPS locating...";
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    }
+
+    function startAutoFaceScanner() {
+        if (autoScanInterval) clearInterval(autoScanInterval);
+        
+        // Auto-scan every 1.5 seconds automatically without requiring manual click
+        autoScanInterval = setInterval(() => {
+            if (!isAttendanceCompleted && !isAutoScanBusy && currentCameraStream) {
+                captureTeacherFaceAndSubmit(true);
+            }
+        }, 1500);
+    }
+
+    function captureTeacherFaceAndSubmit(isAuto = false) {
+        if (isAttendanceCompleted || isAutoScanBusy) return;
+
+        const btn = document.getElementById('btnCaptureAndSubmit');
+        const alertEl = document.getElementById('camErrorAlert');
+        const statusEl = document.getElementById('camAutoScanStatus');
+        const oval = document.getElementById('camFaceOvalGuide');
+        const ovalBadge = document.getElementById('camFaceOvalBadge');
+
+        const video = document.getElementById('teacherCameraVideo');
+        const canvas = document.getElementById('teacherCameraCanvas');
+        if (!video || !video.videoWidth) return;
+
+        isAutoScanBusy = true;
+        if (!isAuto && btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Analyzing Face...`;
+        }
+
+        if (statusEl) {
+            statusEl.innerHTML = `<span class="spinner-border spinner-border-sm text-warning me-1" role="status"></span><strong class="text-warning">Analyzing Biometrics...</strong>`;
+        }
+
+        // Capture frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const capturedBase64 = canvas.toDataURL('image/jpeg', 0.90);
+
+        if (!navigator.geolocation) {
+            if (alertEl) {
+                alertEl.textContent = "Geolocation is not supported by your device/browser.";
+                alertEl.classList.remove('d-none');
+            }
+            isAutoScanBusy = false;
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const payload = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy,
+                    captured_image_base64: capturedBase64
+                };
+
+                const url = activeCameraSessionType === 'morning' ? '/teacher_attendance/mark_morning' : '/teacher_attendance/mark_evening';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        isAttendanceCompleted = true;
+                        if (autoScanInterval) clearInterval(autoScanInterval);
+
+                        // Success UI feedback on scanner oval
+                        if (oval) {
+                            oval.style.borderColor = '#10b981';
+                            oval.style.boxShadow = '0 0 35px #10b981';
+                        }
+                        if (ovalBadge) {
+                            ovalBadge.className = 'position-absolute top-0 start-50 translate-middle-x badge bg-success text-white fs-8 px-3 py-1 rounded-pill mt-1 shadow-sm';
+                            ovalBadge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i>Face Verified!';
+                        }
+                        if (statusEl) {
+                            statusEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>${data.message} (${data.check_in_time || data.check_out_time})</span>`;
+                        }
+
+                        // Auto-close modal after 1.4 seconds
+                        setTimeout(() => {
+                            stopTeacherCamera();
+                            const camModalEl = document.getElementById('teacherFaceCamModal');
+                            const modal = bootstrap.Modal.getInstance(camModalEl);
+                            if (modal) modal.hide();
+                            fetchTeacherGeoStatus();
+                        }, 1400);
+
+                    } else {
+                        isAutoScanBusy = false;
+                        if (statusEl) {
+                            statusEl.innerHTML = `<span class="text-white-75 fs-9"><i class="fa-solid fa-face-viewfinder text-warning me-1"></i>Align face inside oval guide...</span>`;
+                        }
+                        if (!isAuto && alertEl) {
+                            alertEl.textContent = `❌ ${data.message}` + (data.distance ? ` (Your Distance: ${data.distance}m, Allowed: ${data.allowed_radius}m)` : '');
+                            alertEl.classList.remove('d-none');
+                        }
+                    }
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-bolt me-1.5"></i>Capture Now`;
+                    }
+                })
+                .catch(err => {
+                    isAutoScanBusy = false;
+                    if (!isAuto && alertEl) {
+                        alertEl.textContent = `Error: ${err}`;
+                        alertEl.classList.remove('d-none');
+                    }
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = `<i class="fa-solid fa-bolt me-1.5"></i>Capture Now`;
+                    }
+                });
+            },
+            err => {
+                isAutoScanBusy = false;
+                if (!isAuto && alertEl) {
+                    alertEl.textContent = `GPS Error: ${err.message}. Please enable location.`;
+                    alertEl.classList.remove('d-none');
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-bolt me-1.5"></i>Capture Now`;
+                }
+            },
+            { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+        );
+    }
+</script>
+<style>
+    @keyframes pulseFaceScanner {
+        0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        50% { transform: translate(-50%, -50%) scale(1.03); box-shadow: 0 0 35px rgba(59, 130, 246, 0.8); }
+        100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+    }
+    @keyframes scanBeamMotion {
+        0% { top: 0%; opacity: 0.85; }
+        50% { top: 96%; opacity: 1; }
+        100% { top: 0%; opacity: 0.85; }
+    }
+</style>
+    {% endblock %}

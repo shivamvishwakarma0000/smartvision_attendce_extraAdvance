@@ -1,3 +1,7 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - STUDENT PROFILE EDIT VIEW TEMPLATE #}
+{# ============================================================================== #}
+
 {% extends "base.html" %}
 
 {% block title %}Edit Profile - SmartVision{% endblock %}
@@ -20,11 +24,15 @@
             <!-- View Pending Details (ReadOnly) -->
             <fieldset disabled>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Requested Full Name</label>
                         <input type="text" class="form-control" value="{{ pending_request.new_name }}">
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-semibold">Requested Department</label>
+                        <input type="text" class="form-control" value="{{ pending_request.new_department or 'N/A' }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
                         <label class="form-label fw-semibold">Requested Class</label>
                         <input type="text" class="form-control" value="{{ pending_request.class_assigned.name if pending_request.class_assigned else 'No Class' }}">
                     </div>
@@ -59,15 +67,27 @@
             <!-- Editing Form -->
             <form method="POST" action="" enctype="multipart/form-data" class="mt-4" onsubmit="window.stopCamera('edit-profile')">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="name" class="form-label fw-semibold">Full Name</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="name" class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" value="{{ student.name }}" required>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="class_id" class="form-label fw-semibold">Class Assigned</label>
+                    <div class="col-md-4 mb-3">
+                        <label for="department" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+                        <select class="form-select" id="department" name="department" onchange="syncEditProfileClasses()" required>
+                            {% for dept in all_departments %}
+                            <option value="{{ dept.name }}" {% if (student.department and student.department|lower == dept.name|lower) or (not student.department and loop.first) %}selected{% endif %}>
+                                {{ dept.name }} - {{ dept.full_name or dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="class_id" class="form-label fw-semibold">Class Assigned <span class="text-danger">*</span></label>
                         <select class="form-select" id="class_id" name="class_id" required>
                             {% for class_item in classes %}
-                            <option value="{{ class_item.id }}" {% if class_item.id == student.class_id %}selected{% endif %}>{{ class_item.name }}</option>
+                            <option value="{{ class_item.id }}" data-dept="{{ class_item.department or 'General' }}" {% if class_item.id == student.class_id %}selected{% endif %}>
+                                {{ class_item.name }} ({{ class_item.department or 'General' }} Dept)
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -75,11 +95,11 @@
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="roll_no" class="form-label fw-semibold">Roll Number</label>
+                        <label for="roll_no" class="form-label fw-semibold">Roll Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="roll_no" name="roll_no" value="{{ student.roll_no }}" required>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="enrollment_no" class="form-label fw-semibold">Enrollment Number</label>
+                        <label for="enrollment_no" class="form-label fw-semibold">Enrollment Number <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="enrollment_no" name="enrollment_no" value="{{ student.enrollment_no }}" required>
                     </div>
                 </div>
@@ -140,4 +160,37 @@
         </div>
     </div>
 </div>
+
+<script>
+function syncEditProfileClasses() {
+    const deptSelect = document.getElementById('department');
+    const classSelect = document.getElementById('class_id');
+    if (!deptSelect || !classSelect) return;
+    
+    const selectedDept = (deptSelect.value || '').toLowerCase().trim();
+    const options = classSelect.querySelectorAll('option');
+    let firstValidOption = null;
+    let currentlySelectedValid = false;
+
+    options.forEach(opt => {
+        const optDept = (opt.getAttribute('data-dept') || 'General').toLowerCase().trim();
+        if (!selectedDept || optDept === selectedDept) {
+            opt.style.display = '';
+            if (!firstValidOption) firstValidOption = opt.value;
+            if (opt.value === classSelect.value) currentlySelectedValid = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (!currentlySelectedValid && firstValidOption) {
+        classSelect.value = firstValidOption;
+    }
+}
+
+// Run on page load to initialize options matching current department
+document.addEventListener('DOMContentLoaded', () => {
+    syncEditProfileClasses();
+});
+</script>
 {% endblock %}

@@ -1,0 +1,795 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - MANAGE TIMETABLE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Manage Weekly Timetable - SmartVision{% endblock %}
+{% block page_title %}Academic Class Schedule & Lecture Timetable{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white mb-4 overflow-hidden">
+    <div
+        class="card-header bg-gradient bg-primary text-white p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-white shadow-sm d-flex align-items-center justify-content-center flex-shrink-0"
+                style="width: 48px; height: 48px; min-width: 48px;">
+                <i class="fa-solid fa-calendar-days fs-4 text-primary"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0">Weekly Timetable Matrix Generator</h4>
+                <span class="fs-8 text-white-50">Interactive Schedule with Flexible Period Timings, Lunch Break & Custom Slots</span>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <!-- Select Department Filter -->
+            <div class="d-flex align-items-center gap-2">
+                <label for="deptSelectHeader" class="form-label mb-0 text-white fw-bold fs-8 text-nowrap">
+                    <i class="fa-solid fa-building-user me-1"></i>Department:
+                </label>
+                <select class="form-select form-select-sm rounded-pill px-3 fw-bold border-0 shadow-sm text-primary"
+                    id="deptSelectHeader" style="min-width: 150px;" onchange="onDepartmentFilterChange(this.value)">
+                    <option value="">All Departments</option>
+                    {% for dept in all_departments %}
+                    <option value="{{ dept.name }}" {% if selected_department == dept.name %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select Class Filter -->
+            <div class="d-flex align-items-center gap-2">
+                <label for="classSelectHeader" class="form-label mb-0 text-white fw-bold fs-8 text-nowrap">
+                    <i class="fa-solid fa-school me-1"></i>Select Class:
+                </label>
+                <select class="form-select form-select-sm rounded-pill px-3.5 fw-bold border-0 shadow-sm text-primary"
+                    id="classSelectHeader" style="min-width: 170px;" onchange="onClassFilterChange(this.value)" {% if not dept_classes %}disabled{% endif %}>
+                    {% if not dept_classes %}
+                    <option value="" selected disabled>-- No Classes in Dept --</option>
+                    {% else %}
+                    {% for c in dept_classes %}
+                    <option value="{{ c.id }}" data-department="{{ c.department or '' }}" {% if selected_class_id==c.id %}selected{% endif %}>
+                        Class {{ c.name }}{% if not selected_department and c.department %} ({{ c.department }}){% endif %}
+                    </option>
+                    {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Configure Timings / Lunch Button -->
+                <button type="button" class="btn btn-warning btn-sm text-dark rounded-pill px-3 fw-bold shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#periodSettingsModal">
+                    <i class="fa-solid fa-clock me-1"></i> Edit Period & Lunch Timings
+                </button>
+
+                <button type="button" class="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#slotModal"
+                    onclick="prepareSlotModal('{{ selected_class_id or '' }}', 'Monday', '09:30', '10:25', '1')" {% if not selected_class_id %}disabled{% endif %}>
+                    <i class="fa-solid fa-plus me-1"></i> Quick Add Slot
+                </button>
+
+                <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#copyModal">
+                    <i class="fa-solid fa-copy me-1"></i> Copy Schedule
+                </button>
+
+                {% if selected_class_id %}
+                <form method="POST" action="{{ url_for('main.clear_timetable') }}" class="d-inline"
+                    onsubmit="return confirm('Clear all timetable slots for this class?');">
+                    <input type="hidden" name="class_id" value="{{ selected_class_id }}">
+                    <button type="submit"
+                        class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold shadow-sm bg-white bg-opacity-10 text-white border-white border-opacity-30">
+                        <i class="fa-solid fa-trash-can me-1"></i> Clear Class Slots
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        {% if not selected_class %}
+        <!-- Empty State when Department has no classes -->
+        <div class="text-center py-5 bg-light rounded-4 border p-4 my-3">
+            <div class="rounded-circle bg-white shadow-sm d-inline-flex p-3 mb-3">
+                <i class="fa-solid fa-school-circle-xmark fs-1 text-muted"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">No Classes Found for Department: {{ selected_department or 'Selected Department' }}</h5>
+            <p class="text-muted fs-8 mb-3">There are currently no classes created under the <strong>{{ selected_department or 'this' }}</strong> department. Please create a class first to set up its timetable.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('main.manage_classes') }}" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="fa-solid fa-plus me-1.5"></i>Create Class in Manage Classes
+                </a>
+                <a href="{{ url_for('main.manage_timetable') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-4 fw-bold">
+                    View All Departments
+                </a>
+            </div>
+        </div>
+        {% else %}
+
+        <!-- Legend & Active Class Summary Bar -->
+        <div
+            class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border bg-light flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3 fs-8 fw-semibold flex-wrap">
+                <span class="text-dark"><i class="fa-solid fa-clock text-primary me-1"></i> {{ period_settings|rejectattr('is_lunch')|list|length }} Periods + {{ period_settings|selectattr('is_lunch')|list|length }} Lunch Break</span>
+                <span class="text-muted">|</span>
+                <span class="text-dark"><i class="fa-solid fa-calendar-week text-success me-1"></i> Mon – Sat</span>
+                <span class="text-muted">|</span>
+                <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">
+                    {{ timetable_entries|length }} Active Slots for Class {{ selected_class.name }}
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                    <i class="fa-solid fa-book-open me-1"></i>Subject
+                </span>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                    <i class="fa-solid fa-book-bookmark me-1"></i>Library
+                </span>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                    <i class="fa-solid fa-shapes me-1"></i>Others / Custom
+                </span>
+                <span
+                    class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1.5 fs-8 fw-bold">
+                    <i class="fa-solid fa-circle-check me-1"></i>Editable Matrix
+                </span>
+            </div>
+        </div>
+
+        <!-- 6-DAY WEEKLY GRID MATRIX -->
+        <div class="table-responsive rounded-3 border">
+            <table class="table table-bordered align-middle text-center mb-0 fs-8">
+                <thead class="table-dark" style="background: #1e1b4b;">
+                    <tr style="font-size: 0.75rem;">
+                        <th style="width: 110px;" class="py-2 text-center">Time Window</th>
+                        <th class="py-2 text-center">Monday</th>
+                        <th class="py-2 text-center">Tuesday</th>
+                        <th class="py-2 text-center">Wednesday</th>
+                        <th class="py-2 text-center">Thursday</th>
+                        <th class="py-2 text-center">Friday</th>
+                        <th class="py-2 text-center">Saturday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+
+                    {% for ps in period_settings %}
+                    <tr>
+                        <!-- Time Column -->
+                        {% if not ps.is_lunch %}
+                        <td class="table-light align-middle text-center py-1 px-1">
+                            <div class="fw-extrabold text-dark text-nowrap" style="font-size: 0.72rem;">{{ ps.label }}</div>
+                            <div class="text-muted text-nowrap" style="font-size: 0.65rem; opacity: 0.85;">{{ ps.start_time }} – {{ ps.end_time }}</div>
+                        </td>
+                        {% endif %}
+
+                        {% if ps.is_lunch %}
+                        <!-- Full-Width Lunch Break Row -->
+                        <td colspan="7" class="align-middle py-1 px-2 bg-warning bg-opacity-15 border-warning border-opacity-30">
+                            <div class="d-flex align-items-center justify-content-center gap-2 text-dark py-0.5">
+                                <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;"><i class="fa-solid fa-utensils me-1"></i>Lunch</span>
+                                <span class="fw-bold text-dark me-2" style="font-size: 0.75rem;">🍱 {{ ps.label|upper }} ({{ ps.start_time }} – {{ ps.end_time }})</span>
+                                <button type="button" class="btn btn-outline-dark btn-xs py-0 px-2 rounded-pill fw-bold" style="font-size: 0.65rem;" data-bs-toggle="modal" data-bs-target="#periodSettingsModal">
+                                    <i class="fa-solid fa-pencil me-1"></i>Edit Timing
+                                </button>
+                            </div>
+                        </td>
+                        {% else %}
+                        <!-- 6 Day Columns -->
+                        {% for d in days %}
+                        {% set ns = namespace(found=false, slot=None) %}
+                        {% for entry in timetable_entries %}
+                        {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
+                        {% set ns.found = true %}
+                        {% set ns.slot = entry %}
+                        {% endif %}
+                        {% endfor %}
+
+                        <td class="align-middle p-0.5" style="min-width: 105px;">
+                            {% if ns.found %}
+                            <div class="p-1 rounded-2 border position-relative group-hover shadow-xs 
+                                {% if ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30
+                                {% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30
+                                {% else %}bg-primary bg-opacity-10 border-primary border-opacity-20{% endif %}">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                        {% if ns.slot.slot_type == 'LIBRARY' %}
+                                        <span class="badge bg-info text-dark text-truncate fw-bold"
+                                            style="max-width: 80px; font-size: 0.65rem;"
+                                            title="{{ ns.slot.custom_title or 'Library Reading' }}">
+                                            <i class="fa-solid fa-book-bookmark me-0.5"></i>{{ ns.slot.custom_title or 'Library' }}
+                                        </span>
+                                        {% elif ns.slot.slot_type == 'OTHER' %}
+                                        <span class="badge bg-secondary text-white text-truncate fw-bold"
+                                            style="max-width: 80px; font-size: 0.65rem;"
+                                            title="{{ ns.slot.custom_title or 'Custom Activity' }}">
+                                            <i class="fa-solid fa-shapes me-0.5"></i>{{ ns.slot.custom_title or 'Other' }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-primary text-white text-truncate fw-bold"
+                                            style="max-width: 80px; font-size: 0.65rem;"
+                                            title="{{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else (ns.slot.subject.name if ns.slot.subject else 'Subject') }}">
+                                            {{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else
+                                            (ns.slot.subject.name if ns.slot.subject else 'Subject') }}
+                                        </span>
+                                        {% endif %}
+
+                                        <span class="badge bg-dark bg-opacity-75 text-white font-monospace"
+                                            style="font-size: 0.58rem;">P{{ ns.slot.period_no or ps.period_no }}</span>
+                                    </div>
+                                    <div class="text-dark fw-semibold text-truncate" style="max-width: 95px; font-size: 0.68rem;">
+                                        <i class="fa-solid fa-chalkboard-user text-muted me-1"></i>{{
+                                        ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else
+                                        (ns.slot.teacher.name if ns.slot.teacher else 'Unassigned') }}
+                                    </div>
+                                    {% if ns.slot.room_number %}
+                                    <div class="text-muted text-truncate" style="font-size: 0.62rem;"><i
+                                            class="fa-solid fa-location-dot me-1 text-primary"></i>{{ ns.slot.room_number }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-center gap-1 mt-0.5">
+                                    <button type="button"
+                                        class="btn btn-outline-primary btn-xs rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 20px; height: 20px; padding: 0;"
+                                        onclick="prepareEditModal('{{ ns.slot.id }}', '{{ ns.slot.class_id }}', '{{ ns.slot.subject_id or '' }}', '{{ ns.slot.teacher_id or '' }}', '{{ ns.slot.day_of_week }}', '{{ ns.slot.start_time }}', '{{ ns.slot.end_time }}', '{{ ns.slot.room_number or '' }}', '{{ ns.slot.period_no or ps.period_no }}', '{{ ns.slot.slot_type or 'CLASS' }}', '{{ (ns.slot.custom_title or '')|replace('\'', '\\\'') }}')"
+                                        data-bs-toggle="modal" data-bs-target="#editSlotModal" title="Edit Slot">
+                                        <i class="fa-solid fa-pencil" style="font-size: 0.6rem;"></i>
+                                    </button>
+                                    <form method="POST"
+                                        action="{{ url_for('main.delete_timetable_slot', slot_id=ns.slot.id) }}"
+                                        class="d-inline" onsubmit="return confirm('Remove this slot?');">
+                                        <button type="submit"
+                                            class="btn btn-outline-danger btn-xs rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 20px; height: 20px; padding: 0;" title="Remove Slot">
+                                            <i class="fa-solid fa-trash" style="font-size: 0.6rem;"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% else %}
+                            <button type="button"
+                                class="btn btn-outline-secondary border-dashed btn-sm w-100 py-1 px-1 rounded-2 text-muted fs-9 d-flex align-items-center justify-content-center gap-1 hover-bg-light"
+                                onclick="prepareSlotModal('{{ selected_class_id or '' }}', '{{ d }}', '{{ ps.start_time }}', '{{ ps.end_time }}', '{{ ps.period_no }}')"
+                                data-bs-toggle="modal" data-bs-target="#slotModal" style="font-size: 0.65rem;">
+                                <i class="fa-solid fa-plus-circle text-primary" style="font-size: 0.75rem;"></i>
+                                <span>+ P{{ ps.period_no }}</span>
+                            </button>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CONFIGURE PERIOD & LUNCH TIMINGS MODAL -->
+<div class="modal fade" id="periodSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-3.5">
+                <h5 class="modal-title fw-bold fs-7"><i class="fa-solid fa-clock me-2 text-warning"></i>Configure Timetable Period & Lunch Timings</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.save_period_settings') }}">
+                <input type="hidden" name="class_id" value="{{ selected_class_id or '' }}">
+                <div class="modal-body p-4">
+                    <p class="fs-8 text-muted mb-3">
+                        Customize the exact start and end times for all periods and lunch break. You can also rename period labels.
+                    </p>
+
+                    <div class="table-responsive rounded-3 border mb-3">
+                        <table class="table table-bordered align-middle text-center mb-0 fs-8">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 70px;">Type</th>
+                                    <th>Period / Break Label</th>
+                                    <th style="width: 140px;">Start Time</th>
+                                    <th style="width: 140px;">End Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ps in period_settings %}
+                                <tr class="{% if ps.is_lunch %}bg-warning bg-opacity-10{% endif %}">
+                                    <td>
+                                        {% if ps.is_lunch %}
+                                        <span class="badge bg-warning text-dark px-2 py-1 rounded-pill fw-bold"><i class="fa-solid fa-utensils me-1"></i>Lunch</span>
+                                        {% else %}
+                                        <span class="badge bg-primary text-white px-2 py-1 rounded-pill fw-bold">P{{ ps.period_no }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm fw-semibold" name="label_{{ ps.id }}" value="{{ ps.label }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="start_time_{{ ps.id }}" value="{{ ps.start_time }}" placeholder="09:30" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="end_time_{{ ps.id }}" value="{{ ps.end_time }}" placeholder="10:25" required>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-check form-switch fs-8 p-2 rounded bg-light border">
+                        <input class="form-check-input ms-0 me-2" type="checkbox" id="updateExistingSlotsSwitch" name="update_existing_slots" checked>
+                        <label class="form-check-label fw-bold text-dark" for="updateExistingSlotsSwitch">
+                            Automatically update existing class timetable slots to match these new start & end timings
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark btn-sm rounded-3 px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-save me-1"></i> Save Timetable Timings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- QUICK ADD TIMETABLE SLOT MODAL -->
+<div class="modal fade" id="slotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3.5">
+                <h5 class="modal-title fw-bold fs-7"><i class="fa-solid fa-calendar-plus me-2"></i>Assign Timetable Slot</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.manage_timetable') }}">
+                <input type="hidden" name="period" id="modal_period" value="1">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="modal_class_id" class="form-label fw-semibold fs-8 text-dark">Target Class <span class="text-danger">*</span></label>
+                        <select class="form-select" id="modal_class_id" name="class_id" required>
+                            <option selected disabled value="">Choose Class...</option>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}" {% if selected_class_id==c.id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Slot Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-dark">Slot Type <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="slot_type_class" value="CLASS" checked onchange="toggleSlotTypeFields('add', 'CLASS')">
+                                <label class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_class">
+                                    <i class="fa-solid fa-book-open d-block mb-1 fs-6"></i> Subject
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('add', 'LIBRARY')">
+                                <label class="btn btn-outline-info btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_library">
+                                    <i class="fa-solid fa-book-bookmark d-block mb-1 fs-6"></i> Library
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('add', 'OTHER')">
+                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_other">
+                                    <i class="fa-solid fa-shapes d-block mb-1 fs-6"></i> Others / Custom
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Title (for Library / Others) -->
+                    <div class="mb-3 d-none" id="add_custom_title_container">
+                        <label for="modal_custom_title" class="form-label fw-semibold fs-8 text-dark">Slot Title / Activity Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="modal_custom_title" name="custom_title" placeholder="e.g. Physics Lab, Seminar, Sports Hour, Mentorship">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6" id="add_subject_container">
+                            <label for="modal_subject_id" class="form-label fw-semibold fs-8 text-dark">Subject <span class="text-danger">*</span></label>
+                            <select class="form-select" id="modal_subject_id" name="subject_id">
+                                <option selected value="">Choose Subject...</option>
+                                {% for sub in subjects %}
+                                <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-6" id="add_teacher_container">
+                            <label for="modal_teacher_id" class="form-label fw-semibold fs-8 text-dark">Faculty / Incharge</label>
+                            <select class="form-select" id="modal_teacher_id" name="teacher_id">
+                                <option selected value="">Choose Teacher (Optional)...</option>
+                                {% for t in teachers %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="modal_day_of_week" class="form-label fw-semibold fs-8 text-dark">Day of Week <span class="text-danger">*</span></label>
+                            <select class="form-select" id="modal_day_of_week" name="day_of_week" required>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold fs-8 text-dark">Period & Time Slot</label>
+                            <select class="form-select" id="presetSlotSelect" onchange="applyPresetSlot(this.value)">
+                                <option value="">Custom Time</option>
+                                {% for ps in period_settings %}
+                                {% if not ps.is_lunch %}
+                                <option value="{{ ps.period_no }}|{{ ps.start_time }}|{{ ps.end_time }}">{{ ps.label }} ({{ ps.start_time }} – {{ ps.end_time }})</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="modal_start_time" class="form-label fw-semibold fs-8 text-dark">Start Time <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="modal_start_time" name="start_time" placeholder="09:30" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="modal_end_time" class="form-label fw-semibold fs-8 text-dark">End Time <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="modal_end_time" name="end_time" placeholder="10:25" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modal_room_number" class="form-label fw-semibold fs-8 text-dark">Room / Lab / Location</label>
+                        <input type="text" class="form-control" id="modal_room_number" name="room_number" placeholder="e.g. Room 201, Library, Computer Lab A">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-3 px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-save me-1"></i> Save Timetable Slot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT TIMETABLE SLOT MODAL -->
+<div class="modal fade" id="editSlotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3.5">
+                <h5 class="modal-title fw-bold fs-7"><i class="fa-solid fa-pencil me-2"></i>Edit Timetable Slot</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editSlotForm" method="POST" action="">
+                <input type="hidden" name="period" id="edit_period" value="1">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="edit_class_id" class="form-label fw-semibold fs-8 text-dark">Target Class</label>
+                        <select class="form-select" id="edit_class_id" name="class_id" required>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Slot Type Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-dark">Slot Type <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_class" value="CLASS" onchange="toggleSlotTypeFields('edit', 'CLASS')">
+                                <label class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_class">
+                                    <i class="fa-solid fa-book-open d-block mb-1 fs-6"></i> Subject
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('edit', 'LIBRARY')">
+                                <label class="btn btn-outline-info btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_library">
+                                    <i class="fa-solid fa-book-bookmark d-block mb-1 fs-6"></i> Library
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('edit', 'OTHER')">
+                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_other">
+                                    <i class="fa-solid fa-shapes d-block mb-1 fs-6"></i> Others / Custom
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Title (for Library / Others) -->
+                    <div class="mb-3 d-none" id="edit_custom_title_container">
+                        <label for="edit_custom_title" class="form-label fw-semibold fs-8 text-dark">Slot Title / Activity Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_custom_title" name="custom_title" placeholder="e.g. Physics Lab, Seminar, Sports Hour, Mentorship">
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6" id="edit_subject_container">
+                            <label for="edit_subject_id" class="form-label fw-semibold fs-8 text-dark">Subject <span class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_subject_id" name="subject_id">
+                                <option selected value="">Choose Subject...</option>
+                                {% for sub in subjects %}
+                                <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6" id="edit_teacher_container">
+                            <label for="edit_teacher_id" class="form-label fw-semibold fs-8 text-dark">Faculty / Incharge</label>
+                            <select class="form-select" id="edit_teacher_id" name="teacher_id">
+                                <option selected value="">Choose Teacher (Optional)...</option>
+                                {% for t in teachers %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="edit_day_of_week" class="form-label fw-semibold fs-8 text-dark">Day of Week <span class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_day_of_week" name="day_of_week" required>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="edit_room_number" class="form-label fw-semibold fs-8 text-dark">Room / Lab / Location</label>
+                            <input type="text" class="form-control" id="edit_room_number" name="room_number" placeholder="e.g. 201">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="edit_start_time" class="form-label fw-semibold fs-8 text-dark">Start Time <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_start_time" name="start_time" placeholder="09:30" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="edit_end_time" class="form-label fw-semibold fs-8 text-dark">End Time <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit_end_time" name="end_time" placeholder="10:25" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm rounded-3 px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-check me-1"></i> Update Slot Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- COPY / CLONE TIMETABLE MODAL -->
+<div class="modal fade" id="copyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-3.5">
+                <h5 class="modal-title fw-bold fs-7"><i class="fa-solid fa-copy me-2"></i>Copy Class Timetable Schedule</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.copy_timetable') }}">
+                <div class="modal-body p-4">
+                    <p class="fs-8 text-muted mb-3">Instantly duplicate all timetable slots from one class to another with full period tracking. You can edit specific slots as needed.</p>
+                    
+                    <!-- Source Department & Class Selection -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold fs-8 text-dark"><i class="fa-solid fa-building-user me-1 text-primary"></i>Source Dept</label>
+                            <select class="form-select form-select-sm" id="source_dept_select" onchange="filterClassesByDept('source_dept_select', 'source_class_id')">
+                                <option value="">All Departments</option>
+                                {% for dept in all_departments %}
+                                <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="source_class_id" class="form-label fw-semibold fs-8 text-dark"><i class="fa-solid fa-school me-1 text-primary"></i>Source Class <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="source_class_id" name="source_class_id" required>
+                                <option value="" selected disabled>Select Source Class...</option>
+                                {% for c in classes %}
+                                <option value="{{ c.id }}" data-department="{{ c.department or '' }}">Class {{ c.name }}{% if c.department %} ({{ c.department }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Target Department & Class Selection -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold fs-8 text-dark"><i class="fa-solid fa-building-user me-1 text-success"></i>Target Dept</label>
+                            <select class="form-select form-select-sm" id="target_dept_select" onchange="filterClassesByDept('target_dept_select', 'target_class_id')">
+                                <option value="">All Departments</option>
+                                {% for dept in all_departments %}
+                                <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="target_class_id" class="form-label fw-semibold fs-8 text-dark"><i class="fa-solid fa-school me-1 text-success"></i>Target Class <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" id="target_class_id" name="target_class_id" required>
+                                <option value="" selected disabled>Select Target Class...</option>
+                                {% for c in classes %}
+                                <option value="{{ c.id }}" data-department="{{ c.department or '' }}">Class {{ c.name }}{% if c.department %} ({{ c.department }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch fs-8">
+                        <input class="form-check-input" type="checkbox" id="overwriteSwitch" name="overwrite" value="true" checked>
+                        <label class="form-check-label fw-semibold text-dark" for="overwriteSwitch">Overwrite existing slots in Target Class</label>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 bg-light p-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark btn-sm rounded-3 px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-clone me-1"></i> Copy & Apply Timetable
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function onDepartmentFilterChange(dept) {
+        if (dept) {
+            location.href = '?department=' + encodeURIComponent(dept);
+        } else {
+            location.href = '?';
+        }
+    }
+
+    function onClassFilterChange(classId) {
+        const deptSelect = document.getElementById('deptSelectHeader');
+        const deptVal = deptSelect ? deptSelect.value : '';
+        location.href = '?class_id=' + classId + (deptVal ? '&department=' + encodeURIComponent(deptVal) : '');
+    }
+
+    function filterClassesByDept(deptSelectId, classSelectId) {
+        const deptSelect = document.getElementById(deptSelectId);
+        const classSelect = document.getElementById(classSelectId);
+        if (!deptSelect || !classSelect) return;
+
+        const selectedDept = deptSelect.value.trim().toLowerCase();
+        let firstMatch = null;
+
+        for (let opt of classSelect.options) {
+            if (!opt.value) continue;
+            const optDept = (opt.getAttribute('data-department') || '').trim().toLowerCase();
+            if (!selectedDept || optDept === selectedDept) {
+                opt.style.display = '';
+                if (!firstMatch) firstMatch = opt.value;
+            } else {
+                opt.style.display = 'none';
+            }
+        }
+
+        if (firstMatch) {
+            classSelect.value = firstMatch;
+        }
+    }
+
+    function toggleSlotTypeFields(formPrefix, type) {
+        const customTitleContainer = document.getElementById(formPrefix + '_custom_title_container');
+        const customTitleInput = document.getElementById(formPrefix === 'add' ? 'modal_custom_title' : 'edit_custom_title');
+        const subjectContainer = document.getElementById(formPrefix + '_subject_container');
+        const subjectSelect = document.getElementById(formPrefix === 'add' ? 'modal_subject_id' : 'edit_subject_id');
+
+        if (type === 'CLASS') {
+            if (customTitleContainer) customTitleContainer.classList.add('d-none');
+            if (subjectContainer) subjectContainer.classList.remove('d-none');
+            if (subjectSelect) subjectSelect.required = true;
+            if (customTitleInput) customTitleInput.required = false;
+        } else if (type === 'LIBRARY') {
+            if (customTitleContainer) customTitleContainer.classList.remove('d-none');
+            if (subjectContainer) subjectContainer.classList.add('d-none');
+            if (subjectSelect) subjectSelect.required = false;
+            if (customTitleInput) {
+                if (!customTitleInput.value || customTitleInput.value === 'Custom Activity') {
+                    customTitleInput.value = 'Library Reading';
+                }
+                customTitleInput.required = true;
+            }
+        } else { // OTHER
+            if (customTitleContainer) customTitleContainer.classList.remove('d-none');
+            if (subjectContainer) subjectContainer.classList.add('d-none');
+            if (subjectSelect) subjectSelect.required = false;
+            if (customTitleInput) {
+                if (!customTitleInput.value || customTitleInput.value === 'Library Reading') {
+                    customTitleInput.value = '';
+                }
+                customTitleInput.placeholder = 'e.g. Physics Lab, Seminar, Sports Hour, Mentorship';
+                customTitleInput.required = true;
+            }
+        }
+    }
+
+    function prepareSlotModal(classId, day, startTime, endTime, periodNum) {
+        if (classId) {
+            document.getElementById('modal_class_id').value = classId;
+        }
+        document.getElementById('modal_day_of_week').value = day;
+        document.getElementById('modal_start_time').value = startTime;
+        document.getElementById('modal_end_time').value = endTime;
+        if (periodNum) {
+            document.getElementById('modal_period').value = periodNum;
+        }
+        document.getElementById('slot_type_class').checked = true;
+        toggleSlotTypeFields('add', 'CLASS');
+        document.getElementById('presetSlotSelect').value = "";
+    }
+
+    function prepareEditModal(slotId, classId, subjectId, teacherId, day, startTime, endTime, room, periodNum, slotType, customTitle) {
+        const form = document.getElementById('editSlotForm');
+        form.action = '/admin/edit_timetable/' + slotId;
+        document.getElementById('edit_class_id').value = classId;
+        document.getElementById('edit_subject_id').value = subjectId || '';
+        document.getElementById('edit_teacher_id').value = teacherId || '';
+        document.getElementById('edit_day_of_week').value = day;
+        document.getElementById('edit_start_time').value = startTime;
+        document.getElementById('edit_end_time').value = endTime;
+        document.getElementById('edit_room_number').value = room || '';
+        if (periodNum) {
+            document.getElementById('edit_period').value = periodNum;
+        }
+
+        const type = slotType || 'CLASS';
+        if (type === 'LIBRARY') {
+            document.getElementById('edit_slot_type_library').checked = true;
+        } else if (type === 'OTHER') {
+            document.getElementById('edit_slot_type_other').checked = true;
+        } else {
+            document.getElementById('edit_slot_type_class').checked = true;
+        }
+
+        document.getElementById('edit_custom_title').value = customTitle || '';
+        toggleSlotTypeFields('edit', type);
+    }
+
+    function applyPresetSlot(val) {
+        if (!val) return;
+        const parts = val.split('|');
+        if (parts.length === 3) {
+            document.getElementById('modal_period').value = parts[0];
+            document.getElementById('modal_start_time').value = parts[1];
+            document.getElementById('modal_end_time').value = parts[2];
+        } else if (parts.length === 2) {
+            document.getElementById('modal_start_time').value = parts[0];
+            document.getElementById('modal_end_time').value = parts[1];
+        }
+    }
+</script>
+
+<style>
+    .border-dashed {
+        border-style: dashed !important;
+    }
+
+    .hover-bg-light:hover {
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        border-color: #6366f1 !important;
+    }
+</style>
+{% endblock %}

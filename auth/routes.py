@@ -108,20 +108,52 @@ def send_register_otp():
     # Generate external Click-To-Verify URL
     verify_link = url_for('auth.verify_email_link', email=email, token=token, _external=True)
 
-    subject = "SmartVision Registration OTP Code"
-    body = f"""Hello,
+    subject = f"SmartVision Verification Code: {otp}"
+    body_text = f"""Hello,
 
 Your 6-digit email verification OTP code for SmartVision registration is: {otp}
 
 Please enter this OTP code on the registration page to verify your email address.
+(This OTP code is valid for 15 minutes.)
 
-(This OTP code will expire in 15 minutes.)
+Auto-Verification Link: {verify_link}
 
 Best regards,
 SmartVision Team
 """
+    body_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #4f46e5; margin: 0; font-size: 24px; font-weight: 800;">🛡️ SmartVision</h2>
+                <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">AI-Powered Attendance Management Portal</p>
+            </div>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello,</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.5;">Your 6-digit verification code for SmartVision registration is:</p>
+            
+            <div style="background: #f1f5f9; border-radius: 12px; padding: 18px; text-align: center; margin: 20px 0; border: 2px dashed #6366f1;">
+                <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #3730a3;">{otp}</span>
+                <div style="font-size: 12px; color: #64748b; margin-top: 6px;">Valid for 15 minutes</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 22px;">
+                <a href="{verify_link}" style="display: inline-block; background: #4f46e5; color: #ffffff !important; padding: 11px 26px; border-radius: 50px; text-decoration: none; font-weight: 700; font-size: 14px;">⚡ Click Here to Auto-Verify</a>
+            </div>
+
+            <div style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <p style="margin: 0;">If you did not request this email, you can safely ignore it.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
     try:
-        send_email(email, subject, body)
+        send_email(email, subject, body_text, body_html=body_html, sync=False)
     except Exception as e:
         print(f"[OTP Email Error] {e}")
 

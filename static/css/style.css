@@ -855,3 +855,95 @@ body {
     padding: 0.5rem 0.4rem !important;
     font-size: 0.8rem !important;
 }
+
+/* ===========================================================
+   RESPONSIVE FIXES — Mobile & Tablet
+   =========================================================== */
+
+/* Topbar: prevent clock pill from overflowing on small screens */
+@media (max-width: 767.98px) {
+    /* Hide the live clock pill entirely on phones — saves space */
+    #live-clock,
+    #live-ampm,
+    .live-clock-pill {
+        display: none !important;
+    }
+
+    /* Shrink the page title text so it fits next to the toggle button */
+    .top-bar h5 {
+        font-size: 0.95rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 55vw;
+    }
+
+    /* The pill container that wraps h5 + clock on admin dashboard */
+    .top-bar .d-flex.align-items-center.gap-4 {
+        gap: 0.5rem !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
+    }
+
+    /* Topbar padding */
+    .top-bar {
+        padding: 10px 14px !important;
+    }
+
+    /* Logout button — keep text short */
+    .top-bar a.btn {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.6rem !important;
+    }
+
+    /* Main content inner padding */
+    .main-content {
+        padding: 12px !important;
+    }
+}
+
+/* Extra small phones */
+@media (max-width: 575.98px) {
+    /* Cards: full-width stacking */
+    .col-md-6, .col-lg-3, .col-lg-4, .col-lg-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Prevent wide tables from breaking layout — make them scroll */
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Card body padding */
+    .card-body, .card-header {
+        padding: 0.85rem !important;
+    }
+
+    /* Stat card numbers */
+    .display-5, .display-4 {
+        font-size: 1.8rem !important;
+    }
+
+    /* Section headings */
+    h4, .h4 { font-size: 1.1rem !important; }
+    h5, .h5 { font-size: 1rem !important; }
+    h3, .h3 { font-size: 1.2rem !important; }
+
+    /* Button groups stack vertically */
+    .btn-group-responsive {
+        flex-direction: column;
+        width: 100%;
+    }
+    .btn-group-responsive .btn {
+        width: 100%;
+        margin-bottom: 0.4rem;
+    }
+
+    /* Sidebar toggle button more tappable */
+    .sidebar-toggle {
+        font-size: 1.4rem;
+        padding: 0.3rem 0.6rem;
+    }
+}

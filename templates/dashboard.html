@@ -6,26 +6,31 @@
 
 {% block title %}Dashboard - SmartVision{% endblock %}
 {% block page_title %}
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2.5 w-100">
-    <h5 class="fw-extrabold text-dark tracking-tight mb-0">Administrator Dashboard</h5>
-    
-    <!-- Clean, Spacious Single-Line Live Clock Pill (Responsive & Auto-Aligned) -->
-    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill shadow-xs border text-nowrap"
-         style="background: linear-gradient(135deg, #090d16 0%, #1e293b 100%); border-color: rgba(56, 189, 248, 0.3) !important;">
-        <!-- Calendar Section: Generous inner padding, no line touching -->
-        <span class="d-inline-flex align-items-center gap-1.5 fs-9 fw-semibold text-white-50 ps-1 pe-2.5 border-end border-secondary border-opacity-50 text-nowrap">
-            <i class="fa-regular fa-calendar-days text-info fs-8 me-1"></i>
-            <span class="text-white">{{ today_day_name }}</span>
-        </span>
-        <!-- Time Section -->
-        <span id="live-clock" class="font-monospace fw-bold fs-8 tracking-wider text-nowrap px-1" style="color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);">--:--:--</span>
-        <!-- AM/PM Badge -->
-        <span id="live-ampm" class="badge rounded-pill font-monospace fw-bold fs-9 py-0.5 px-2" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">--</span>
-    </div>
-</div>
+<h5 class="fw-extrabold text-dark tracking-tight mb-0 text-truncate fs-6 fs-sm-5">Administrator Dashboard</h5>
 {% endblock %}
 
 {% block content %}
+<!-- Responsive Live Header & Clock Strip -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3.5 p-2.5 px-3 rounded-4 shadow-xs border"
+     style="background: var(--bg-card); border-color: var(--border-card) !important;">
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1 rounded-pill fs-9 fw-bold">
+            <i class="fa-solid fa-shield-halved me-1"></i> Admin Portal
+        </span>
+        <span class="text-muted fs-8 d-none d-sm-inline">Campus Monitoring & Live Analytics</span>
+    </div>
+    
+    <!-- Clean Live Clock Pill -->
+    <div class="d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill shadow-xs border text-nowrap ms-auto"
+         style="background: linear-gradient(135deg, #090d16 0%, #1e293b 100%); border-color: rgba(56, 189, 248, 0.3) !important;">
+        <span class="d-inline-flex align-items-center gap-1 fs-9 fw-semibold text-white-50 pe-2 border-end border-secondary border-opacity-50 text-nowrap">
+            <i class="fa-regular fa-calendar-days text-info fs-9 me-0.5"></i>
+            <span class="text-white">{{ today_day_name }}</span>
+        </span>
+        <span id="live-clock" class="font-monospace fw-bold fs-8 tracking-wider text-nowrap px-1" style="color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.45);">--:--:--</span>
+        <span id="live-ampm" class="badge rounded-pill font-monospace fw-bold fs-9 py-0.5 px-1.5" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">--</span>
+    </div>
+</div>
 
 {% if unclassified_students_count > 0 %}
 <!-- Unclassified Students Alert -->

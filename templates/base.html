@@ -183,29 +183,29 @@
     <!-- Content Area wrapper: conditional fullscreen style -->
     <div class="{% if current_user.is_authenticated %}main-content{% else %}fullscreen-content{% endif %}" id="main-content">
         {% if current_user.is_authenticated %}
-            <!-- Topbar (Only for Logged In users) -->
-            <div class="top-bar">
-                <div class="d-flex align-items-center">
-                    <button class="sidebar-toggle" id="sidebarToggle">
+            <!-- Topbar (Responsive for all screen sizes) -->
+            <div class="top-bar d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2 overflow-hidden" style="min-width: 0;">
+                    <button class="sidebar-toggle flex-shrink-0" id="sidebarToggle" aria-label="Toggle Sidebar">
                         &#9776;
                     </button>
-                    <div class="d-flex align-items-center ms-1">{% block page_title %}{% endblock %}</div>
+                    <div class="page-title-wrapper text-truncate">{% block page_title %}{% endblock %}</div>
                 </div>
                 
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
                     <!-- Theme Toggle Button -->
-                    <button id="themeToggle" class="btn btn-link text-decoration-none p-2 border-0" style="color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; transition: transform 0.2s;" title="Toggle Dark/Light Mode">
+                    <button id="themeToggle" class="btn btn-link text-decoration-none p-1.5 border-0" style="color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;" title="Toggle Dark/Light Mode">
                         <i class="fa-solid fa-moon"></i>
                     </button>
                     
-                    <div class="user-greeting d-none d-sm-block">
+                    <div class="user-greeting d-none d-lg-block">
                         <span class="text-muted">Role: <strong class="text-primary" style="text-transform: capitalize;">{{ current_user.role }}</strong> |</span>
                         Welcome, <strong>{{ current_user.name }}</strong>!
                     </div>
 
                     <!-- Topbar Quick Logout Button -->
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
-                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 fw-bold d-inline-flex align-items-center gap-1 shadow-sm fs-8" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Logout</span>
                     </a>
                 </div>
             </div>

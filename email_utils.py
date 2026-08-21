@@ -85,18 +85,18 @@ def send_email(to_email, subject, body_text, body_html=None, sync=False):
         tuple (bool, str): Status flag and descriptive message.
     """
     try:
-        host = current_app.config.get('SMTP_HOST')
+        host = current_app.config.get('SMTP_HOST') or 'smtp.gmail.com'
         port = current_app.config.get('SMTP_PORT', 587)
-        username = current_app.config.get('SMTP_USERNAME')
-        password = current_app.config.get('SMTP_PASSWORD')
-        sender = current_app.config.get('SMTP_SENDER_EMAIL', 'noreply@smartvision.com')
+        username = current_app.config.get('SMTP_USERNAME') or 'vishshivam16@gmail.com'
+        password = current_app.config.get('SMTP_PASSWORD') or 'vyrn mtsa hqxy chqh'
+        sender = current_app.config.get('SMTP_SENDER_EMAIL') or username or 'vishshivam16@gmail.com'
         use_tls = current_app.config.get('SMTP_USE_TLS', True)
     except Exception:
-        host = os.environ.get('SMTP_HOST') or os.environ.get('MAIL_SERVER')
+        host = os.environ.get('SMTP_HOST') or os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
         port = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT', 587))
-        username = os.environ.get('SMTP_USERNAME') or os.environ.get('MAIL_USERNAME')
-        password = os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD')
-        sender = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@smartvision.com')
+        username = os.environ.get('SMTP_USERNAME') or os.environ.get('MAIL_USERNAME') or 'vishshivam16@gmail.com'
+        password = os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD') or 'vyrn mtsa hqxy chqh'
+        sender = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER') or username or 'vishshivam16@gmail.com'
         use_tls = os.environ.get('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 
     # --------------------------------------------------------------------------

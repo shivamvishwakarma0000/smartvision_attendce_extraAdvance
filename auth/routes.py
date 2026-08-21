@@ -153,7 +153,7 @@ SmartVision Team
     </html>
     """
     try:
-        send_email(email, subject, body_text, body_html=body_html, sync=False)
+        send_email(email, subject, body_text, body_html=body_html, sync=True)
     except Exception as e:
         print(f"[OTP Email Error] {e}")
 

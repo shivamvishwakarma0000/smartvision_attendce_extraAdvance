@@ -747,6 +747,11 @@ body {
 }
 
 @media (max-width: 991.98px) {
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100% !important;
+    }
+
     .sidebar {
         transform: translateX(-100%);
     }
@@ -756,12 +761,30 @@ body {
     }
 
     .main-content {
-        margin-left: 0;
-        padding: 20px;
+        margin-left: 0 !important;
+        padding: 16px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Fix Bootstrap row negative margins causing left cutoff */
+    .main-content > .row,
+    .main-content .container-fluid > .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Top bar: prevent overflow */
+    .top-bar {
+        padding: 10px 12px !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
     }
 
     .sidebar-toggle {
         display: block;
+        flex-shrink: 0;
     }
 }
 

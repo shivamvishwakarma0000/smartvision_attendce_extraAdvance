@@ -257,6 +257,13 @@ def create_app():
         db.create_all()
         setup_initial_data()
 
+    # Enable reverse proxy support for secure HTTPS OAuth redirects on Render / AWS / Railway
+    try:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    except Exception:
+        pass
+
     return app
 
 # ==============================================================================

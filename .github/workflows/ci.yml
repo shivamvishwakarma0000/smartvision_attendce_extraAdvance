@@ -36,4 +36,4 @@ jobs:
           SECRET_KEY: test_secret_key_ci_environment
           FLASK_ENV: testing
         run: |
-          python scratch/test_full_deployment_readiness.py
+          python -m unittest discover tests

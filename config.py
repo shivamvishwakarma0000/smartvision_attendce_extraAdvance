@@ -44,9 +44,9 @@ class Config:
     # --------------------------------------------------------------------------
     # 4. SMTP MAIL SERVER & NOTIFICATION CREDENTIALS
     # --------------------------------------------------------------------------
-    SMTP_HOST = os.environ.get('SMTP_HOST', '')
-    SMTP_PORT = int(os.environ.get('SMTP_PORT', 587)) if os.environ.get('SMTP_PORT') and os.environ.get('SMTP_PORT').isdigit() else 587
-    SMTP_USERNAME = os.environ.get('SMTP_USERNAME', '')
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
-    SMTP_SENDER_EMAIL = os.environ.get('SMTP_SENDER_EMAIL', 'noreply@smartvision.com')
+    SMTP_HOST = os.environ.get('SMTP_HOST') or os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'
+    SMTP_PORT = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT') or 587)
+    SMTP_USERNAME = (os.environ.get('SMTP_USERNAME') or os.environ.get('MAIL_USERNAME') or '').strip()
+    SMTP_PASSWORD = (os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD') or '').strip()
+    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() in ('true', '1', 'yes')
+    SMTP_SENDER_EMAIL = (os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER') or SMTP_USERNAME or 'noreply@smartvision.com').strip()

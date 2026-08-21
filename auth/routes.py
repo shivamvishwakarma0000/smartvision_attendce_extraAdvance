@@ -684,7 +684,12 @@ def google_login():
         flash('Google Login is not configured by the administrator.', 'warning')
         return redirect(url_for('main.index', state='login'))
     
-    redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI') or url_for('auth.google_login_callback', _external=True)
+    redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+    if not redirect_uri:
+        redirect_uri = url_for('auth.google_login_callback', _external=True)
+        # Ensure HTTPS for production cloud deployments (Render / AWS / Railway)
+        if 'localhost' not in redirect_uri and '127.0.0.1' not in redirect_uri and redirect_uri.startswith('http://'):
+            redirect_uri = 'https://' + redirect_uri[len('http://'):]
     return oauth.google.authorize_redirect(redirect_uri)
 
 @auth_bp.route('/login/google/callback')

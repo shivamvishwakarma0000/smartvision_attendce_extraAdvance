@@ -16,20 +16,24 @@ from flask import current_app
 def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
     """Worker thread function for non-blocking SMTP dispatch."""
     try:
+        clean_user = (username or '').strip()
+        clean_pass = (password or '').strip().replace(' ', '')
+        clean_sender = (sender or clean_user or 'noreply@smartvision.com').strip()
+
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-        msg['From'] = sender
+        msg['From'] = f"SmartVision Portal <{clean_sender}>"
         msg['To'] = to_email
 
         msg.attach(MIMEText(body_text, 'plain'))
         if body_html:
             msg.attach(MIMEText(body_html, 'html'))
 
-        server = smtplib.SMTP(host, port, timeout=8)
+        server = smtplib.SMTP(host, int(port), timeout=12)
         if use_tls:
             server.starttls()
-        server.login(username, password)
-        server.sendmail(sender, [to_email], msg.as_string())
+        server.login(clean_user, clean_pass)
+        server.sendmail(clean_sender, [to_email], msg.as_string())
         server.quit()
         print(f"[SMTP Mail Sent] Subject: '{subject}' to {to_email}", flush=True)
     except Exception as e:

@@ -24,7 +24,7 @@ jobs:
       - name: Install System Libraries for OpenCV & Dlib
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libgl1-mesa-glx libglib2.0-0 build-essential cmake
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 build-essential cmake
 
       - name: Install Python Dependencies
         run: |

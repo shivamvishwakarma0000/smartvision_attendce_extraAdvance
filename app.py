@@ -257,6 +257,28 @@ def create_app():
         db.create_all()
         setup_initial_data()
 
+    # --------------------------------------------------------------------------
+    # 7. GLOBAL ERROR HANDLERS — Friendly redirects instead of blank error pages
+    # --------------------------------------------------------------------------
+    @app.errorhandler(500)
+    def internal_error(error):
+        """Handle 500 Internal Server Error — redirect to landing page."""
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        import traceback
+        print(f"[500 Error] {traceback.format_exc()}", flush=True)
+        from flask import redirect, url_for, flash
+        flash('Something went wrong on the server. Please try again.', 'danger')
+        return redirect(url_for('main.index')), 302
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        """Handle 404 Not Found — redirect to landing page."""
+        from flask import redirect, url_for
+        return redirect(url_for('main.index')), 302
+
     return app
 
 # ==============================================================================

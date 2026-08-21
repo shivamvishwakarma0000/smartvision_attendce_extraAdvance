@@ -10,7 +10,7 @@ services:
       - key: DATABASE_URL
         value: sqlite:////app/instance/smartvision.db
       - key: SECRET_KEY
-        sync: false
+        value: "sv-prod-7f3a9e2b1c4d6f8a0e5b2c9d4f7a1e3b6c8d0f2a5e7b9c1d3f5a7e9b2c4d6f"
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET

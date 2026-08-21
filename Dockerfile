@@ -1,11 +1,7 @@
 FROM python:3.10-slim
 
-# Install system build tools and OpenCV/Dlib runtime libraries
+# Install lightweight runtime libraries for OpenCV & Dlib (No heavy C++ compilers needed)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    pkg-config \
-    g++ \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -15,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Upgrade pip & install build tools
+# Upgrade pip & install pre-compiled wheels
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 COPY requirements.txt .

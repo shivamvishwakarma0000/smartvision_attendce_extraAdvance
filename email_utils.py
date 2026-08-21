@@ -15,48 +15,51 @@ from flask import current_app
 
 def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
     """Worker thread function for non-blocking SMTP dispatch with dual-port failover."""
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    
-    if '<' in str(sender):
-        msg['From'] = sender
-    else:
-        msg['From'] = f"SmartVision Portal <{sender}>"
-        
-    msg['To'] = to_email
+    try:
+        sender_email = str(sender).strip()
+        if '<' in sender_email and '>' in sender_email:
+            sender_email = sender_email.split('<')[1].split('>')[0].strip()
 
-    msg.attach(MIMEText(body_text, 'plain', 'utf-8'))
-    if body_html:
-        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"SmartVision Portal <{sender_email}>"
+        msg['To'] = to_email
 
-    # List of ports to attempt (primary configured port first, then fallback)
-    ports_to_try = [port]
-    if port != 465 and 465 not in ports_to_try:
-        ports_to_try.append(465)
-    if port != 587 and 587 not in ports_to_try:
-        ports_to_try.append(587)
+        msg.attach(MIMEText(body_text, 'plain', 'utf-8'))
+        if body_html:
+            msg.attach(MIMEText(body_html, 'html', 'utf-8'))
 
-    last_error = None
-    for attempt_port in ports_to_try:
-        try:
-            if attempt_port == 465:
-                server = smtplib.SMTP_SSL(host, attempt_port, timeout=15)
-            else:
-                server = smtplib.SMTP(host, attempt_port, timeout=15)
-                if use_tls:
-                    server.starttls()
-                    
-            server.login(username, password)
-            server.sendmail(sender, [to_email], msg.as_string())
-            server.quit()
-            print(f"[SMTP Mail Sent] Subject: '{subject}' successfully delivered to {to_email} (via port {attempt_port})", flush=True)
-            return True
-        except Exception as e:
-            last_error = e
-            print(f"[SMTP Port {attempt_port} Warning] Could not deliver via port {attempt_port}: {e}. Trying next port...", flush=True)
+        # List of ports to attempt (primary configured port first, then fallback)
+        ports_to_try = [port]
+        if port != 465 and 465 not in ports_to_try:
+            ports_to_try.append(465)
+        if port != 587 and 587 not in ports_to_try:
+            ports_to_try.append(587)
 
-    print(f"[SMTP Error] Failed to send email to {to_email} after all attempts: {last_error}", flush=True)
-    return False
+        last_error = None
+        for attempt_port in ports_to_try:
+            try:
+                if attempt_port == 465:
+                    server = smtplib.SMTP_SSL(host, attempt_port, timeout=15)
+                else:
+                    server = smtplib.SMTP(host, attempt_port, timeout=15)
+                    if use_tls:
+                        server.starttls()
+                        
+                server.login(username, password)
+                server.sendmail(sender_email, [to_email], msg.as_string())
+                server.quit()
+                print(f"[SMTP Mail Sent] Subject: '{subject}' successfully delivered to {to_email} (via port {attempt_port})", flush=True)
+                return True
+            except Exception as e:
+                last_error = e
+                print(f"[SMTP Port {attempt_port} Warning] Could not deliver via port {attempt_port}: {e}. Trying next port...", flush=True)
+
+        print(f"[SMTP Error] Failed to send email to {to_email} after all attempts: {last_error}", flush=True)
+        return False
+    except Exception as e:
+        print(f"[SMTP Fatal Error] Worker encountered an error for {to_email}: {e}", flush=True)
+        return False
 
 # ==============================================================================
 # CORE EMAIL DISPATCH FUNCTION
@@ -68,24 +71,32 @@ def send_email(to_email, subject, body_text, body_html=None, sync=False):
     By default dispatches asynchronously in a background thread to prevent UI freezing.
     """
     try:
-        host = current_app.config.get('SMTP_HOST')
-        port = int(current_app.config.get('SMTP_PORT', 587))
-        username = current_app.config.get('SMTP_USERNAME')
-        password = current_app.config.get('SMTP_PASSWORD')
-        sender = current_app.config.get('SMTP_SENDER_EMAIL', 'noreply@smartvision.com')
-        use_tls = current_app.config.get('SMTP_USE_TLS', True)
+        from dotenv import load_dotenv
+        load_dotenv()
     except Exception:
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-        except ImportError:
-            pass
-        host = os.environ.get('SMTP_HOST') or os.environ.get('MAIL_SERVER')
-        port = int(os.environ.get('SMTP_PORT') or os.environ.get('MAIL_PORT', 587))
-        username = os.environ.get('SMTP_USERNAME') or os.environ.get('MAIL_USERNAME')
-        password = os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD')
-        sender = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@smartvision.com')
-        use_tls = os.environ.get('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+        pass
+
+    host = os.environ.get('SMTP_HOST')
+    port = int(os.environ.get('SMTP_PORT', 465)) if os.environ.get('SMTP_PORT') and str(os.environ.get('SMTP_PORT')).isdigit() else 465
+    username = os.environ.get('SMTP_USERNAME')
+    password = os.environ.get('SMTP_PASSWORD')
+    sender = os.environ.get('SMTP_SENDER_EMAIL') or username or 'noreply@smartvision.com'
+    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() in ('true', '1', 'yes')
+
+    # Fallback to current_app if available
+    try:
+        if current_app:
+            host = current_app.config.get('SMTP_HOST') or host
+            port = int(current_app.config.get('SMTP_PORT', port))
+            username = current_app.config.get('SMTP_USERNAME') or username
+            password = current_app.config.get('SMTP_PASSWORD') or password
+            sender = current_app.config.get('SMTP_SENDER_EMAIL') or sender
+            use_tls = current_app.config.get('SMTP_USE_TLS', use_tls)
+    except Exception:
+        pass
+
+    if not host:
+        host = 'smtp.gmail.com'
 
     # --------------------------------------------------------------------------
     # 1. ATTEMPT REAL-TIME SMTP DISPATCH

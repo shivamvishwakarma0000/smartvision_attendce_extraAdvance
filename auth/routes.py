@@ -120,8 +120,7 @@ def send_register_otp():
 
     return {
         'success': True,
-        'message': f'6-Digit OTP sent to {email}! Please check your Inbox (or Spam folder).',
-        'otp_debug': otp
+        'message': f'6-Digit OTP sent to {email}! Please check your Inbox (or Spam folder).'
     }
 
 @auth_bp.route('/verify-register-otp', methods=['POST'])

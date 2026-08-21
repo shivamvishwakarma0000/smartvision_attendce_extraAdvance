@@ -1,7 +1,11 @@
 FROM python:3.10-slim
 
-# Install lightweight runtime dependencies for OpenCV & Dlib (No heavy compilers needed)
+# Install system build tools and OpenCV/Dlib runtime libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    pkg-config \
+    g++ \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -11,10 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Upgrade pip & install pre-compiled dlib binary wheel + face-recognition without C++ compilation
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir dlib-bin face-recognition-models && \
-    pip install --no-cache-dir --no-deps face-recognition
+# Upgrade pip & install build tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt

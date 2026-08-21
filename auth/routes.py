@@ -313,10 +313,8 @@ def register():
         if existing_reg_user:
             has_active_profile = False
             if existing_reg_user.role == 'student':
-                from models import Student
                 has_active_profile = (Student.query.filter_by(user_id=existing_reg_user.id).first() is not None)
             elif existing_reg_user.role == 'teacher':
-                from models import Teacher
                 has_active_profile = (Teacher.query.filter_by(user_id=existing_reg_user.id).first() is not None)
             elif existing_reg_user.role == 'admin':
                 has_active_profile = True

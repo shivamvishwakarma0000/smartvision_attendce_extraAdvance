@@ -263,6 +263,60 @@
             object-fit: cover;
             border: 2px solid var(--primary-blue);
         }
+
+        /* ====================== RESPONSIVE FIXES ====================== */
+        @media (max-width: 991.98px) {
+            /* On mobile/tablet, stack vertically — remove fixed max-height so form is fully visible */
+            .auth-card-container {
+                max-width: 100%;
+                max-height: none !important;
+                overflow-y: visible !important;
+                padding-right: 0;
+            }
+            .auth-card {
+                padding: 1.5rem 1.1rem;
+                border-radius: 1rem;
+            }
+            /* Prevent hero title overflow on mobile */
+            .hero-main-title {
+                font-size: 2rem;
+                letter-spacing: -0.5px;
+            }
+            /* Constrain the container to full width */
+            .col-lg-6.col-12.ms-auto.ps-lg-4 {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            /* Prevent row overflow */
+            .container-fluid {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .auth-card {
+                padding: 1.25rem 0.9rem;
+            }
+            /* Prevent 2-col rows from breaking on very small phones */
+            .auth-card .row.g-2 > .col-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            /* Navbar brand text */
+            .navbar .fs-4 {
+                font-size: 1.1rem !important;
+            }
+            /* Theme toggle button shrink */
+            .navbar .btn {
+                font-size: 0.75rem !important;
+                padding: 0.25rem 0.6rem !important;
+            }
+            /* Role selector grid on mobile */
+            .auth-nav-pills {
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -591,8 +645,8 @@
                             </div>
 
                             <!-- MANDATORY FACIAL PHOTO SELECTION -->
-                            <div class="mb-3">
-                                <label class="form-label d-block" style="color: var(--text-main);">Register Face Photo <span class="text-danger">* (Mandatory)</span></label>
+                            <div class="mb-3" id="student-photo-section">
+                                <label class="form-label d-block" style="color: var(--text-main);">Register Face Photo <span class="text-muted fs-9">(Optional — can be added later)</span></label>
 
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">

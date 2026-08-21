@@ -470,10 +470,9 @@ def register():
                 flash('Parent Name, Parent Email, and Parent Mobile Number are required for student registration.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
-            # Enforce Mandatory Photo for Student Registration
-            if not captured_base64 and not (student_photo and student_photo.filename):
-                flash('Student photo is mandatory for registration. Please upload a photo or capture via camera.', 'danger')
-                return redirect(url_for('main.index', state='signup'))
+            # Photo is optional — student can add it later via their profile.
+            # We still process it if provided.
+
 
             if Student.query.filter_by(roll_no=roll_no).first():
                 flash('A student with this Roll Number already exists.', 'danger')

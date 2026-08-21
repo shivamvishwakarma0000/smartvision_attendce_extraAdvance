@@ -77,23 +77,9 @@ def send_register_otp():
 
     # Check if user already exists
     existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        has_active_profile = False
-        if existing_user.role == 'student':
-            from models import Student
-            has_active_profile = (Student.query.filter_by(user_id=existing_user.id).first() is not None)
-        elif existing_user.role == 'teacher':
-            from models import Teacher
-            has_active_profile = (Teacher.query.filter_by(user_id=existing_user.id).first() is not None)
-        elif existing_user.role == 'admin':
-            has_active_profile = True
-
-        if has_active_profile and getattr(existing_user, 'is_email_verified', True):
-            return {'success': False, 'message': 'An account with this email already exists and is verified. Please sign in instead.'}, 400
-        elif not has_active_profile:
-            # Purge stale orphan user record left from previous deletions
-            db.session.delete(existing_user)
-            db.session.commit()
+    is_already_registered = False
+    if existing_user and getattr(existing_user, 'is_email_verified', False):
+        is_already_registered = True
 
     otp = generate_otp(6)
     token = secrets.token_urlsafe(24)

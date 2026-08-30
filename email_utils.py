@@ -106,6 +106,29 @@ def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_em
         print(f"[SMTP Port 587 STARTTLS Failed: {e_tls}]", flush=True)
         return False
 
+def _dispatch_unified_worker(resend_api_key, brevo_api_key, host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
+    """Unified email dispatcher with automatic failover chain."""
+    # 1. Try Resend Cloud API
+    if resend_api_key:
+        if _dispatch_resend_api(resend_api_key, sender, to_email, subject, body_text, body_html):
+            return True
+        print("[Resend Notice: Delivery failed or sandbox restricted] Automatically falling back to SMTP...", flush=True)
+
+    # 2. Try Brevo Cloud API
+    if brevo_api_key:
+        if _dispatch_brevo_api(brevo_api_key, sender, to_email, subject, body_text, body_html):
+            return True
+        print("[Brevo Notice: Delivery failed] Falling back to SMTP...", flush=True)
+
+    # 3. Try Direct SMTP (Port 465 SSL -> Port 587 STARTTLS)
+    if host and username and password:
+        if _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
+            return True
+
+    # 4. Safe Console Log Fallback
+    print(f"[EMAIL DEV FALLBACK LOG] To: {to_email} | Subject: {subject}\n{body_text}", flush=True)
+    return False
+
 # ==============================================================================
 # CORE EMAIL DISPATCH FUNCTION
 # ==============================================================================
@@ -132,43 +155,13 @@ def send_email(to_email, subject, body_text, body_html=None, sync=False):
         sender = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER') or username or 'vishshivam16@gmail.com'
         use_tls = os.environ.get('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 
-    # 1. Cloud-Native Resend API (Preferred: 100% Free, 3000 emails/mo, 0% spam block)
-    if resend_api_key:
-        if sync:
-            _dispatch_resend_api(resend_api_key, sender, to_email, subject, body_text, body_html)
-        else:
-            threading.Thread(
-                target=_dispatch_resend_api,
-                args=(resend_api_key, sender, to_email, subject, body_text, body_html),
-                daemon=True
-            ).start()
-        return True, "Email dispatched via Resend API."
+    if sync:
+        _dispatch_unified_worker(resend_api_key, brevo_api_key, host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html)
+    else:
+        threading.Thread(
+            target=_dispatch_unified_worker,
+            args=(resend_api_key, brevo_api_key, host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html),
+            daemon=True
+        ).start()
 
-    # 2. Cloud-Native Brevo API (300 emails/day Free)
-    if brevo_api_key:
-        if sync:
-            _dispatch_brevo_api(brevo_api_key, sender, to_email, subject, body_text, body_html)
-        else:
-            threading.Thread(
-                target=_dispatch_brevo_api,
-                args=(brevo_api_key, sender, to_email, subject, body_text, body_html),
-                daemon=True
-            ).start()
-        return True, "Email dispatched via Brevo API."
-
-    # 3. SMTP Direct Dispatch (Gmail Port 465 SSL / Port 587 STARTTLS)
-    if host and username and password:
-        if sync:
-            _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html)
-        else:
-            t = threading.Thread(
-                target=_dispatch_smtp_worker,
-                args=(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html),
-                daemon=True
-            )
-            t.start()
-        return True, "Email dispatch scheduled via SMTP."
-
-    # 4. Fallback Log
-    print(f"[EMAIL DEV LOG] To: {to_email} | Subject: {subject}", flush=True)
-    return True, "Email logged to console."
+    return True, "Email dispatch initiated."

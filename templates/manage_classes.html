@@ -62,17 +62,21 @@
                     <p class="text-muted fs-9 mb-3">Select existing catalog subjects or create new ones, and immediately assign subject teachers.</p>
 
                     <!-- Step 1: Subjects Count Preset -->
-                    <div class="d-flex align-items-center gap-2 mb-3 bg-white p-2 rounded-3 border">
-                        <label for="subject_count_input" class="text-muted fs-8 fw-semibold text-nowrap mb-0">How many subjects would you like to add?</label>
-                        <input type="number" id="subject_count_input" class="form-control form-control-sm text-center fw-bold" style="width: 80px;" min="1" max="15" value="1" oninput="generateSubjectRows()" onchange="generateSubjectRows()">
-                        <button type="button" onclick="generateSubjectRows()" class="btn btn-sm btn-outline-primary py-1 px-3 fs-8 fw-semibold">
-                            Generate Rows
-                        </button>
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3 bg-white p-2.5 rounded-3 border">
+                        <label for="subject_count_input" class="text-muted fs-8 fw-semibold mb-0">How many subjects to add?</label>
+                        <div class="d-flex align-items-center gap-1.5 w-100 w-sm-auto justify-content-between justify-content-sm-end">
+                            <input type="number" id="subject_count_input" class="form-control form-control-sm text-center fw-bold" style="width: 75px;" min="0" max="15" value="0" placeholder="0">
+                            <button type="button" onclick="generateSubjectRows()" class="btn btn-sm btn-outline-primary py-1 px-3 fs-8 fw-semibold text-nowrap">
+                                Generate Rows
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Subject Rows Container -->
                     <div id="subjectRowsContainer" class="d-flex flex-column gap-2 mb-3">
-                        <!-- Dynamic subject rows will be injected here -->
+                        <div id="noSubjectRowsNotice" class="p-3 text-center text-muted fs-9 border rounded-3 bg-white">
+                            <i class="fa-solid fa-layer-group text-primary me-1"></i> No subject rows added yet. Enter a count above or click below.
+                        </div>
                     </div>
 
                     <button type="button" onclick="addSubjectRow()" class="btn btn-sm btn-light border text-primary fw-semibold w-100 py-2">
@@ -260,13 +264,15 @@ const availableTeachers = [
 
 function addSubjectRow(initialSubName = '', initialTeacherId = '') {
     const container = document.getElementById('subjectRowsContainer');
-    const rowId = Date.now() + Math.random().toString(36).substring(2, 5);
+    const notice = document.getElementById('noSubjectRowsNotice');
+    if (notice) notice.remove();
 
-    let teacherOptionsHtml = '<option value="" selected disabled>Assign Teacher...</option>';
-    availableTeachers.forEach(t => {
-        const isSel = (t.id === initialTeacherId) ? 'selected' : '';
-        teacherOptionsHtml += `<option value="${t.id}" ${isSel}>${t.name}</option>`;
-    });
+    const rowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+
+    let teacherOptionsHtml = '<option value="" disabled selected>Assign Subject Teacher...</option>';
+    {% for teacher in teachers %}
+    teacherOptionsHtml += `<option value="{{ teacher.id }}" ${initialTeacherId == '{{ teacher.id }}' ? 'selected' : ''}>{{ teacher.name }} ({{ teacher.emp_id or 'Faculty' }})</option>`;
+    {% endfor %}
 
     const rowHtml = `
         <div class="row g-2 align-items-center bg-white p-2 rounded-3 border" id="subject_row_${rowId}">
@@ -291,6 +297,14 @@ function addSubjectRow(initialSubName = '', initialTeacherId = '') {
 function removeSubjectRow(rowId) {
     const row = document.getElementById(`subject_row_${rowId}`);
     if (row) row.remove();
+    const container = document.getElementById('subjectRowsContainer');
+    if (container && container.children.length === 0) {
+        container.innerHTML = `
+            <div id="noSubjectRowsNotice" class="p-3 text-center text-muted fs-9 border rounded-3 bg-white">
+                <i class="fa-solid fa-layer-group text-primary me-1"></i> No subject rows added yet. Enter a count above or click below.
+            </div>
+        `;
+    }
 }
 
 function generateSubjectRows() {
@@ -299,14 +313,22 @@ function generateSubjectRows() {
     const container = document.getElementById('subjectRowsContainer');
     container.innerHTML = '';
 
+    if (count <= 0) {
+        container.innerHTML = `
+            <div id="noSubjectRowsNotice" class="p-3 text-center text-muted fs-9 border rounded-3 bg-white">
+                <i class="fa-solid fa-layer-group text-primary me-1"></i> No subject rows added yet. Enter a count above or click below.
+            </div>
+        `;
+        return;
+    }
+
     for (let i = 0; i < count; i++) {
         addSubjectRow();
     }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Generate initial 2 rows by default
-    generateSubjectRows();
+    // Default 0 rows on load (user adds dynamically when creating a class)
 
     // Paginate Active Classes List (10 per page if > 10)
     const classItems = Array.from(document.querySelectorAll('.active-class-item'));

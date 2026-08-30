@@ -232,18 +232,17 @@
 </div>
 
 <!-- Section 2.5: Emergency Proxy & Class Reallocation Desk (Uninformed / Absent / Leave Teacher Classes) -->
-<div class="card p-4 shadow-sm border-0 mb-4 fade-in" id="emergencyProxyDeskSection" style="border-left: 5px solid #ef4444 !important; background: #ffffff;">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9 animate-pulse">
-                    <i class="fa-solid fa-triangle-exclamation me-1"></i> DIRECT WORKLOAD ASSIGNMENT
-                </span>
-                <h4 class="fw-bold text-dark mb-0">Emergency Proxy Desk (Absent Faculty / Leave Class Allocations)</h4>
-            </div>
-            <p class="text-muted mb-0 fs-8">Directly allocate substitute teachers for absent faculty, or cancel classes when no proxy is free.</p>
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in" id="emergencyProxyDeskSection" style="border-left: 5px solid #ef4444 !important; background: #ffffff;">
+    <div class="d-flex flex-column gap-2 mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i> DIRECT WORKLOAD ASSIGNMENT
+            </span>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h4 class="fw-bold text-dark mb-1 fs-5">Emergency Proxy Desk (Absent Faculty / Leave Class Allocations)</h4>
+        <p class="text-muted mb-0 fs-8">Directly allocate substitute teachers for absent faculty, or cancel classes when no proxy is free.</p>
+        
+        <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
             {% if emergency_desk %}
             <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 fw-bold fs-8 shadow-xs">
                 <i class="fa-solid fa-user-xmark me-1"></i> {{ emergency_desk.total_absent_count }} Absent Faculty
@@ -258,8 +257,8 @@
                 <i class="fa-solid fa-ban me-1"></i> {{ emergency_desk.cancelled_slots_count }} Cancelled
             </span>
             {% endif %}
-            <a href="{{ url_for('main.emergency_proxy_desk') }}" class="btn btn-sm btn-danger rounded-pill px-4 py-2 fw-bold fs-8 shadow-xs">
-                <i class="fa-solid fa-user-shield me-1.5"></i> Open Full Emergency Proxy Desk & History →
+            <a href="{{ url_for('main.emergency_proxy_desk') }}" class="btn btn-sm btn-danger rounded-pill px-3.5 py-1.5 fw-bold fs-8 shadow-xs ms-sm-auto text-nowrap">
+                <i class="fa-solid fa-user-shield me-1.5"></i> Open Full Desk →
             </a>
         </div>
     </div>

@@ -653,9 +653,12 @@ class UniversitySettings(db.Model):
     dean_name = db.Column(db.String(100), default='Dr. R. Sharma')
     registrar_name = db.Column(db.String(100), default='Dr. A. K. Mishra')
     logo_filename = db.Column(db.String(255), nullable=True)
+    logo_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     name_image_filename = db.Column(db.String(255), nullable=True)
+    name_image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     header_display_mode = db.Column(db.String(20), default='BOTH') # 'TEXT', 'IMAGE', 'BOTH'
     signature_filename = db.Column(db.String(255), nullable=True)
+    signature_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     address = db.Column(db.String(255), default='SmartVision Academic Campus, IT Knowledge Park, City')
     phone = db.Column(db.String(50), default='+91 98765 43210')
     email = db.Column(db.String(100), default='admin@smartvision.edu')

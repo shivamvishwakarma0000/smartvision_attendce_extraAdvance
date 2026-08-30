@@ -88,9 +88,11 @@ def run_migrations(db_path="smartvision.db"):
             ("daily_schedule", "proxy_assigned_at", "DATETIME"),
             ("class_announcements", "admin_id", "INTEGER"),
             ("class_announcements", "posted_by_role", "VARCHAR(20) DEFAULT 'teacher'"),
-            ("class_announcements", "target_role", "VARCHAR(20) DEFAULT 'STUDENTS'"),
             ("university_settings", "name_image_filename", "VARCHAR(255)"),
-            ("university_settings", "header_display_mode", "VARCHAR(20) DEFAULT 'BOTH'")
+            ("university_settings", "header_display_mode", "VARCHAR(20) DEFAULT 'BOTH'"),
+            ("university_settings", "logo_data", "TEXT"),
+            ("university_settings", "name_image_data", "TEXT"),
+            ("university_settings", "signature_data", "TEXT")
         ]
 
         for table, column, col_type in migrations:

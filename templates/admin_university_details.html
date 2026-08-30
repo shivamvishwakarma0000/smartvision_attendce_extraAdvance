@@ -126,7 +126,7 @@
 
                     <div class="text-center p-3 bg-light rounded-3 border mb-3">
                         {% if settings.logo_filename %}
-                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 85px; max-width: 180px; object-fit: contain;">
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 85px; max-width: 180px; object-fit: contain;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/university/parul_logo.png') }}';">
                         <span class="d-block fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Custom Logo Active</span>
                         {% else %}
                         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 80px; max-width: 140px; object-fit: contain;">
@@ -151,7 +151,7 @@
                     <div class="text-center p-3 bg-light rounded-3 border mb-3">
                         {% if settings.name_image_filename %}
                         <div class="p-2 bg-dark rounded-3 border mb-2 d-inline-block">
-                            <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="College Name Graphic" class="p-1" style="max-height: 55px; max-width: 260px; object-fit: contain;">
+                            <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="College Name Graphic" class="p-1" style="max-height: 55px; max-width: 260px; object-fit: contain;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/university/parul_name.png') }}';">
                         </div>
                         <div class="d-flex justify-content-center align-items-center gap-2">
                             <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>College Name Image Active</span>
@@ -193,7 +193,7 @@
 
                     <div class="text-center p-3 bg-light rounded-3 border mb-3">
                         {% if settings.signature_filename %}
-                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.signature_filename) }}" alt="Signature" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 60px; max-width: 160px; object-fit: contain;">
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.signature_filename) }}" alt="Signature" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 60px; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/university/parul_signature.png') }}';">
                         <span class="d-block fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Official Signature Active</span>
                         {% else %}
                         <div class="font-signature text-primary fs-4 fw-bold p-2" style="font-family: cursive;">{{ settings.dean_name or 'Dr. R. Sharma' }}</div>
@@ -218,7 +218,7 @@
                         <div class="d-flex align-items-center gap-3.5 flex-wrap flex-sm-nowrap">
                             {% if settings.logo_filename and settings.header_display_mode != 'IMAGE' %}
                             <div class="rounded-3 bg-white p-2 flex-shrink-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 74px; height: 74px;">
-                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/university/parul_logo.png') }}';">
                             </div>
                             {% elif settings.header_display_mode != 'IMAGE' %}
                             <div class="rounded-3 bg-white p-2 flex-shrink-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 74px; height: 74px;">
@@ -228,7 +228,7 @@
 
                             <div class="flex-grow-1">
                                 {% if settings.name_image_filename and settings.header_display_mode in ('IMAGE', 'BOTH') %}
-                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="{{ settings.name }}" class="d-block mb-1.5" style="max-height: 64px; max-width: 380px; width: auto; object-fit: contain;">
+                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="{{ settings.name }}" class="d-block mb-1.5" style="max-height: 64px; max-width: 380px; width: auto; object-fit: contain;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/university/parul_name.png') }}';">
                                 {% else %}
                                 <h4 class="fw-bold mb-1 text-white fs-5" style="letter-spacing: -0.3px;">{{ settings.short_name or settings.name }}</h4>
                                 {% endif %}

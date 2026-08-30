@@ -7,13 +7,15 @@
 # ==============================================================================
 
 import os
+import io
+import base64
 try:
     import face_recognition
 except ImportError:
     face_recognition = None
 import numpy as np
 from datetime import date, datetime, time, timedelta
-from flask import render_template, redirect, url_for, flash, request, send_from_directory, jsonify, Blueprint, session
+from flask import render_template, redirect, url_for, flash, request, send_from_directory, send_file, jsonify, Blueprint, session
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from collections import defaultdict
@@ -2033,7 +2035,73 @@ def uploaded_face(filename):
 def uploaded_university_logo(filename):
     u_dir = os.path.join(os.getcwd(), 'uploads', 'university')
     os.makedirs(u_dir, exist_ok=True)
-    return send_from_directory(u_dir, filename)
+    target_path = os.path.join(u_dir, filename)
+
+    # 1. If file already exists on local container disk, return it directly
+    if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
+        return send_from_directory(u_dir, filename)
+
+    # 2. Self-healing from Persistent Neon PostgreSQL Database Base64 Storage
+    try:
+        settings = UniversitySettings.get_settings()
+        
+        # Check if requested filename is the logo
+        if settings.logo_filename == filename and settings.logo_data:
+            data = settings.logo_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target_path, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+
+        # Check if requested filename is the name graphic
+        if settings.name_image_filename == filename and settings.name_image_data:
+            data = settings.name_image_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target_path, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+
+        # Check if requested filename is the signature
+        if settings.signature_filename == filename and settings.signature_data:
+            data = settings.signature_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target_path, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+    except Exception as e:
+        print(f"[Uploads Recovery Error] Could not restore {filename} from Neon DB: {e}")
+
+    # 3. Fallback to bundled static repository assets
+    static_univ_dir = os.path.join(os.getcwd(), 'static', 'images', 'university')
+    static_asset = os.path.join(static_univ_dir, filename)
+    if os.path.exists(static_asset):
+        return send_from_directory(static_univ_dir, filename)
+    
+    # 4. Graceful default fallbacks based on file prefix
+    if 'logo' in filename.lower():
+        fallback_logo = os.path.join(static_univ_dir, 'parul_logo.png')
+        if os.path.exists(fallback_logo):
+            return send_from_directory(static_univ_dir, 'parul_logo.png')
+        return send_from_directory(os.path.join(os.getcwd(), 'static', 'images'), 'logo.png')
+    elif 'name' in filename.lower():
+        fallback_name = os.path.join(static_univ_dir, 'parul_name.png')
+        if os.path.exists(fallback_name):
+            return send_from_directory(static_univ_dir, 'parul_name.png')
+    elif 'signature' in filename.lower():
+        fallback_sig = os.path.join(static_univ_dir, 'parul_signature.png')
+        if os.path.exists(fallback_sig):
+            return send_from_directory(static_univ_dir, 'parul_signature.png')
+
+    return send_from_directory(os.path.join(os.getcwd(), 'static', 'images'), 'logo.png')
 
 @main_bp.route('/get_subjects/<int:class_id>')
 @login_required
@@ -3657,8 +3725,11 @@ def university_details():
             ext = os.path.splitext(secure_filename(logo_file.filename))[1] or '.png'
             logo_fn = f"univ_logo_{int(datetime.utcnow().timestamp())}{ext}"
             logo_path = os.path.join(u_dir, logo_fn)
-            logo_file.save(logo_path)
+            file_bytes = logo_file.read()
+            with open(logo_path, 'wb') as f:
+                f.write(file_bytes)
             settings.logo_filename = logo_fn
+            settings.logo_data = base64.b64encode(file_bytes).decode('utf-8')
 
         # Handle College Name Image / Wordmark Typography Banner Upload
         name_image_file = request.files.get('name_image')
@@ -3668,11 +3739,15 @@ def university_details():
             ext = os.path.splitext(secure_filename(name_image_file.filename))[1] or '.png'
             name_img_fn = f"univ_name_{int(datetime.utcnow().timestamp())}{ext}"
             name_img_path = os.path.join(u_dir, name_img_fn)
-            name_image_file.save(name_img_path)
+            file_bytes = name_image_file.read()
+            with open(name_img_path, 'wb') as f:
+                f.write(file_bytes)
             settings.name_image_filename = name_img_fn
+            settings.name_image_data = base64.b64encode(file_bytes).decode('utf-8')
 
         if request.form.get('remove_name_image') == '1':
             settings.name_image_filename = None
+            settings.name_image_data = None
 
         # Header Display Mode
         display_mode = request.form.get('header_display_mode', 'BOTH')
@@ -3687,8 +3762,11 @@ def university_details():
             ext = os.path.splitext(secure_filename(sig_file.filename))[1] or '.png'
             sig_fn = f"univ_signature_{int(datetime.utcnow().timestamp())}{ext}"
             sig_path = os.path.join(u_dir, sig_fn)
-            sig_file.save(sig_path)
+            file_bytes = sig_file.read()
+            with open(sig_path, 'wb') as f:
+                f.write(file_bytes)
             settings.signature_filename = sig_fn
+            settings.signature_data = base64.b64encode(file_bytes).decode('utf-8')
 
         db.session.commit()
         flash("✓ University institutional profile, college name wordmark & branding successfully updated! All portals, headers, and ID cards now reflect the updated details.", "success")

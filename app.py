@@ -281,7 +281,9 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        ensure_postgresql_columns()
         setup_initial_data()
+        sync_university_images_to_db()
 
     # Enable reverse proxy support for secure HTTPS OAuth redirects on Render / AWS / Railway
     try:
@@ -293,8 +295,78 @@ def create_app():
     return app
 
 # ==============================================================================
-# INITIAL DATA SEEDING FUNCTION
+# INITIAL DATA SEEDING & ASSET SYNC FUNCTIONS
 # ==============================================================================
+def ensure_postgresql_columns():
+    """Runs idempotent column check on Neon PostgreSQL / SQLite for new schema columns."""
+    try:
+        from sqlalchemy import text
+        statements = [
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS logo_data TEXT",
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS name_image_data TEXT",
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT"
+        ]
+        for stmt in statements:
+            try:
+                db.session.execute(text(stmt))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+    except Exception as e:
+        pass
+
+def sync_university_images_to_db():
+    """Ensures university logos and banners are permanently stored as Base64 in Neon PostgreSQL."""
+    try:
+        import base64
+        from models import UniversitySettings
+        settings = UniversitySettings.get_settings()
+        changed = False
+
+        static_univ_dir = os.path.join(os.getcwd(), 'static', 'images', 'university')
+
+        # 1. Sync Logo
+        if not settings.logo_data:
+            logo_src = os.path.join(static_univ_dir, 'parul_logo.png')
+            if not os.path.exists(logo_src):
+                logo_src = os.path.join(static_univ_dir, 'univ_logo_1788059444.png')
+            if os.path.exists(logo_src):
+                with open(logo_src, 'rb') as f:
+                    settings.logo_data = base64.b64encode(f.read()).decode('utf-8')
+                    if not settings.logo_filename:
+                        settings.logo_filename = 'parul_logo.png'
+                    changed = True
+
+        # 2. Sync Wordmark Name Banner
+        if not settings.name_image_data:
+            name_src = os.path.join(static_univ_dir, 'parul_name.png')
+            if not os.path.exists(name_src):
+                name_src = os.path.join(static_univ_dir, 'univ_name_1788060474.png')
+            if os.path.exists(name_src):
+                with open(name_src, 'rb') as f:
+                    settings.name_image_data = base64.b64encode(f.read()).decode('utf-8')
+                    if not settings.name_image_filename:
+                        settings.name_image_filename = 'parul_name.png'
+                    changed = True
+
+        # 3. Sync Signature Stamp
+        if not settings.signature_data:
+            sig_src = os.path.join(static_univ_dir, 'parul_signature.png')
+            if not os.path.exists(sig_src):
+                sig_src = os.path.join(static_univ_dir, 'univ_signature_1788059444.png')
+            if os.path.exists(sig_src):
+                with open(sig_src, 'rb') as f:
+                    settings.signature_data = base64.b64encode(f.read()).decode('utf-8')
+                    if not settings.signature_filename:
+                        settings.signature_filename = 'parul_signature.png'
+                    changed = True
+
+        if changed:
+            db.session.commit()
+            print("[University Sync] Successfully stored permanent Base64 university assets into Neon PostgreSQL DB!")
+    except Exception as e:
+        print(f"[University Sync Notice] {e}")
+
 def setup_initial_data():
     """Seeds default administrator accounts if not present in the database."""
     from models import User

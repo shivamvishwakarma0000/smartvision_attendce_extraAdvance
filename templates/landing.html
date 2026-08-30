@@ -267,15 +267,19 @@
 </head>
 <body>
 
-<!-- Single Top Navbar with Official Brand Logo Image -->
+<!-- Single Top Navbar with SmartVision Official Brand Logo Image & Aura Glow -->
 <nav class="navbar px-4 py-3 border-bottom border-opacity-10 border-white">
     <div class="container d-flex justify-content-between align-items-center">
         <a class="d-flex align-items-center gap-2.5 text-decoration-none" href="#">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SmartVision Logo" class="rounded shadow-sm" style="width: 38px; height: 38px; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.2);" onerror="this.style.display='none'; document.getElementById('landing-logo-fallback').classList.remove('d-none');">
-            <span id="landing-logo-fallback" class="d-none rounded bg-primary d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                <i class="fa-solid fa-eye text-white fs-6"></i>
-            </span>
-            <span class="fs-4 fw-bold text-white" style="letter-spacing: -0.5px;">SmartVision</span>
+            <div class="position-relative d-inline-flex align-items-center justify-content-center">
+                <!-- Glowing Logo Aura -->
+                <div class="position-absolute rounded-circle" style="width: 46px; height: 46px; background: radial-gradient(circle, rgba(99, 102, 241, 0.65) 0%, rgba(79, 70, 229, 0) 70%); filter: blur(5px); z-index: 0;"></div>
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SmartVision Logo" class="rounded shadow-sm position-relative" style="width: 38px; height: 38px; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.25); z-index: 1;" onerror="this.style.display='none'; document.getElementById('landing-logo-fallback').classList.remove('d-none');">
+                <span id="landing-logo-fallback" class="d-none rounded bg-primary position-relative d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); z-index: 1;">
+                    <i class="fa-solid fa-eye text-white fs-6"></i>
+                </span>
+            </div>
+            <span class="fs-4 fw-bold text-white tracking-tight" style="letter-spacing: -0.5px;">SmartVision</span>
         </a>
 
         <!-- Theme Toggle Button -->

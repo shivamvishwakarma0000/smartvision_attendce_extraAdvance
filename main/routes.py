@@ -25,7 +25,7 @@ from models import (
     TeacherAssignment, Timetable, Holiday, TeacherLeave, DailySchedule,
     AttendanceSession, AttendanceRecord, CorrectionRequest, AttendanceAuditLog,
     TeacherDailyAttendance, TimetablePeriodSetting, Department, ProxyAttendanceTransfer,
-    TeacherAttendanceSettings, TeacherAttendanceAuditLog
+    TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -751,7 +751,13 @@ def manual_faculty_override():
     db.session.add(audit)
     db.session.commit()
     
-    flash(f"✓ Faculty status updated to '{new_status}' successfully.", "success")
+    # Regenerate daily lecture schedule for target date
+    try:
+        generate_daily_schedule(target_date)
+    except Exception as sched_err:
+        print(f"[Manual Override] Error regenerating daily schedule: {sched_err}")
+    
+    flash(f"✓ Faculty status updated to '{new_status}' successfully and schedule synchronized.", "success")
     return redirect(request.referrer or url_for('main.dashboard'))
 
 @main_bp.route('/admin/export_exam_eligibility_report')
@@ -2023,6 +2029,12 @@ def uploaded_face(filename):
         return send_from_directory(faces_dir2, filename)
     return send_from_directory(faces_dir1, filename)
 
+@main_bp.route('/uploads/university/<path:filename>')
+def uploaded_university_logo(filename):
+    u_dir = os.path.join(os.getcwd(), 'uploads', 'university')
+    os.makedirs(u_dir, exist_ok=True)
+    return send_from_directory(u_dir, filename)
+
 @main_bp.route('/get_subjects/<int:class_id>')
 @login_required
 def get_subjects(class_id):
@@ -2055,6 +2067,7 @@ def approvals():
     all_teachers = get_admin_teachers()
     
     pending_leaves = TeacherLeave.query.filter_by(status='PENDING').order_by(TeacherLeave.id.desc()).all()
+    all_leaves = TeacherLeave.query.order_by(TeacherLeave.id.desc()).limit(100).all()
     pending_corrections = CorrectionRequest.query.filter_by(status='PENDING').order_by(CorrectionRequest.id.desc()).all()
     emergency_desk = compute_emergency_proxy_desk(get_current_date())
 
@@ -2064,6 +2077,7 @@ def approvals():
         pending_teachers=pending_teachers,
         all_teachers=all_teachers,
         pending_leaves=pending_leaves,
+        all_leaves=all_leaves,
         pending_corrections=pending_corrections,
         emergency_desk=emergency_desk
     )
@@ -2725,6 +2739,8 @@ def manage_timetable():
     else:
         timetable_entries = []
 
+    declared_holidays = Holiday.query.order_by(Holiday.date.desc()).limit(30).all()
+
     return render_template(
         'manage_timetable.html',
         timetable_entries=timetable_entries,
@@ -2736,7 +2752,8 @@ def manage_timetable():
         all_departments=all_departments,
         selected_department=selected_department,
         selected_class_id=selected_class_id,
-        selected_class=selected_class
+        selected_class=selected_class,
+        declared_holidays=declared_holidays
     )
 
 @main_bp.route('/admin/delete_timetable/<int:slot_id>', methods=['POST'])
@@ -3274,7 +3291,127 @@ def delete_holiday(id):
     except Exception as e:
         db.session.rollback()
         flash(f"Error removing holiday: {e}", "danger")
-    return redirect(url_for('main.manage_holidays'))
+    return redirect(request.referrer or url_for('main.manage_holidays'))
+
+@main_bp.route('/admin/declare_college_off', methods=['POST'])
+@login_required
+@admin_required
+def declare_college_off():
+    date_from_str = request.form.get('date_from') or request.form.get('date')
+    date_to_str = request.form.get('date_to') or date_from_str
+    scope = request.form.get('scope', 'ALL').strip()
+    reason_category = request.form.get('reason_category', 'Emergency Incident').strip()
+    custom_reason = request.form.get('reason', '').strip()
+    broadcast_notice = request.form.get('broadcast_notice') == '1' or request.form.get('broadcast_notice') == 'on'
+
+    final_reason = f"{reason_category}: {custom_reason}" if custom_reason else reason_category
+
+    if not date_from_str:
+        flash("Date is required to declare college off.", "warning")
+        return redirect(request.referrer or url_for('main.manage_timetable'))
+
+    try:
+        d_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
+        d_to = datetime.strptime(date_to_str, "%Y-%m-%d").date() if date_to_str else d_from
+    except ValueError:
+        flash("Invalid date format provided.", "danger")
+        return redirect(request.referrer or url_for('main.manage_timetable'))
+
+    if d_to < d_from:
+        d_to = d_from
+
+    from datetime import timedelta
+    curr = d_from
+    days_count = 0
+    all_teachers = Teacher.query.all()
+
+    try:
+        while curr <= d_to:
+            # 1. Create or update Holiday record
+            existing_hol = Holiday.query.filter_by(date=curr, scope=scope).first()
+            if not existing_hol:
+                existing_hol = Holiday(date=curr, scope=scope, reason=final_reason)
+                db.session.add(existing_hol)
+            else:
+                existing_hol.reason = final_reason
+
+            # 2. Regenerate daily lecture schedule for this date (sets resolved_status='HOLIDAY')
+            generate_daily_schedule(curr)
+
+            # 3. Synchronize Teacher Daily Attendance (Only if FULL College Off for faculty too)
+            is_faculty_working_day = (scope in ('CLASSES_ONLY', 'STUDENTS_ONLY'))
+            if not is_faculty_working_day and (scope == 'ALL' or str(scope).upper() == 'ALL'):
+                for t in all_teachers:
+                    rec = TeacherDailyAttendance.query.filter_by(teacher_id=t.id, attendance_date=curr).first()
+                    if not rec:
+                        rec = TeacherDailyAttendance(teacher_id=t.id, attendance_date=curr, status='Holiday')
+                        db.session.add(rec)
+                    else:
+                        rec.status = 'Holiday'
+                        rec.is_uninformed_absence = False
+                        rec.late_status = 'Holiday'
+                        rec.absence_reason = final_reason
+
+            days_count += 1
+            curr += timedelta(days=1)
+
+        # 4. If broadcast notice requested, create institutional notices for students & faculty
+        if broadcast_notice:
+            target_class_id = int(scope) if scope.isdigit() else None
+            date_label = d_from.strftime('%b %d, %Y') if d_from == d_to else f"{d_from.strftime('%b %d, %Y')} to {d_to.strftime('%b %d, %Y')}"
+            
+            if is_faculty_working_day:
+                # Student Notice (Classes suspended)
+                stu_title = f"📢 STUDENT NOTICE: Classes Suspended ({date_label})"
+                stu_content = f"Official Administration Notice: Regular student lectures and labs are suspended on {date_label}.\n\nReason / Event: {final_reason}.\nStudents are not required to attend classes today."
+                stu_ann = ClassAnnouncement(
+                    class_id=target_class_id,
+                    admin_id=current_user.id,
+                    posted_by_role='admin',
+                    target_role='STUDENTS',
+                    title=stu_title,
+                    content=stu_content,
+                    notice_type='Emergency Notice'
+                )
+                db.session.add(stu_ann)
+
+                # Faculty Notice (Teachers must report)
+                fac_title = f"📋 FACULTY DUTY NOTICE: Classes Suspended - Faculty Working Day ({date_label})"
+                fac_content = f"Official Administration Notice: Student classes are suspended on {date_label} for '{final_reason}'.\n\nAll faculty members and staff are REQUIRED on duty / regular working hours. Please mark your daily morning & evening attendance as normal."
+                fac_ann = ClassAnnouncement(
+                    class_id=None,
+                    admin_id=current_user.id,
+                    posted_by_role='admin',
+                    target_role='TEACHERS',
+                    title=fac_title,
+                    content=fac_content,
+                    notice_type='Emergency Notice'
+                )
+                db.session.add(fac_ann)
+            else:
+                # Full college / global closure
+                notice_title = f"🚨 EMERGENCY NOTICE: College Off / Classes Suspended ({date_label})"
+                notice_content = f"Official Administration Notice: College is closed / classes are suspended for {date_label}.\n\nReason: {final_reason}.\nAll scheduled lectures, practical labs, and attendance requirements are suspended for this period."
+                announcement = ClassAnnouncement(
+                    class_id=target_class_id,
+                    admin_id=current_user.id,
+                    posted_by_role='admin',
+                    target_role='ALL',
+                    title=notice_title,
+                    content=notice_content,
+                    notice_type='Emergency Notice'
+                )
+                db.session.add(announcement)
+
+        db.session.commit()
+        date_desc = d_from.strftime('%b %d, %Y') if d_from == d_to else f"{d_from.strftime('%b %d, %Y')} to {d_to.strftime('%b %d, %Y')}"
+        mode_label = "Students / Classes Off (Faculty Working Day)" if is_faculty_working_day else "Full College Closure"
+        flash(f"🚨 {mode_label} successfully declared for {date_desc} ({days_count} day(s)). Timetable slots and notices synchronized.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error declaring college off: {e}", "danger")
+
+    return redirect(request.referrer or url_for('main.manage_timetable'))
 
 @main_bp.route('/admin/leave_approval/<int:leave_id>/<action>', methods=['POST'])
 @login_required
@@ -3305,6 +3442,40 @@ def handle_leave_approval(leave_id, action):
         flash(f"Error updating leave status: {e}", "danger")
 
     return redirect(url_for('main.approvals'))
+
+@main_bp.route('/admin/override_leave', methods=['POST'])
+@login_required
+@admin_required
+def override_leave():
+    leave_id = request.form.get('leave_id', type=int)
+    new_status = request.form.get('status', 'APPROVED').upper().strip()
+    substitute_id_str = request.form.get('substitute_teacher_id')
+    reason = request.form.get('reason', 'Admin override').strip()
+
+    leave = TeacherLeave.query.get_or_404(leave_id)
+    prev_status = leave.status
+    leave.status = new_status
+
+    if substitute_id_str and substitute_id_str.isdigit():
+        leave.substitute_teacher_id = int(substitute_id_str)
+    elif substitute_id_str == '' or substitute_id_str == 'none':
+        leave.substitute_teacher_id = None
+
+    try:
+        db.session.commit()
+        # Regenerate daily schedule for the leave range
+        from datetime import timedelta
+        curr = leave.date_from
+        while curr <= leave.date_to:
+            generate_daily_schedule(curr)
+            curr += timedelta(days=1)
+        sub_name = leave.substitute_teacher.name if leave.substitute_teacher else 'Auto / Unassigned'
+        flash(f"✓ Leave for '{leave.teacher.name}' updated to {new_status} (Substitute: {sub_name}). Schedules synchronized.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error overriding leave status: {e}", "danger")
+
+    return redirect(request.referrer or url_for('main.approvals'))
 
 @main_bp.route('/admin/correction_approval/<int:req_id>/<action>', methods=['POST'])
 @login_required
@@ -3409,6 +3580,121 @@ def delete_announcement(ann_id):
     db.session.commit()
     flash("✓ Announcement permanently deleted from portal and all feeds.", "info")
     return redirect(url_for('main.manage_announcements'))
+
+@main_bp.route('/admin/id_cards')
+@login_required
+@admin_required
+def admin_id_cards():
+    classes = get_admin_classes()
+    teachers = Teacher.query.filter_by(status='Approved').order_by(Teacher.name.asc()).all()
+    
+    card_type = request.args.get('type', 'students') # 'students' or 'teachers'
+    selected_class_id = request.args.get('class_id')
+    search_query = request.args.get('q', '').strip()
+
+    students = []
+    if card_type == 'students':
+        q = Student.query
+        if selected_class_id and selected_class_id.isdigit():
+            q = q.filter_by(class_id=int(selected_class_id))
+        if search_query:
+            q = q.filter((Student.name.ilike(f"%{search_query}%")) | (Student.roll_no.ilike(f"%{search_query}%")) | (Student.enrollment_no.ilike(f"%{search_query}%")))
+        students = q.order_by(Student.roll_no.asc()).all()
+    else:
+        if search_query:
+            teachers = [t for t in teachers if search_query.lower() in t.name.lower() or (t.emp_id and search_query.lower() in t.emp_id.lower()) or (t.department and search_query.lower() in t.department.lower())]
+
+    return render_template(
+        'admin_id_cards.html',
+        classes=classes,
+        teachers=teachers,
+        students=students,
+        card_type=card_type,
+        selected_class_id=int(selected_class_id) if selected_class_id and selected_class_id.isdigit() else None,
+        search_query=search_query,
+        today=date.today()
+    )
+
+@main_bp.route('/admin/university_details', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def university_details():
+    settings = UniversitySettings.get_settings()
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        short_name = request.form.get('short_name', '').strip()
+        slogan = request.form.get('slogan', '').strip()
+        president_name = request.form.get('president_name', '').strip()
+        dean_name = request.form.get('dean_name', '').strip()
+        registrar_name = request.form.get('registrar_name', '').strip()
+        address = request.form.get('address', '').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        website = request.form.get('website', '').strip()
+        accreditation = request.form.get('accreditation', '').strip()
+        established_year = request.form.get('established_year', '').strip()
+
+        if name:
+            settings.name = name
+        if short_name:
+            settings.short_name = short_name
+        settings.slogan = slogan or settings.slogan
+        settings.president_name = president_name or settings.president_name
+        settings.dean_name = dean_name or settings.dean_name
+        settings.registrar_name = registrar_name or settings.registrar_name
+        settings.address = address or settings.address
+        settings.phone = phone or settings.phone
+        settings.email = email or settings.email
+        settings.website = website or settings.website
+        settings.accreditation = accreditation or settings.accreditation
+        settings.established_year = established_year or settings.established_year
+
+        # Handle Logo File Upload
+        logo_file = request.files.get('logo')
+        if logo_file and logo_file.filename:
+            u_dir = os.path.join(os.getcwd(), 'uploads', 'university')
+            os.makedirs(u_dir, exist_ok=True)
+            ext = os.path.splitext(secure_filename(logo_file.filename))[1] or '.png'
+            logo_fn = f"univ_logo_{int(datetime.utcnow().timestamp())}{ext}"
+            logo_path = os.path.join(u_dir, logo_fn)
+            logo_file.save(logo_path)
+            settings.logo_filename = logo_fn
+
+        # Handle College Name Image / Wordmark Typography Banner Upload
+        name_image_file = request.files.get('name_image')
+        if name_image_file and name_image_file.filename:
+            u_dir = os.path.join(os.getcwd(), 'uploads', 'university')
+            os.makedirs(u_dir, exist_ok=True)
+            ext = os.path.splitext(secure_filename(name_image_file.filename))[1] or '.png'
+            name_img_fn = f"univ_name_{int(datetime.utcnow().timestamp())}{ext}"
+            name_img_path = os.path.join(u_dir, name_img_fn)
+            name_image_file.save(name_img_path)
+            settings.name_image_filename = name_img_fn
+
+        if request.form.get('remove_name_image') == '1':
+            settings.name_image_filename = None
+
+        # Header Display Mode
+        display_mode = request.form.get('header_display_mode', 'BOTH')
+        if display_mode in ('TEXT', 'IMAGE', 'BOTH'):
+            settings.header_display_mode = display_mode
+
+        # Handle Signature Stamp Upload
+        sig_file = request.files.get('signature')
+        if sig_file and sig_file.filename:
+            u_dir = os.path.join(os.getcwd(), 'uploads', 'university')
+            os.makedirs(u_dir, exist_ok=True)
+            ext = os.path.splitext(secure_filename(sig_file.filename))[1] or '.png'
+            sig_fn = f"univ_signature_{int(datetime.utcnow().timestamp())}{ext}"
+            sig_path = os.path.join(u_dir, sig_fn)
+            sig_file.save(sig_path)
+            settings.signature_filename = sig_fn
+
+        db.session.commit()
+        flash("✓ University institutional profile, college name wordmark & branding successfully updated! All portals, headers, and ID cards now reflect the updated details.", "success")
+        return redirect(url_for('main.university_details'))
+
+    return render_template('admin_university_details.html', settings=settings)
 
 @main_bp.app_context_processor
 def inject_pending_approvals():

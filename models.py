@@ -639,6 +639,42 @@ class TeacherAttendanceAuditLog(db.Model):
     changed_by = db.relationship('User')
 
 
+class UniversitySettings(db.Model):
+    """
+    Institutional metadata, branding, leadership details, and logos
+    reflected across all admin, teacher, student portals, landing page, and ID cards.
+    """
+    __tablename__ = 'university_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), default='SmartVision Institute of Technology')
+    short_name = db.Column(db.String(50), default='SmartVision')
+    slogan = db.Column(db.String(255), default='Empowering Intelligence, Inspiring Academic Excellence')
+    president_name = db.Column(db.String(100), default='Prof. S. K. Verma')
+    dean_name = db.Column(db.String(100), default='Dr. R. Sharma')
+    registrar_name = db.Column(db.String(100), default='Dr. A. K. Mishra')
+    logo_filename = db.Column(db.String(255), nullable=True)
+    name_image_filename = db.Column(db.String(255), nullable=True)
+    header_display_mode = db.Column(db.String(20), default='BOTH') # 'TEXT', 'IMAGE', 'BOTH'
+    signature_filename = db.Column(db.String(255), nullable=True)
+    address = db.Column(db.String(255), default='SmartVision Academic Campus, IT Knowledge Park, City')
+    phone = db.Column(db.String(50), default='+91 98765 43210')
+    email = db.Column(db.String(100), default='admin@smartvision.edu')
+    website = db.Column(db.String(100), default='https://smartvision.edu')
+    accreditation = db.Column(db.String(200), default='NAAC A++ Accredited | AICTE Approved')
+    established_year = db.Column(db.String(20), default='2018')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @classmethod
+    def get_settings(cls):
+        """Helper to get or initialize default university settings."""
+        settings = cls.query.first()
+        if not settings:
+            settings = cls()
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+
+
 # ==============================================================================
 # SECTION 9: FLASK-LOGIN USER LOADER CALLBACK
 # ==============================================================================

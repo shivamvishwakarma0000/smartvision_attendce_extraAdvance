@@ -584,6 +584,38 @@ def take_proxy_attendance():
         absent_count = len(absent_rolls)
         all_students_count = len(all_class)
         print(f"[Proxy] Present: {present_rolls_str} | Absent: {absent_rolls_str}")
+
+        # Auto-save or update ProxyAttendanceTransfer
+        if present_rolls_str:
+            try:
+                transfer = ProxyAttendanceTransfer.query.filter_by(
+                    timetable_id=slot.id,
+                    date=duty_date
+                ).first()
+                if not transfer:
+                    transfer = ProxyAttendanceTransfer(
+                        substitute_teacher_id=teacher.id,
+                        original_teacher_id=orig_teacher.id if orig_teacher else teacher.id,
+                        leave_id=leave.id if leave else None,
+                        timetable_id=slot.id,
+                        class_id=slot.class_id,
+                        subject_id=slot.subject_id,
+                        date=duty_date,
+                        time_slot=f"{slot.start_time} - {slot.end_time}",
+                        present_rolls=present_rolls_str,
+                        status='PENDING'
+                    )
+                    db.session.add(transfer)
+                else:
+                    transfer.present_rolls = present_rolls_str
+                    transfer.substitute_teacher_id = teacher.id
+                    if orig_teacher:
+                        transfer.original_teacher_id = orig_teacher.id
+                db.session.commit()
+                flash(f"✓ Proxy attendance processed: {present_count} student(s) marked Present. Rolls ready to send.", "success")
+            except Exception as tr_err:
+                db.session.rollback()
+                print(f"[Proxy] Error saving proxy transfer: {tr_err}")
     else:
         all_class = Student.query.filter_by(class_id=slot.class_id).all()
         if not all_class:
@@ -591,6 +623,19 @@ def take_proxy_attendance():
         absent_rolls_str = ""
         absent_count = 0
         all_students_count = len(all_class)
+        present_students = []
+
+    # Check if there is an existing transfer record with rolls already saved
+    if not present_rolls_str:
+        saved_tr = ProxyAttendanceTransfer.query.filter_by(
+            timetable_id=slot.id,
+            date=duty_date
+        ).first()
+        if saved_tr and saved_tr.present_rolls:
+            present_rolls_str = saved_tr.present_rolls
+            r_list = [r.strip() for r in present_rolls_str.split(',') if r.strip()]
+            present_count = len(r_list)
+            present_students = Student.query.filter(Student.roll_no.in_(r_list), Student.class_id == slot.class_id).all()
 
     return render_template(
         'teacher_take_proxy_attendance.html',
@@ -605,7 +650,8 @@ def take_proxy_attendance():
         present_count=present_count,
         absent_rolls_str=absent_rolls_str,
         absent_count=absent_count,
-        all_students_count=all_students_count
+        all_students_count=all_students_count,
+        present_students=present_students
     )
 
 
@@ -1899,5 +1945,31 @@ def delete_teacher_announcement(ann_id):
         flash("✓ Notice deleted from your Notice Board.", "info")
 
     return redirect(url_for('teacher.announcements'))
+
+
+@teacher_bp.route('/teacher/id_card')
+@login_required
+@teacher_required
+def teacher_id_card():
+    teacher = get_current_teacher()
+    if not teacher:
+        flash("Faculty profile not found.", "warning")
+        return redirect(url_for('teacher.dashboard'))
+
+    subjects = Subject.query.filter_by(teacher_id=teacher.id).all()
+    assigned_classes = [s.class_assigned for s in subjects if s.class_assigned]
+    
+    # QR verification data payload
+    qr_data = f"SMARTVISION:FACULTY|ID:{teacher.emp_id or teacher.id}|NAME:{teacher.name}|DEPT:{teacher.department or 'General'}|ROLE:TEACHER"
+    
+    return render_template(
+        'teacher_id_card.html',
+        teacher=teacher,
+        subjects=subjects,
+        assigned_classes=assigned_classes,
+        qr_data=qr_data,
+        today=date.today()
+    )
+
 
 

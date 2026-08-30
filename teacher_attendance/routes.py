@@ -127,8 +127,11 @@ def recalculate_daily_status(rec, settings=None):
         rec.is_uninformed_absence = False
         return rec.status
 
-    # 3. Holiday Check
-    holiday = Holiday.query.filter_by(date=rec.attendance_date).first()
+    # 3. Holiday Check (Only Global/ALL scope holidays apply to faculty; CLASSES_ONLY/STUDENTS_ONLY remain working days)
+    holiday = Holiday.query.filter(
+        Holiday.date == rec.attendance_date,
+        (Holiday.scope == 'ALL') | (Holiday.scope == 'all')
+    ).first()
     if holiday:
         rec.status = 'Holiday'
         rec.is_uninformed_absence = False
@@ -771,6 +774,12 @@ def override_teacher_attendance():
     )
     db.session.add(audit)
     db.session.commit()
+
+    try:
+        from schedule_service import generate_daily_schedule
+        generate_daily_schedule(rec.attendance_date)
+    except Exception as sched_err:
+        print(f"[Attendance Override] Error regenerating schedule: {sched_err}")
 
     flash(f'Attendance status for {rec.teacher.name} updated to "{new_status}". Audit log recorded.', 'success')
     return redirect(url_for('teacher_attendance.admin_teacher_attendance', date=rec.attendance_date.strftime('%Y-%m-%d')))

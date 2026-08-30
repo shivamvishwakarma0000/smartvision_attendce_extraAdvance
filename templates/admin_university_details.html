@@ -1,0 +1,246 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - UNIVERSITY & CAMPUS PROFILE SETTINGS #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}University Details & Branding - SmartVision{% endblock %}
+{% block page_title %}University & Campus Institutional Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 py-md-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-building-columns text-primary me-2"></i>University Profile & Institutional Branding</h4>
+            <p class="text-muted fs-8 mb-0">Configure institution name, logo, slogan, leadership details, and contact info reflected across all dashboards, student/faculty portals, and ID cards.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('main.admin_id_cards') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3.5 py-2 fw-bold shadow-2xs">
+                <i class="fa-solid fa-id-badge me-1.5"></i>Preview on ID Cards
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('main.university_details') }}" enctype="multipart/form-data">
+        <div class="row g-4">
+            <!-- Left Column: Branding, Logo & General Metadata -->
+            <div class="col-12 col-lg-7">
+                <!-- 1. Institutional Identity -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-landmark text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Institutional Identity</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label fs-8 fw-bold text-dark">University / Institute Full Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control form-control-sm rounded-3 fw-semibold" value="{{ settings.name }}" required placeholder="e.g. SmartVision Institute of Technology & Science">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Short Name / Acronym</label>
+                            <input type="text" name="short_name" class="form-control form-control-sm rounded-3 fw-semibold" value="{{ settings.short_name or '' }}" placeholder="e.g. SVIT / SmartVision">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fs-8 fw-bold text-dark">Institutional Motto / Slogan</label>
+                            <input type="text" name="slogan" class="form-control form-control-sm rounded-3" value="{{ settings.slogan or '' }}" placeholder="e.g. Empowering Intelligence, Inspiring Academic Excellence">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fs-8 fw-bold text-dark">Accreditation / Affiliation</label>
+                            <input type="text" name="accreditation" class="form-control form-control-sm rounded-3" value="{{ settings.accreditation or '' }}" placeholder="e.g. NAAC A++ Accredited | AICTE Approved">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fs-8 fw-bold text-dark">Established Year</label>
+                            <input type="text" name="established_year" class="form-control form-control-sm rounded-3" value="{{ settings.established_year or '2018' }}" placeholder="e.g. 2018">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Institutional Leadership -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-user-tie text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">University Leadership & Signatories</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">President / Chancellor</label>
+                            <input type="text" name="president_name" class="form-control form-control-sm rounded-3" value="{{ settings.president_name or '' }}" placeholder="e.g. Prof. S. K. Verma">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Dean / Principal Name</label>
+                            <input type="text" name="dean_name" class="form-control form-control-sm rounded-3" value="{{ settings.dean_name or '' }}" placeholder="e.g. Dr. R. Sharma">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Registrar Name</label>
+                            <input type="text" name="registrar_name" class="form-control form-control-sm rounded-3" value="{{ settings.registrar_name or '' }}" placeholder="e.g. Dr. A. K. Mishra">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Campus Address & Contact Details -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-map-location-dot text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Campus Location & Contact Details</h5>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fs-8 fw-bold text-dark">Campus Address</label>
+                            <input type="text" name="address" class="form-control form-control-sm rounded-3" value="{{ settings.address or '' }}" placeholder="e.g. Academic Campus, Knowledge Park, Phase II">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Official Helpline Phone</label>
+                            <input type="text" name="phone" class="form-control form-control-sm rounded-3" value="{{ settings.phone or '' }}" placeholder="e.g. +91 98765 43210">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Official Support Email</label>
+                            <input type="email" name="email" class="form-control form-control-sm rounded-3" value="{{ settings.email or '' }}" placeholder="e.g. contact@smartvision.edu">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fs-8 fw-bold text-dark">Official Website URL</label>
+                            <input type="url" name="website" class="form-control form-control-sm rounded-3" value="{{ settings.website or '' }}" placeholder="e.g. https://smartvision.edu">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-start">
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Save University Profile & Sync Everywhere
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Logo & Signature Upload + Live Preview -->
+            <div class="col-12 col-lg-5">
+                <!-- Logo Upload Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-shield-halved text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">1. Official Logo / Crest Emblem</h5>
+                    </div>
+
+                    <div class="text-center p-3 bg-light rounded-3 border mb-3">
+                        {% if settings.logo_filename %}
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 85px; max-width: 180px; object-fit: contain;">
+                        <span class="d-block fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Custom Logo Active</span>
+                        {% else %}
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 80px; max-width: 140px; object-fit: contain;">
+                        <span class="d-block fs-9 text-muted"><i class="fa-solid fa-circle-info me-1"></i>Default SmartVision Logo</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fs-8 fw-bold text-dark">Upload University Crest / Icon Logo</label>
+                        <input type="file" name="logo" class="form-control form-control-sm rounded-3" accept="image/*">
+                        <span class="fs-9 text-muted d-block mt-1">Recommended: Square PNG/SVG icon with transparent background.</span>
+                    </div>
+                </div>
+
+                <!-- 2. College Name Typography / Wordmark Image Upload Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-font text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">2. College Name Graphic / Wordmark Image</h5>
+                    </div>
+
+                    <div class="text-center p-3 bg-light rounded-3 border mb-3">
+                        {% if settings.name_image_filename %}
+                        <div class="p-2 bg-dark rounded-3 border mb-2 d-inline-block">
+                            <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="College Name Graphic" class="p-1" style="max-height: 55px; max-width: 260px; object-fit: contain;">
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                            <span class="fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>College Name Image Active</span>
+                            <div class="form-check form-check-inline mb-0">
+                                <input class="form-check-input" type="checkbox" name="remove_name_image" id="remove_name_image" value="1">
+                                <label class="form-check-label fs-9 text-danger fw-bold" for="remove_name_image">Remove Image</label>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-2.5 bg-white rounded-3 border mb-2 text-muted fs-8 fw-semibold">
+                            <i class="fa-solid fa-image me-1"></i>No College Name Image Uploaded (Using Text: "{{ settings.short_name or settings.name }}")
+                        </div>
+                        <span class="d-block fs-9 text-muted">Upload stylized typography image of your college/university name.</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-8 fw-bold text-dark">Upload College Name Image (Wordmark / Stylized Title Banner)</label>
+                        <input type="file" name="name_image" class="form-control form-control-sm rounded-3" accept="image/*">
+                        <span class="fs-9 text-muted d-block mt-1">Upload the graphic image of your institution's name (e.g. Parul University typography banner).</span>
+                    </div>
+
+                    <div>
+                        <label class="form-label fs-8 fw-bold text-dark">Header Display Mode</label>
+                        <select name="header_display_mode" class="form-select form-select-sm rounded-3">
+                            <option value="BOTH" {% if settings.header_display_mode == 'BOTH' %}selected{% endif %}>Both (Crest Logo + College Name Image / Text)</option>
+                            <option value="IMAGE" {% if settings.header_display_mode == 'IMAGE' %}selected{% endif %}>College Name Image Only</option>
+                            <option value="TEXT" {% if settings.header_display_mode == 'TEXT' %}selected{% endif %}>Standard Text Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Signature Stamp Upload Card -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                        <i class="fa-solid fa-file-signature text-primary fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">3. Authorized Signature / Stamp</h5>
+                    </div>
+
+                    <div class="text-center p-3 bg-light rounded-3 border mb-3">
+                        {% if settings.signature_filename %}
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=settings.signature_filename) }}" alt="Signature" class="rounded-3 p-2 bg-white border shadow-2xs mb-2" style="max-height: 60px; max-width: 160px; object-fit: contain;">
+                        <span class="d-block fs-9 text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Official Signature Active</span>
+                        {% else %}
+                        <div class="font-signature text-primary fs-4 fw-bold p-2" style="font-family: cursive;">{{ settings.dean_name or 'Dr. R. Sharma' }}</div>
+                        <span class="d-block fs-9 text-muted">Digital Text Signature</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fs-8 fw-bold text-dark">Upload Registrar / Principal Signature Stamp</label>
+                        <input type="file" name="signature" class="form-control form-control-sm rounded-3" accept="image/*">
+                        <span class="fs-9 text-muted d-block mt-1">Printed on official ID cards, transcripts, and reports.</span>
+                    </div>
+                </div>
+
+                <!-- Live Header Preview Widget -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" style="border: 1.5px solid #e2e8f0 !important;">
+                    <div class="d-flex justify-content-between align-items-center mb-2.5">
+                        <span class="fs-8 text-uppercase fw-bold text-dark"><i class="fa-solid fa-desktop text-primary me-1.5"></i>LIVE PORTAL HEADER PREVIEW</span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary fs-9 px-2.5 py-1 rounded-pill fw-bold">Live Synced</span>
+                    </div>
+                    <div class="p-3.5 p-md-4 rounded-4 text-white position-relative overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #181842 0%, #282566 50%, #3730a3 100%); border: 1px solid rgba(255,255,255,0.15);">
+                        <div class="d-flex align-items-center gap-3.5 flex-wrap flex-sm-nowrap">
+                            {% if settings.logo_filename and settings.header_display_mode != 'IMAGE' %}
+                            <div class="rounded-3 bg-white p-2 flex-shrink-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 74px; height: 74px;">
+                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.logo_filename) }}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            {% elif settings.header_display_mode != 'IMAGE' %}
+                            <div class="rounded-3 bg-white p-2 flex-shrink-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 74px; height: 74px;">
+                                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                {% if settings.name_image_filename and settings.header_display_mode in ('IMAGE', 'BOTH') %}
+                                <img src="{{ url_for('main.uploaded_university_logo', filename=settings.name_image_filename) }}" alt="{{ settings.name }}" class="d-block mb-1.5" style="max-height: 64px; max-width: 380px; width: auto; object-fit: contain;">
+                                {% else %}
+                                <h4 class="fw-bold mb-1 text-white fs-5" style="letter-spacing: -0.3px;">{{ settings.short_name or settings.name }}</h4>
+                                {% endif %}
+                                {% if settings.slogan %}
+                                <span class="fs-8 text-white text-opacity-75 d-block fw-medium">{{ settings.slogan }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -40,10 +40,10 @@ def generate_daily_schedule(target_date=None):
 
     # Pre-fetch global holidays and class holidays for target_date
     holidays = Holiday.query.filter_by(date=target_date).all()
-    global_holiday = any(h.scope == 'ALL' or str(h.scope).upper() == 'ALL' for h in holidays)
+    global_holiday = any(h.scope in ('ALL', 'CLASSES_ONLY', 'STUDENTS_ONLY') or str(h.scope).upper() in ('ALL', 'CLASSES_ONLY', 'STUDENTS_ONLY') for h in holidays)
     class_holiday_ids = set()
     for h in holidays:
-        if h.scope and h.scope != 'ALL':
+        if h.scope and h.scope not in ('ALL', 'CLASSES_ONLY', 'STUDENTS_ONLY'):
             try:
                 class_holiday_ids.add(int(h.scope))
             except ValueError:

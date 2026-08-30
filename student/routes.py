@@ -597,3 +597,24 @@ def dismiss_notice(notice_id):
     flash("Notice dismissed from your dashboard.", "info")
     return redirect(url_for('student.notices'))
 
+
+@student_bp.route('/student/id_card')
+@login_required
+@student_required
+def student_id_card():
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('auth.logout'))
+
+    # QR verification data payload
+    qr_data = f"SMARTVISION:STUDENT|ROLL:{student.roll_no}|NAME:{student.name}|ENROLL:{student.enrollment_no}|CLASS:{student.class_assigned.name if student.class_assigned else 'N/A'}|ROLE:STUDENT"
+
+    return render_template(
+        'student_id_card.html',
+        student=student,
+        qr_data=qr_data,
+        today=date.today()
+    )
+
+

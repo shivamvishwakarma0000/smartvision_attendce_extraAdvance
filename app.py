@@ -240,6 +240,18 @@ def create_app():
             'admin_pending_approvals_count': 0
         }
 
+    @app.context_processor
+    def inject_university_settings():
+        """Injects institutional profile, branding, logos, leadership names everywhere."""
+        try:
+            from models import UniversitySettings
+            settings = UniversitySettings.get_settings()
+            return {'university': settings}
+        except Exception as e:
+            print(f"Error in inject_university_settings: {e}")
+            return {'university': None}
+
+
     # --------------------------------------------------------------------------
     # 6. DATABASE SCHEMA MIGRATION & SEEDING ON STARTUP
     # --------------------------------------------------------------------------

@@ -67,6 +67,20 @@ def create_app():
     app.register_blueprint(teacher_attendance_bp)
 
     # --------------------------------------------------------------------------
+    # 4. LIGHTWEIGHT HEALTH MONITORING (UPTIMEROBOT 24/7 KEEP-ALIVE)
+    # --------------------------------------------------------------------------
+    @app.route('/health')
+    @app.route('/api/health')
+    def health_check():
+        """Ultra-lightweight heartbeat endpoint for UptimeRobot to keep Render instance awake 24/7."""
+        import datetime
+        return {
+            'status': 'online',
+            'service': 'SmartVision Attendance Portal',
+            'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
+        }, 200
+
+    # --------------------------------------------------------------------------
     # 4. CUSTOM JINJA TEMPLATE FILTERS
     # --------------------------------------------------------------------------
     @app.template_filter('to_ist')

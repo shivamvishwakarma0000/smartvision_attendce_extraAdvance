@@ -9,9 +9,63 @@
 import os
 import smtplib
 import threading
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
+
+def _dispatch_resend_api(api_key, sender, to_email, subject, body_text, body_html):
+    """Dispatches transactional email via Resend Cloud API (Port 443 HTTPS)."""
+    try:
+        from_addr = sender if ('@' in sender and 'gmail' not in sender.lower()) else "SmartVision <onboarding@resend.dev>"
+        headers = {
+            "Authorization": f"Bearer {api_key.strip()}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "from": from_addr,
+            "to": [to_email],
+            "subject": subject,
+            "html": body_html if body_html else body_text,
+            "text": body_text
+        }
+        res = requests.post("https://api.resend.com/emails", json=payload, headers=headers, timeout=6)
+        if res.status_code in (200, 201):
+            print(f"[Resend API Sent] Subject: '{subject}' to {to_email}", flush=True)
+            return True
+        else:
+            print(f"[Resend API Error: {res.status_code}] {res.text}", flush=True)
+            return False
+    except Exception as e:
+        print(f"[Resend API Exception: {e}]", flush=True)
+        return False
+
+def _dispatch_brevo_api(api_key, sender, to_email, subject, body_text, body_html):
+    """Dispatches transactional email via Brevo / Sendinblue Cloud API (Port 443 HTTPS)."""
+    try:
+        from_email = sender if ('@' in sender) else "smartvision.portal@gmail.com"
+        headers = {
+            "api-key": api_key.strip(),
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        payload = {
+            "sender": {"name": "SmartVision Portal", "email": from_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": body_html if body_html else body_text,
+            "textContent": body_text
+        }
+        res = requests.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers, timeout=6)
+        if res.status_code in (200, 201):
+            print(f"[Brevo API Sent] Subject: '{subject}' to {to_email}", flush=True)
+            return True
+        else:
+            print(f"[Brevo API Error: {res.status_code}] {res.text}", flush=True)
+            return False
+    except Exception as e:
+        print(f"[Brevo API Exception: {e}]", flush=True)
+        return False
 
 def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html):
     """Worker function for SMTP dispatch with direct Port 465 SSL primary and Port 587 fallback."""
@@ -57,20 +111,12 @@ def _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_em
 # ==============================================================================
 def send_email(to_email, subject, body_text, body_html=None, sync=False):
     """
-    Dispatches email via SMTP if credentials are configured in environment.
-    Falls back to a clean server console log if SMTP credentials are not configured.
-    By default dispatches asynchronously in a background thread to prevent UI freezing.
-    
-    Parameters:
-        to_email (str): Recipient email address
-        subject (str): Email subject line
-        body_text (str): Plain text version of email message
-        body_html (str, optional): HTML formatted version of email message
-        sync (bool, optional): If True, waits synchronously for SMTP completion.
-        
-    Returns:
-        tuple (bool, str): Status flag and descriptive message.
+    Dispatches email via Resend API, Brevo API, or SMTP if credentials are configured.
+    Falls back gracefully to development console logging if offline.
     """
+    resend_api_key = os.environ.get('RESEND_API_KEY', '').strip()
+    brevo_api_key = os.environ.get('BREVO_API_KEY', '').strip()
+
     try:
         host = current_app.config.get('SMTP_HOST') or 'smtp.gmail.com'
         port = current_app.config.get('SMTP_PORT', 587)
@@ -86,9 +132,31 @@ def send_email(to_email, subject, body_text, body_html=None, sync=False):
         sender = os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER') or username or 'vishshivam16@gmail.com'
         use_tls = os.environ.get('SMTP_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 
-    # --------------------------------------------------------------------------
-    # 1. ATTEMPT REAL-TIME SMTP DISPATCH
-    # --------------------------------------------------------------------------
+    # 1. Cloud-Native Resend API (Preferred: 100% Free, 3000 emails/mo, 0% spam block)
+    if resend_api_key:
+        if sync:
+            _dispatch_resend_api(resend_api_key, sender, to_email, subject, body_text, body_html)
+        else:
+            threading.Thread(
+                target=_dispatch_resend_api,
+                args=(resend_api_key, sender, to_email, subject, body_text, body_html),
+                daemon=True
+            ).start()
+        return True, "Email dispatched via Resend API."
+
+    # 2. Cloud-Native Brevo API (300 emails/day Free)
+    if brevo_api_key:
+        if sync:
+            _dispatch_brevo_api(brevo_api_key, sender, to_email, subject, body_text, body_html)
+        else:
+            threading.Thread(
+                target=_dispatch_brevo_api,
+                args=(brevo_api_key, sender, to_email, subject, body_text, body_html),
+                daemon=True
+            ).start()
+        return True, "Email dispatched via Brevo API."
+
+    # 3. SMTP Direct Dispatch (Gmail Port 465 SSL / Port 587 STARTTLS)
     if host and username and password:
         if sync:
             _dispatch_smtp_worker(host, port, username, password, sender, use_tls, to_email, subject, body_text, body_html)
@@ -99,15 +167,8 @@ def send_email(to_email, subject, body_text, body_html=None, sync=False):
                 daemon=True
             )
             t.start()
-        return True, "Email dispatch scheduled."
+        return True, "Email dispatch scheduled via SMTP."
 
-    # --------------------------------------------------------------------------
-    # 2. DEVELOPMENT / LOCAL CONSOLE FALLBACK
-    # --------------------------------------------------------------------------
-    print("\n" + "=" * 80)
-    print(f"[SMARTVISION MAIL DISPATCHER (DEVELOPMENT LOG)]")
-    print(f"  To      : {to_email}")
-    print(f"  Subject : {subject}")
-    print(f"  Content :\n{body_text}")
-    print("=" * 80 + "\n", flush=True)
-    return True, "Email logged to console (Development Mode)."
+    # 4. Fallback Log
+    print(f"[EMAIL DEV LOG] To: {to_email} | Subject: {subject}", flush=True)
+    return True, "Email logged to console."

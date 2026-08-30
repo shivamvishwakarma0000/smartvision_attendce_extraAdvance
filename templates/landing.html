@@ -475,21 +475,21 @@
                                 </div>
 
                                 <!-- INLINE OTP BOX (Revealed when Send OTP is clicked) -->
-                                <div class="col-12 my-1 d-none" id="inline-otp-container">
-                                    <div class="p-3 rounded-3 border bg-light shadow-sm">
-                                        <div class="d-flex align-items-center justify-content-between mb-1.5">
-                                            <span class="fs-9 text-dark fw-bold"><i class="fa-solid fa-envelope-open-text me-1 text-primary"></i> Enter 6-Digit Email OTP</span>
-                                            <span class="fs-9 text-muted" id="otp-timer-display"></span>
+                                <div class="col-12 my-2 d-none" id="inline-otp-container">
+                                    <div class="p-3 rounded-3 shadow-sm" style="background: rgba(99, 102, 241, 0.08); border: 1.5px solid rgba(99, 102, 241, 0.3) !important;">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="fs-8 fw-bold" style="color: var(--text-main);"><i class="fa-solid fa-envelope-open-text me-1.5 text-primary"></i> Enter 6-Digit Email OTP</span>
+                                            <span class="fs-8 text-primary fw-bold" id="otp-timer-display"></span>
                                         </div>
-                                        <div class="input-group input-group-sm mb-1">
-                                            <input type="text" class="form-control font-monospace fw-bold fs-7 text-center" id="input_inline_otp" maxlength="6" placeholder="Enter 6-digit OTP code" style="letter-spacing: 4px;">
-                                            <button type="button" class="btn btn-success fw-bold px-3" id="btn-verify-otp" onclick="verifyInlineOTP()">
-                                                <i class="fa-solid fa-check-circle me-1"></i> Verify OTP
+                                        <div class="input-group input-group-sm mb-1.5">
+                                            <input type="text" class="form-control font-monospace fw-bold fs-6 text-center" id="input_inline_otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="• • • • • •" style="letter-spacing: 6px; background-color: var(--input-bg) !important; color: var(--input-text) !important; border-color: var(--input-border) !important;">
+                                            <button type="button" class="btn btn-success fw-bold px-3 d-flex align-items-center gap-1.5" id="btn-verify-otp" onclick="verifyInlineOTP()">
+                                                <i class="fa-solid fa-circle-check"></i> <span>Verify OTP</span>
                                             </button>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mt-1">
                                             <span class="fs-9 text-danger d-none fw-semibold" id="inline-otp-err"></span>
-                                            <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none ms-auto fs-9" onclick="requestInlineOTP()">Resend OTP</button>
+                                            <button type="button" class="btn btn-link btn-xs p-0 text-decoration-none ms-auto fs-9 fw-semibold text-primary" onclick="requestInlineOTP()">Resend OTP Code</button>
                                         </div>
                                     </div>
                                 </div>

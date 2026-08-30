@@ -43,14 +43,15 @@ def _dispatch_resend_api(api_key, sender, to_email, subject, body_text, body_htm
 def _dispatch_brevo_api(api_key, sender, to_email, subject, body_text, body_html):
     """Dispatches transactional email via Brevo / Sendinblue Cloud API (Port 443 HTTPS)."""
     try:
-        from_email = sender if ('@' in sender) else "smartvision.portal@gmail.com"
+        # Brevo REQUIRES the sender email to match the verified Brevo account email
+        verified_sender = (os.environ.get('BREVO_SENDER_EMAIL') or os.environ.get('SMTP_USERNAME') or sender or 'vishshivam16@gmail.com').strip()
         headers = {
             "api-key": api_key.strip(),
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
         payload = {
-            "sender": {"name": "SmartVision Portal", "email": from_email},
+            "sender": {"name": "SmartVision Portal", "email": verified_sender},
             "to": [{"email": to_email}],
             "subject": subject,
             "htmlContent": body_html if body_html else body_text,
@@ -58,7 +59,7 @@ def _dispatch_brevo_api(api_key, sender, to_email, subject, body_text, body_html
         }
         res = requests.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers, timeout=6)
         if res.status_code in (200, 201):
-            print(f"[Brevo API Sent] Subject: '{subject}' to {to_email}", flush=True)
+            print(f"[Brevo API Sent] Subject: '{subject}' to {to_email} (From: {verified_sender})", flush=True)
             return True
         else:
             print(f"[Brevo API Error: {res.status_code}] {res.text}", flush=True)

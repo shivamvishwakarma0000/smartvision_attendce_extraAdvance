@@ -43,22 +43,27 @@
         <!-- Sidebar Navigation (Only for Logged In users) -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-nav-scroll">
-                <h3 class="sidebar-header d-flex align-items-center gap-2.5">
-                    {% if university and university.logo_filename and (not university.header_display_mode or university.header_display_mode != 'IMAGE') %}
-                    <img src="{{ url_for('main.uploaded_university_logo', filename=university.logo_filename) }}" alt="Logo" class="rounded-2 p-1 bg-white flex-shrink-0 shadow-2xs" style="width: 42px; height: 42px; object-fit: contain; border: 1.5px solid rgba(255, 255, 255, 0.2);">
-                    {% elif not university or (not university.name_image_filename and not university.logo_filename) %}
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="rounded flex-shrink-0" style="width: 40px; height: 40px; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.2);" onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').classList.remove('d-none');">
-                    <span id="sidebar-logo-fallback" class="d-none rounded bg-primary flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: 1.5px solid rgba(255, 255, 255, 0.2);">
-                        <i class="fa-solid fa-eye text-white fs-5"></i>
-                    </span>
-                    {% endif %}
+                <div class="sidebar-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2 text-truncate">
+                        {% if university and university.logo_filename and (not university.header_display_mode or university.header_display_mode != 'IMAGE') %}
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=university.logo_filename) }}" alt="Logo" class="rounded-2 p-1 bg-white flex-shrink-0 shadow-2xs" style="width: 38px; height: 38px; object-fit: contain; border: 1.5px solid rgba(255, 255, 255, 0.2);">
+                        {% elif not university or (not university.name_image_filename and not university.logo_filename) %}
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="rounded flex-shrink-0" style="width: 38px; height: 38px; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.2);" onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').classList.remove('d-none');">
+                        <span id="sidebar-logo-fallback" class="d-none rounded bg-primary flex-shrink-0 d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: 1.5px solid rgba(255, 255, 255, 0.2);">
+                            <i class="fa-solid fa-eye text-white fs-6"></i>
+                        </span>
+                        {% endif %}
 
-                    {% if university and university.name_image_filename and (not university.header_display_mode or university.header_display_mode in ('IMAGE', 'BOTH')) %}
-                    <img src="{{ url_for('main.uploaded_university_logo', filename=university.name_image_filename) }}" alt="{{ university.name }}" class="flex-shrink-1" style="max-height: 42px; max-width: 175px; object-fit: contain;">
-                    {% else %}
-                    <span class="text-truncate" title="{{ university.name if university else 'SmartVision' }}">{{ university.short_name or university.name if university else 'SmartVision' }}</span>
-                    {% endif %}
-                </h3>
+                        {% if university and university.name_image_filename and (not university.header_display_mode or university.header_display_mode in ('IMAGE', 'BOTH')) %}
+                        <img src="{{ url_for('main.uploaded_university_logo', filename=university.name_image_filename) }}" alt="{{ university.name }}" class="flex-shrink-1" style="max-height: 38px; max-width: 155px; object-fit: contain;">
+                        {% else %}
+                        <span class="text-truncate fw-bold fs-6" title="{{ university.name if university else 'SmartVision' }}">{{ university.short_name or university.name if university else 'SmartVision' }}</span>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-link text-white text-opacity-75 d-lg-none p-1 text-decoration-none fs-5 ms-2" onclick="toggleSidebar()" aria-label="Close sidebar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
                 
                 {% if current_user.role == 'admin' %}
                     <!-- Admin Navigation -->
@@ -778,73 +783,6 @@
             }, 5000);
         });
     </script>
-    {% if current_user.is_authenticated %}
-    <!-- Mobile Fixed Bottom Action Bar (Phones & Small Screen Devices) -->
-    <nav class="mobile-bottom-nav d-md-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg py-1.5 px-3 d-flex align-items-center justify-content-around" style="z-index: 1040; backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.94) !important;">
-        {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('main.dashboard') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'main.dashboard' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-chart-pie d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Dashboard</span>
-            </a>
-            <a href="{{ url_for('main.approvals') }}" class="mobile-nav-link text-center text-decoration-none position-relative {% if request.endpoint == 'main.approvals' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-user-shield d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Approvals</span>
-                {% set a_count = (pending_approvals_count if pending_approvals_count is defined and pending_approvals_count > 0 else admin_pending_approvals_count) %}
-                {% if a_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.2em 0.4em;">{{ a_count }}</span>
-                {% endif %}
-            </a>
-            <a href="{{ url_for('main.manage_timetable') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'main.manage_timetable' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-calendar-days d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Timetable</span>
-            </a>
-            <a href="{{ url_for('main.emergency_proxy_desk') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'main.emergency_proxy_desk' %}active text-danger fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-user-clock d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Proxy Desk</span>
-            </a>
-        {% elif current_user.role == 'teacher' %}
-            <a href="{{ url_for('teacher.dashboard') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'teacher.dashboard' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-chart-line d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Home</span>
-            </a>
-            <a href="{{ url_for('teacher.take_attendance') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'teacher.take_attendance' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 30px; height: 30px; margin-top: -8px;">
-                    <i class="fa-solid fa-camera fs-7"></i>
-                </div>
-                <span class="fs-9 d-block" style="font-size: 0.68rem;">Take Att</span>
-            </a>
-            <a href="{{ url_for('teacher.my_attendance') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'teacher.my_attendance' %}active text-success fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-calendar-check d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">My Attend</span>
-            </a>
-            <a href="{{ url_for('teacher.proxy_classes') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'teacher.proxy_classes' %}active text-info fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-clock-rotate-left d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Proxy</span>
-            </a>
-        {% elif current_user.role == 'student' %}
-            <a href="{{ url_for('student.dashboard') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'student.dashboard' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-chart-pie d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Dashboard</span>
-            </a>
-            <a href="{{ url_for('student.request_modification') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'student.request_modification' %}active text-warning fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-file-signature d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Requests</span>
-            </a>
-            <a href="{{ url_for('student.notices') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'student.notices' %}active text-info fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-bullhorn d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Notices</span>
-            </a>
-            <a href="{{ url_for('student.edit_profile') }}" class="mobile-nav-link text-center text-decoration-none {% if request.endpoint == 'student.edit_profile' %}active text-primary fw-bold{% else %}text-muted{% endif %}">
-                <i class="fa-solid fa-user-gear d-block fs-6 mb-0.5"></i>
-                <span class="fs-9" style="font-size: 0.68rem;">Profile</span>
-            </a>
-        {% endif %}
-        <button class="mobile-nav-link text-center text-decoration-none text-muted border-0 bg-transparent" id="mobileMenuToggleBtn" onclick="document.getElementById('sidebarToggle').click()">
-            <i class="fa-solid fa-bars d-block fs-6 mb-0.5"></i>
-            <span class="fs-9" style="font-size: 0.68rem;">Menu</span>
-        </button>
-    </nav>
-    {% endif %}
 
     <style>
         .hover-scale {

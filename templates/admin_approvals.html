@@ -9,14 +9,16 @@
 
 {% block content %}
 <!-- Section 1: Pending Teacher Registrations -->
-<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-chalkboard-user me-2 text-info"></i> Pending Teacher Registration Approvals</h4>
-        <span class="badge bg-info text-white py-2 px-3 fs-7 rounded-pill">
-            {{ pending_teachers|length }} Pending Teachers
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-chalkboard-user me-2 text-info"></i> Pending Teacher Registration Approvals</h4>
+            <p class="text-muted mb-0 fs-8">Review faculty member self-registrations. Verify Employee ID and photo before granting portal access.</p>
+        </div>
+        <span class="badge bg-info text-white py-2 px-3 fs-8 fw-bold rounded-pill text-nowrap align-self-start align-self-sm-center">
+            <i class="fa-solid fa-user-clock me-1"></i> {{ pending_teachers|length }} Pending
         </span>
     </div>
-    <p class="text-muted mb-0">Review faculty member self-registrations. Verify Employee ID and photo before granting portal access.</p>
 </div>
 
 {% if pending_teachers %}
@@ -76,19 +78,21 @@
 {% endif %}
 
 <!-- Section 2: Teacher Leave Approvals Queue -->
-<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-minus me-2 text-warning"></i> Teacher Leave Approvals & Substitute Assignment</h4>
-        <div class="d-flex gap-2">
-            <span class="badge bg-warning text-dark py-2 px-3 fs-7 rounded-pill">
-                {{ pending_leaves|length }} Pending Requests
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2.5 mb-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-calendar-minus me-2 text-warning"></i> Teacher Leave Approvals & Substitute Assignment</h4>
+            <p class="text-muted mb-0 fs-8">Approve teacher leaves, assign substitute teachers, or override previously approved/rejected leave statuses.</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-2 mt-sm-0">
+            <span class="badge bg-warning text-dark py-2 px-3 fs-8 fw-bold rounded-pill text-nowrap">
+                <i class="fa-solid fa-clock me-1"></i> {{ pending_leaves|length }} Pending
             </span>
-            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold fs-8" type="button" data-bs-toggle="collapse" data-bs-target="#allLeavesHistoryCollapse">
-                <i class="fa-solid fa-list-check me-1"></i>All Leaves & Admin Override ({{ all_leaves|length }})
+            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fw-bold fs-8 text-nowrap" type="button" data-bs-toggle="collapse" data-bs-target="#allLeavesHistoryCollapse">
+                <i class="fa-solid fa-list-check me-1"></i>All Leaves ({{ all_leaves|length }})
             </button>
         </div>
     </div>
-    <p class="text-muted mb-0">Approve teacher leaves, assign substitute teachers, or override previously approved/rejected leave statuses.</p>
 </div>
 
 {% if pending_leaves %}
@@ -356,14 +360,16 @@
 </div>
 
 <!-- Section 3: Attendance Correction Requests -->
-<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-file-signature me-2 text-danger"></i> Attendance Correction Requests</h4>
-        <span class="badge bg-danger text-white py-2 px-3 fs-7 rounded-pill">
-            {{ pending_corrections|length }} Pending Corrections
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-file-signature me-2 text-danger"></i> Attendance Correction Requests</h4>
+            <p class="text-muted mb-0 fs-8">Review locked session correction requests submitted by faculty.</p>
+        </div>
+        <span class="badge bg-danger text-white py-2 px-3 fs-8 fw-bold rounded-pill text-nowrap align-self-start align-self-sm-center">
+            <i class="fa-solid fa-clock me-1"></i> {{ pending_corrections|length }} Pending
         </span>
     </div>
-    <p class="text-muted mb-0">Review locked session correction requests submitted by faculty.</p>
 </div>
 
 {% if pending_corrections %}
@@ -424,14 +430,16 @@
 {% endif %}
 
 <!-- Section 4: Student Change Requests -->
-<div class="card p-4 shadow-sm border-0 mb-4 fade-in">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h4 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-shield me-2 text-primary"></i> Student Profile Change Requests</h4>
-        <span class="badge bg-primary text-white py-2 px-3 fs-7 rounded-pill">
-            {{ requests|length }} Pending Reviews
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-shield me-2 text-primary"></i> Student Profile Change Requests</h4>
+            <p class="text-muted mb-0 fs-8">Review student-submitted profile updates below.</p>
+        </div>
+        <span class="badge bg-primary text-white py-2 px-3 fs-8 fw-bold rounded-pill text-nowrap align-self-start align-self-sm-center">
+            <i class="fa-solid fa-clock me-1"></i> {{ requests|length }} Pending
         </span>
     </div>
-    <p class="text-muted mb-0">Review student-submitted profile updates below.</p>
 </div>
 
 {% for req in requests %}

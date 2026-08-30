@@ -338,6 +338,9 @@
             </div>
         </div>
 
+        <!-- AI COPILOT BACKDROP FOR MOBILE -->
+        <div id="ai-copilot-backdrop" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" style="z-index: 1068;" onclick="toggleAICopilotDrawer()"></div>
+
         <!-- AI COPILOT CHAT DRAWER / POPUP -->
         <div id="ai-copilot-drawer" class="card position-fixed bottom-0 end-0 m-2 m-sm-4 border-0 shadow-2xl rounded-4 d-none overflow-hidden" style="z-index: 1070; width: 420px; max-width: calc(100vw - 20px); height: 560px; max-height: calc(100vh - 80px); background: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.2) !important;">
             <!-- Copilot Header -->
@@ -577,19 +580,35 @@
     <script>
         function toggleAICopilotDrawer() {
             const drawer = document.getElementById('ai-copilot-drawer');
+            const backdrop = document.getElementById('ai-copilot-backdrop');
             if (drawer) {
-                drawer.classList.toggle('d-none');
-                if (!drawer.classList.contains('d-none')) {
-                    document.getElementById('ai-copilot-input')?.focus();
-                    scrollAIChatToBottom();
+                const isHidden = drawer.classList.contains('d-none');
+                if (isHidden) {
+                    drawer.classList.remove('d-none');
+                    if (backdrop && window.innerWidth <= 768) {
+                        backdrop.classList.remove('d-none');
+                    }
+                    setTimeout(() => {
+                        document.getElementById('ai-copilot-input')?.focus();
+                        scrollAIChatToBottom();
+                    }, 80);
+                } else {
+                    drawer.classList.add('d-none');
+                    if (backdrop) {
+                        backdrop.classList.add('d-none');
+                    }
                 }
             }
         }
 
         window.openSmartVisionAICopilot = function(prefillQuery) {
             const drawer = document.getElementById('ai-copilot-drawer');
+            const backdrop = document.getElementById('ai-copilot-backdrop');
             if (drawer && drawer.classList.contains('d-none')) {
                 drawer.classList.remove('d-none');
+                if (backdrop && window.innerWidth <= 768) {
+                    backdrop.classList.remove('d-none');
+                }
             }
             if (prefillQuery) {
                 sendQuickPrompt(prefillQuery);

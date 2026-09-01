@@ -68,3 +68,9 @@ class Config:
     SMTP_PASSWORD = (os.environ.get('SMTP_PASSWORD') or os.environ.get('MAIL_PASSWORD') or 'vyrn mtsa hqxy chqh').strip()
     SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() in ('true', '1', 'yes')
     SMTP_SENDER_EMAIL = (os.environ.get('SMTP_SENDER_EMAIL') or os.environ.get('MAIL_DEFAULT_SENDER') or SMTP_USERNAME or 'vishshivam16@gmail.com').strip()
+
+    # --------------------------------------------------------------------------
+    # 5. REQUEST & UPLOAD PAYLOAD LIMITS (Eliminate 413 Payload Errors)
+    # --------------------------------------------------------------------------
+    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB
+    MAX_FORM_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB

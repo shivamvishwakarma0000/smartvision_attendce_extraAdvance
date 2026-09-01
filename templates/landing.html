@@ -1376,9 +1376,52 @@
         }
     }
 
-    // CROPPER.JS GALLERY SELECTION WORKFLOW
+    // CROPPER.JS GALLERY SELECTION WORKFLOW & CLIENT-SIDE AUTO COMPRESSION
     let cropperInstance = null;
     let originalSelectedFileName = '';
+
+    // Fast client-side downscale & compression to prevent 413 Payload Too Large
+    function compressImageFile(file, maxDimension, quality, callback) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const rawDataUrl = e.target.result;
+            const img = new Image();
+            img.onload = function() {
+                try {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    callback(compressedDataUrl);
+                } catch (canvasErr) {
+                    console.warn('Canvas compression fallback to raw dataUrl:', canvasErr);
+                    callback(rawDataUrl);
+                }
+            };
+            img.onerror = function() {
+                callback(rawDataUrl);
+            };
+            img.src = rawDataUrl;
+        };
+        reader.onerror = function(err) {
+            console.error('FileReader failed:', err);
+        };
+        reader.readAsDataURL(file);
+    }
 
     function previewFile(input) {
         if (input.files && input.files[0]) {
@@ -1387,11 +1430,10 @@
 
             const file = input.files[0];
             originalSelectedFileName = file.name;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const dataUrl = e.target.result;
-                
-                // Immediately set preview & hidden field so the photo is NEVER lost
+
+            // Automatically downscale and compress high-res phone/camera photos (e.g. 25MB -> 120KB)
+            compressImageFile(file, 1024, 0.85, function(dataUrl) {
+                // Immediately set preview & hidden field so the photo is NEVER lost or oversized
                 const hiddenInput = document.getElementById('captured_image_base64');
                 if (hiddenInput) hiddenInput.value = dataUrl;
 
@@ -1402,7 +1444,7 @@
                 if (label) label.innerText = 'Gallery photo attached';
                 if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
 
-                // Launch the interactive Crop Modal
+                // Launch the interactive Crop Modal with the fast-loading compressed image
                 const cropperModalEl = document.getElementById('imageCropperModal');
                 const cropperImage = document.getElementById('cropperImage');
                 
@@ -1433,8 +1475,7 @@
                         }
                     }, { once: true });
                 }
-            };
-            reader.readAsDataURL(file);
+            });
         }
     }
 

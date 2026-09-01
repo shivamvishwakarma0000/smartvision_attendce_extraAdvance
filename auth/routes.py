@@ -32,7 +32,7 @@ FACES_FOLDER = os.path.join('temp_uploads', 'faces')
 
 def save_base64_image(base64_str, roll_no, name, folder):
     """
-    Decodes a base64 data URL and saves it as a file in the specified folder.
+    Decodes a base64 data URL, corrects EXIF orientation, compresses/resizes, and saves to folder.
     Returns the saved file's secure filename or None.
     """
     if not base64_str:
@@ -40,25 +40,33 @@ def save_base64_image(base64_str, roll_no, name, folder):
     try:
         base64_str = base64_str.strip()
         if ';base64,' in base64_str:
-            format_part, imgstr = base64_str.split(';base64,', 1)
-            ext = format_part.split('/')[-1].lower()
-            if ext in ['jpeg', 'jpg']:
-                ext = 'jpg'
-            elif ext not in ['png', 'webp', 'jpg']:
-                ext = 'jpg'
+            _, imgstr = base64_str.split(';base64,', 1)
         else:
             imgstr = base64_str
-            ext = 'jpg'
 
         image_data = base64.b64decode(imgstr)
         safe_roll = secure_filename(str(roll_no)) or 'id'
         safe_name = secure_filename(str(name)) or 'user'
-        filename = f"{safe_roll}_{safe_name}_captured.{ext}"
+        filename = f"{safe_roll}_{safe_name}_captured.jpg"
         filepath = os.path.join(folder, filename)
 
         os.makedirs(folder, exist_ok=True)
-        with open(filepath, 'wb') as f:
-            f.write(image_data)
+
+        try:
+            from PIL import Image, ImageOps
+            import io
+            img = Image.open(io.BytesIO(image_data))
+            img = ImageOps.exif_transpose(img)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            if max(img.size) > 1200:
+                img.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+            img.save(filepath, 'JPEG', quality=88, optimize=True)
+        except Exception as pil_err:
+            print(f"[Image Save Notice] Direct write fallback: {pil_err}")
+            with open(filepath, 'wb') as f:
+                f.write(image_data)
+
         return filename, filepath
     except Exception as e:
         print(f"Error decoding base64 image: {e}")

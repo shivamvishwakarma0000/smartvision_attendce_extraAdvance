@@ -292,6 +292,11 @@ def create_app():
     except Exception:
         pass
 
+    @app.errorhandler(413)
+    def request_entity_too_large(e):
+        flash("The uploaded photo/file exceeds the allowable limit. Please select a compressed photo or capture a live webcam photo.", "warning")
+        return redirect(request.referrer or url_for('main.index', state='register'))
+
     @app.errorhandler(500)
     def internal_server_error(e):
         import traceback

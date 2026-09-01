@@ -292,22 +292,51 @@ def create_app():
     except Exception:
         pass
 
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        import traceback
+        print("\n" + "=" * 80)
+        print("[CRITICAL 500 INTERNAL SERVER ERROR TRACEBACK]")
+        traceback.print_exc()
+        print("=" * 80 + "\n", flush=True)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        flash("A server error occurred. Your session has been safely reset. Please try signing in.", "danger")
+        return redirect(url_for('main.index', state='login'))
+
     return app
 
 # ==============================================================================
 # INITIAL DATA SEEDING & ASSET SYNC FUNCTIONS
 # ==============================================================================
 def ensure_postgresql_columns():
-    """Runs idempotent column check on Neon PostgreSQL / SQLite for new schema columns."""
+    """Runs idempotent column check on Neon PostgreSQL / SQLite for all schema columns."""
     try:
         from sqlalchemy import text
         statements = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(100)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile VARCHAR(20)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_name VARCHAR(100)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_email VARCHAR(100)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_mobile VARCHAR(20)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS image_data TEXT",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS face_embedding BYTEA",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS face_encoding BYTEA",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS image_data TEXT",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS primary_subject VARCHAR(100)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS secondary_subject VARCHAR(100)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS tertiary_subject VARCHAR(100)",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_name VARCHAR(100)",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_email VARCHAR(100)",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_mobile VARCHAR(20)",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_image_data TEXT",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_face_encoding BYTEA",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS logo_data TEXT",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS name_image_data TEXT",
-            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT",
-            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS image_data TEXT",
-            "ALTER TABLE students ADD COLUMN IF NOT EXISTS image_data TEXT",
-            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_image_data TEXT"
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT"
         ]
         for stmt in statements:
             try:
@@ -315,8 +344,9 @@ def ensure_postgresql_columns():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        print("[PostgreSQL Schema Sync] Verified and updated all database columns successfully!")
     except Exception as e:
-        pass
+        print(f"[PostgreSQL Schema Sync Notice] {e}")
 
 def sync_university_images_to_db():
     """Ensures university logos and banners are permanently stored as Base64 in Neon PostgreSQL."""

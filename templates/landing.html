@@ -939,11 +939,15 @@
             }
 
             if (gTeacherId) {
-                switchSignupRole('teacher');
+                const radioT = document.getElementById('reg-role-teacher');
+                if (radioT) radioT.checked = true;
+                setRole('teacher');
                 const tInput = document.getElementById('input_teacher_id');
                 if (tInput) tInput.value = gTeacherId;
             } else {
-                switchSignupRole('student');
+                const radioS = document.getElementById('reg-role-student');
+                if (radioS) radioS.checked = true;
+                setRole('student');
             }
             {% endif %}
         } else if (stateParam === 'forgot') {

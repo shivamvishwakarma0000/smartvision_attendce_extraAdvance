@@ -335,10 +335,10 @@ def register():
         return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
-        role = request.form.get('signup_role')
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
+        role = request.form.get('signup_role', 'student').strip()
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '').strip()
 
         if not all([role, name, email, password]):
             flash('Name, email, and password are required.', 'danger')
@@ -348,22 +348,10 @@ def register():
             flash('Password must be at least 8 characters long.', 'danger')
             return redirect(url_for('main.index', state='signup'))
 
-        existing_reg_user = User.query.filter_by(email=email).first()
+        existing_reg_user = User.query.filter(db.func.lower(User.email) == email).first()
         if existing_reg_user:
-            has_active_profile = False
-            if existing_reg_user.role == 'student':
-                has_active_profile = (Student.query.filter_by(user_id=existing_reg_user.id).first() is not None)
-            elif existing_reg_user.role == 'teacher':
-                has_active_profile = (Teacher.query.filter_by(user_id=existing_reg_user.id).first() is not None)
-            elif existing_reg_user.role == 'admin':
-                has_active_profile = True
-
-            if has_active_profile:
-                flash('This email address is already registered. Please log in.', 'danger')
-                return redirect(url_for('main.index', state='signup'))
-            else:
-                db.session.delete(existing_reg_user)
-                db.session.commit()
+            flash(f'The email address {email} is already registered as a {existing_reg_user.role.capitalize()}. Please sign in.', 'warning')
+            return redirect(url_for('main.index', state='login'))
 
         # --- ADMIN REGISTRATION ---
         if role == 'admin':

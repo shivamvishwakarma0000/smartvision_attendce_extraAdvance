@@ -39,11 +39,14 @@
                 </div>
 
                 <!-- Date Navigation & Reset Quick Action -->
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <form method="GET" action="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="d-flex align-items-center gap-2 bg-white bg-opacity-10 p-1.5 px-2.5 rounded-pill border border-white border-opacity-20 shadow-xs">
-                        <span class="text-white-50 fs-8 ps-1"><i class="fa-regular fa-calendar-days text-info me-1"></i>Date:</span>
-                        <input type="date" name="date" class="form-control form-control-sm rounded-pill border-0 fw-bold text-primary shadow-none py-1 px-2.5 fs-8" 
-                               value="{{ selected_date }}" onchange="this.form.submit()" style="max-width: 135px; background: #ffffff;">
+                <div class="d-flex align-items-center gap-2 flex-wrap mt-3 mt-lg-0">
+                    <form method="GET" action="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="d-inline-flex align-items-center gap-1.5 bg-white bg-opacity-20 p-1 ps-2.5 pe-1.5 rounded-pill border border-white border-opacity-25 shadow-sm">
+                        <label for="admin_teacher_att_date" class="text-white fs-8 mb-0 d-inline-flex align-items-center gap-1 text-nowrap">
+                            <i class="fa-regular fa-calendar-days text-warning"></i>
+                            <span class="d-none d-sm-inline opacity-90 fw-semibold">Date:</span>
+                        </label>
+                        <input type="date" id="admin_teacher_att_date" name="date" class="form-control form-control-sm rounded-pill border-0 fw-bold text-primary shadow-none py-1 px-2 fs-8" 
+                               value="{{ selected_date }}" onchange="this.form.submit()" style="width: auto; min-width: 130px; min-height: 32px; background: #ffffff;">
                         {% if selected_department %}
                         <input type="hidden" name="department" value="{{ selected_department }}">
                         {% endif %}
@@ -54,8 +57,8 @@
                         <input type="hidden" name="status" value="{{ selected_status }}">
                         {% endif %}
                     </form>
-                    <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm" title="Reset to Today's Attendance">
-                        <i class="fa-solid fa-rotate-right me-1"></i>Today
+                    <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-bold text-primary shadow-sm d-inline-flex align-items-center gap-1" style="min-height: 34px;" title="Reset to Today's Attendance">
+                        <i class="fa-solid fa-rotate-right"></i> Today
                     </a>
                 </div>
             </div>

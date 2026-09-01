@@ -392,23 +392,26 @@
                     <!-- Slot Type Selection -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold fs-8 text-dark">Slot Type <span class="text-danger">*</span></label>
-                        <div class="row g-2">
-                            <div class="col-4">
+                        <div class="d-flex gap-2 flex-wrap flex-sm-nowrap">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_class" value="CLASS" checked onchange="toggleSlotTypeFields('add', 'CLASS')">
-                                <label class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_class">
-                                    <i class="fa-solid fa-book-open d-block mb-1 fs-6"></i> Subject
+                                <label class="btn btn-outline-primary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_class">
+                                    <i class="fa-solid fa-book-open mb-1 fs-6"></i>
+                                    <span>Subject</span>
                                 </label>
                             </div>
-                            <div class="col-4">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('add', 'LIBRARY')">
-                                <label class="btn btn-outline-info btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_library">
-                                    <i class="fa-solid fa-book-bookmark d-block mb-1 fs-6"></i> Library
+                                <label class="btn btn-outline-info btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_library">
+                                    <i class="fa-solid fa-book-bookmark mb-1 fs-6"></i>
+                                    <span>Library</span>
                                 </label>
                             </div>
-                            <div class="col-4">
+                            <div class="flex-fill" style="min-width: 100px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('add', 'OTHER')">
-                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="slot_type_other">
-                                    <i class="fa-solid fa-shapes d-block mb-1 fs-6"></i> Others / Custom
+                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_other">
+                                    <i class="fa-solid fa-shapes mb-1 fs-6"></i>
+                                    <span>Others / Custom</span>
                                 </label>
                             </div>
                         </div>
@@ -421,9 +424,9 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6" id="add_subject_container">
+                        <div class="col-12 col-sm-6" id="add_subject_container">
                             <label for="modal_subject_id" class="form-label fw-semibold fs-8 text-dark">Subject <span class="text-danger">*</span></label>
-                            <select class="form-select" id="modal_subject_id" name="subject_id">
+                            <select class="form-select form-select-sm" id="modal_subject_id" name="subject_id">
                                 <option selected value="">Choose Subject...</option>
                                 {% for sub in subjects %}
                                 <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
@@ -431,9 +434,9 @@
                             </select>
                         </div>
 
-                        <div class="col-6" id="add_teacher_container">
+                        <div class="col-12 col-sm-6" id="add_teacher_container">
                             <label for="modal_teacher_id" class="form-label fw-semibold fs-8 text-dark">Faculty / Incharge</label>
-                            <select class="form-select" id="modal_teacher_id" name="teacher_id">
+                            <select class="form-select form-select-sm" id="modal_teacher_id" name="teacher_id">
                                 <option selected value="">Choose Teacher (Optional)...</option>
                                 {% for t in teachers %}
                                 <option value="{{ t.id }}">{{ t.name }}</option>
@@ -518,23 +521,26 @@
                     <!-- Slot Type Selection -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold fs-8 text-dark">Slot Type <span class="text-danger">*</span></label>
-                        <div class="row g-2">
-                            <div class="col-4">
+                        <div class="d-flex gap-2 flex-wrap flex-sm-nowrap">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_class" value="CLASS" onchange="toggleSlotTypeFields('edit', 'CLASS')">
-                                <label class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_class">
-                                    <i class="fa-solid fa-book-open d-block mb-1 fs-6"></i> Subject
+                                <label class="btn btn-outline-primary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_class">
+                                    <i class="fa-solid fa-book-open mb-1 fs-6"></i>
+                                    <span>Subject</span>
                                 </label>
                             </div>
-                            <div class="col-4">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('edit', 'LIBRARY')">
-                                <label class="btn btn-outline-info btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_library">
-                                    <i class="fa-solid fa-book-bookmark d-block mb-1 fs-6"></i> Library
+                                <label class="btn btn-outline-info btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_library">
+                                    <i class="fa-solid fa-book-bookmark mb-1 fs-6"></i>
+                                    <span>Library</span>
                                 </label>
                             </div>
-                            <div class="col-4">
+                            <div class="flex-fill" style="min-width: 100px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('edit', 'OTHER')">
-                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-nowrap" for="edit_slot_type_other">
-                                    <i class="fa-solid fa-shapes d-block mb-1 fs-6"></i> Others / Custom
+                                <label class="btn btn-outline-secondary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_other">
+                                    <i class="fa-solid fa-shapes mb-1 fs-6"></i>
+                                    <span>Others / Custom</span>
                                 </label>
                             </div>
                         </div>
@@ -547,18 +553,18 @@
                     </div>
 
                     <div class="row g-2 mb-3">
-                        <div class="col-6" id="edit_subject_container">
+                        <div class="col-12 col-sm-6" id="edit_subject_container">
                             <label for="edit_subject_id" class="form-label fw-semibold fs-8 text-dark">Subject <span class="text-danger">*</span></label>
-                            <select class="form-select" id="edit_subject_id" name="subject_id">
+                            <select class="form-select form-select-sm" id="edit_subject_id" name="subject_id">
                                 <option selected value="">Choose Subject...</option>
                                 {% for sub in subjects %}
                                 <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-6" id="edit_teacher_container">
+                        <div class="col-12 col-sm-6" id="edit_teacher_container">
                             <label for="edit_teacher_id" class="form-label fw-semibold fs-8 text-dark">Faculty / Incharge</label>
-                            <select class="form-select" id="edit_teacher_id" name="teacher_id">
+                            <select class="form-select form-select-sm" id="edit_teacher_id" name="teacher_id">
                                 <option selected value="">Choose Teacher (Optional)...</option>
                                 {% for t in teachers %}
                                 <option value="{{ t.id }}">{{ t.name }}</option>

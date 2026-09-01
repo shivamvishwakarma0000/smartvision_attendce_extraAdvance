@@ -35,18 +35,27 @@ def save_base64_image(base64_str, roll_no, name, folder):
     Decodes a base64 data URL and saves it as a file in the specified folder.
     Returns the saved file's secure filename or None.
     """
-    if not base64_str or not base64_str.startswith('data:image/'):
+    if not base64_str:
         return None
     try:
-        format, imgstr = base64_str.split(';base64,')
-        ext = format.split('/')[-1]
-        if ext == 'jpeg':
+        base64_str = base64_str.strip()
+        if ';base64,' in base64_str:
+            format_part, imgstr = base64_str.split(';base64,', 1)
+            ext = format_part.split('/')[-1].lower()
+            if ext in ['jpeg', 'jpg']:
+                ext = 'jpg'
+            elif ext not in ['png', 'webp', 'jpg']:
+                ext = 'jpg'
+        else:
+            imgstr = base64_str
             ext = 'jpg'
+
         image_data = base64.b64decode(imgstr)
-        
-        filename = secure_filename(f"{roll_no}_{name}_captured.{ext}")
+        safe_roll = secure_filename(str(roll_no)) or 'id'
+        safe_name = secure_filename(str(name)) or 'user'
+        filename = f"{safe_roll}_{safe_name}_captured.{ext}"
         filepath = os.path.join(folder, filename)
-        
+
         os.makedirs(folder, exist_ok=True)
         with open(filepath, 'wb') as f:
             f.write(image_data)
@@ -336,10 +345,8 @@ def register():
         if existing_reg_user:
             has_active_profile = False
             if existing_reg_user.role == 'student':
-                from models import Student
                 has_active_profile = (Student.query.filter_by(user_id=existing_reg_user.id).first() is not None)
             elif existing_reg_user.role == 'teacher':
-                from models import Teacher
                 has_active_profile = (Teacher.query.filter_by(user_id=existing_reg_user.id).first() is not None)
             elif existing_reg_user.role == 'admin':
                 has_active_profile = True
@@ -381,7 +388,6 @@ def register():
                 flash(f'This Teacher ID ({teacher_id}) was issued specifically for {issued_rec.email}. Please use that email address.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
-            from models import Teacher
             if Teacher.query.filter_by(emp_id=teacher_id).first():
                 flash('A teacher with this Teacher ID is already registered.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
@@ -469,7 +475,7 @@ def register():
                 db.session.add(new_teacher)
                 if issued_rec:
                     issued_rec.is_used = True
-                    issued_rec.used_by_user_id = user.id
+                    issued_rec.used_by_user_id = new_user.id
                     issued_rec.name = name
                     if not issued_rec.email:
                         issued_rec.email = email

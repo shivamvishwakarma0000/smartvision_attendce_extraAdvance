@@ -253,6 +253,9 @@ class StudentEditRequest(db.Model):
     new_department = db.Column(db.String(100), nullable=True)
     new_mobile = db.Column(db.String(20), nullable=True)
     new_class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    new_parent_name = db.Column(db.String(100), nullable=True)
+    new_parent_email = db.Column(db.String(100), nullable=True)
+    new_parent_mobile = db.Column(db.String(20), nullable=True)
     new_image_filename = db.Column(db.String(255), nullable=True)
     new_image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     new_face_encoding = db.Column(db.LargeBinary, nullable=True)

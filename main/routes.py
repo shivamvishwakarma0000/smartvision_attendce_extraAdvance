@@ -2385,20 +2385,35 @@ def handle_approval(request_id, action):
                 c = Class.query.get(req.new_class_id)
                 if c and c.department:
                     student.department = c.department
-            student.image_filename = req.new_image_filename
-            student.face_encoding = req.new_face_encoding
+            
+            if hasattr(req, 'new_mobile') and req.new_mobile:
+                student.mobile = req.new_mobile
+            if hasattr(req, 'new_parent_name') and req.new_parent_name:
+                student.parent_name = req.new_parent_name
+            if hasattr(req, 'new_parent_email') and req.new_parent_email:
+                student.parent_email = req.new_parent_email
+            if hasattr(req, 'new_parent_mobile') and req.new_parent_mobile:
+                student.parent_mobile = req.new_parent_mobile
+
+            if req.new_image_filename:
+                student.image_filename = req.new_image_filename
+            if req.new_face_encoding:
+                student.face_encoding = req.new_face_encoding
+                student.face_embedding = req.new_face_encoding
             if req.new_image_data:
                 student.image_data = req.new_image_data
             
-            # If student has a linked User account, update their display name there too
+            # If student has a linked User account, update their display name and mobile too
             if student.user_id:
                 user = User.query.get(student.user_id)
                 if user:
                     user.name = req.new_name
+                    if hasattr(req, 'new_mobile') and req.new_mobile:
+                        user.mobile = req.new_mobile
 
             db.session.delete(req) # Remove request from queue
             db.session.commit()
-            flash(f"Profile change request for student '{student.name}' approved successfully!", "success")
+            flash(f"Profile change request for student '{student.name}' approved successfully! All changes are now live.", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"An error occurred while approving: {e}", "danger")

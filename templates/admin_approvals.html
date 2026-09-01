@@ -462,7 +462,7 @@
     <div class="row">
         <!-- Current Profile -->
         <div class="col-md-6 mb-4">
-            <div class="p-3 rounded border bg-light h-100">
+            <div class="p-3 rounded border bg-light h-100" style="background: var(--surface-secondary) !important; border-color: var(--border-card) !important;">
                 <h6 class="fw-bold text-muted mb-3 uppercase tracking-wider fs-8 text-uppercase"><i class="fa-solid fa-circle-xmark text-danger me-1"></i> Current Profile Details</h6>
                 
                 <div class="mb-2">
@@ -474,7 +474,7 @@
                     <div class="fw-semibold text-dark"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ req.student.department or (req.student.class_assigned.department if req.student.class_assigned else 'General') }}</span></div>
                 </div>
                 <div class="mb-2">
-                    <span class="text-muted fs-8">Class Level:</span>
+                    <span class="text-muted fs-8">Class Assigned:</span>
                     <div class="fw-semibold text-dark">{{ req.student.class_assigned.name if req.student.class_assigned else 'N/A' }}</div>
                 </div>
                 <div class="mb-2">
@@ -485,16 +485,28 @@
                     <span class="text-muted fs-8">Enrollment Number:</span>
                     <div class="fw-semibold text-dark">{{ req.student.enrollment_no }}</div>
                 </div>
+                <div class="mb-2">
+                    <span class="text-muted fs-8">Mobile Number:</span>
+                    <div class="fw-semibold text-dark">{{ req.student.mobile or 'Not Provided' }}</div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted fs-8">Parent / Guardian:</span>
+                    <div class="fw-semibold text-dark">{{ req.student.parent_name or 'N/A' }} {% if req.student.parent_mobile %}({{ req.student.parent_mobile }}){% endif %}</div>
+                </div>
                 
                 <div class="mt-4 text-center">
-                    <span class="text-muted fs-8 d-block mb-2">Registered Face Photo:</span>
-                    {% if req.student.image_filename %}
+                    <span class="text-muted fs-8 d-block mb-2">Current Registered Photo:</span>
+                    {% if req.student.image_data %}
+                        <img src="{% if req.student.image_data.startswith('data:image/') %}{{ req.student.image_data }}{% else %}data:image/jpeg;base64,{{ req.student.image_data }}{% endif %}" 
+                             class="rounded-3 shadow-sm border" 
+                             style="width: 130px; height: 130px; object-fit: cover;">
+                    {% elif req.student.image_filename %}
                         <img src="{{ url_for('main.uploaded_face', filename=req.student.image_filename) }}" 
                              onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ req.student.name|urlencode }}&background=6366f1&color=fff&size=128&bold=true';"
-                             class="rounded shadow-sm border border-2" 
+                             class="rounded-3 shadow-sm border" 
                              style="width: 130px; height: 130px; object-fit: cover;">
                     {% else %}
-                        <div class="rounded bg-white border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 130px; height: 130px; font-size: 2.5rem;">
+                        <div class="rounded-3 bg-white border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 130px; height: 130px; font-size: 2.5rem;">
                             <i class="fa-solid fa-user"></i>
                         </div>
                     {% endif %}
@@ -504,7 +516,7 @@
 
         <!-- Requested Changes -->
         <div class="col-md-6 mb-4">
-            <div class="p-3 rounded border h-100" style="background-color: rgba(99, 102, 241, 0.02); border-color: rgba(99, 102, 241, 0.2) !important;">
+            <div class="p-3 rounded border h-100" style="background-color: rgba(99, 102, 241, 0.03); border-color: rgba(99, 102, 241, 0.25) !important;">
                 <h6 class="fw-bold text-primary mb-3 uppercase tracking-wider fs-8 text-uppercase"><i class="fa-solid fa-circle-check text-success me-1"></i> Requested Changes</h6>
                 
                 <div class="mb-2">
@@ -520,7 +532,7 @@
                     </div>
                 </div>
                 <div class="mb-2">
-                    <span class="text-muted fs-8">Requested Class Level:</span>
+                    <span class="text-muted fs-8">Requested Class Assigned:</span>
                     <div class="fw-bold {% if req.new_class_id != req.student.class_id %}text-success{% else %}text-dark{% endif %}">
                         {{ req.class_assigned.name if req.class_assigned else 'No Class' }}
                     </div>
@@ -537,18 +549,35 @@
                         {{ req.new_enrollment_no }}
                     </div>
                 </div>
+                <div class="mb-2">
+                    <span class="text-muted fs-8">Requested Mobile:</span>
+                    <div class="fw-bold {% if req.new_mobile and req.new_mobile != req.student.mobile %}text-success{% else %}text-dark{% endif %}">
+                        {{ req.new_mobile or 'Unchanged' }}
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted fs-8">Requested Parent Details:</span>
+                    <div class="fw-bold {% if req.new_parent_name and req.new_parent_name != req.student.parent_name %}text-success{% else %}text-dark{% endif %}">
+                        {{ req.new_parent_name or req.student.parent_name or 'N/A' }} {% if req.new_parent_mobile %}({{ req.new_parent_mobile }}){% endif %}
+                    </div>
+                </div>
                 
                 <div class="mt-4 text-center">
                     <span class="text-muted fs-8 d-block mb-2">Requested Face Photo:</span>
-                    {% if req.new_image_filename %}
-                        <div class="scan-box-wrapper mx-auto shadow-sm border border-2 {% if req.new_image_filename != req.student.image_filename %}border-success{% endif %}" style="width: 130px; height: 130px;">
+                    {% if req.new_image_data %}
+                        <div class="scan-box-wrapper mx-auto shadow-sm border border-2 border-success rounded-3 overflow-hidden" style="width: 130px; height: 130px;">
+                            <img src="{% if req.new_image_data.startswith('data:image/') %}{{ req.new_image_data }}{% else %}data:image/jpeg;base64,{{ req.new_image_data }}{% endif %}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    {% elif req.new_image_filename %}
+                        <div class="scan-box-wrapper mx-auto shadow-sm border border-2 {% if req.new_image_filename != req.student.image_filename %}border-success{% endif %} rounded-3 overflow-hidden" style="width: 130px; height: 130px;">
                             <img src="{{ url_for('main.uploaded_face', filename=req.new_image_filename) }}" 
                                  onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ req.new_name|urlencode }}&background=10b981&color=fff&size=128&bold=true';"
                                  style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     {% else %}
-                        <div class="rounded bg-white border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 130px; height: 130px; font-size: 2.5rem;">
-                            <i class="fa-solid fa-user"></i>
+                        <div class="rounded-3 bg-white border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 130px; height: 130px; font-size: 0.85rem;">
+                            <span class="text-muted px-2">No photo change requested</span>
                         </div>
                     {% endif %}
                 </div>

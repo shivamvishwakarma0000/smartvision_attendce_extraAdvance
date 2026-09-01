@@ -5,158 +5,222 @@
 {% extends "base.html" %}
 
 {% block title %}Edit Profile - SmartVision{% endblock %}
-{% block page_title %}Edit Profile Information{% endblock %}
+{% block page_title %}Profile Change Request{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card p-4 shadow-sm border-0 fade-in">
-            <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-user-pen text-primary me-2"></i> Profile Change Request</h5>
-            <p class="text-muted">Modify your details below. To ensure academic integrity, profile alterations (such as class changes or face updates) must be reviewed and approved by a portal administrator before taking effect.</p>
-
-            {% if pending_request %}
-            <!-- Pending Alert Box -->
-            <div class="alert alert-warning border-0 shadow-sm rounded-3 py-3 mb-4" style="background-color: var(--warning-bg); color: var(--warning);">
-                <h6 class="fw-bold mb-1"><i class="fa-solid fa-hourglass-half text-warning me-2"></i> Request Pending Review</h6>
-                You currently have a profile change request submitted on <strong>{{ pending_request.created_at.strftime('%B %d, %Y at %H:%M') }}</strong> pending administrator approval. You cannot submit new changes until this request is processed.
-            </div>
-
-            <!-- View Pending Details (ReadOnly) -->
-            <fieldset disabled>
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Requested Full Name</label>
-                        <input type="text" class="form-control" value="{{ pending_request.new_name }}">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Requested Department</label>
-                        <input type="text" class="form-control" value="{{ pending_request.new_department or 'N/A' }}">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-semibold">Requested Class</label>
-                        <input type="text" class="form-control" value="{{ pending_request.class_assigned.name if pending_request.class_assigned else 'No Class' }}">
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-semibold">Requested Roll Number</label>
-                        <input type="text" class="form-control" value="{{ pending_request.new_roll_no }}">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-semibold">Requested Enrollment Number</label>
-                        <input type="text" class="form-control" value="{{ pending_request.new_enrollment_no }}">
-                    </div>
-                </div>
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-9 col-xl-8">
+            <div class="card p-4 shadow-sm border-0 rounded-4" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
                 
-                {% if pending_request.new_image_filename != student.image_filename %}
-                <div class="text-center my-4">
-                    <label class="form-label fw-semibold d-block">Requested New Face Profile Photo:</label>
-                    <div class="scan-box-wrapper mx-auto shadow" style="width: 160px; height: 160px; border: 4px solid var(--border-card);">
-                        <div class="scan-laser-line"></div>
-                        <img src="{{ url_for('main.uploaded_face', filename=pending_request.new_image_filename) }}" 
-                             style="width: 100%; height: 100%; object-fit: cover;">
+                <!-- Header Title -->
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px; background: rgba(99, 102, 241, 0.12); border: 1.5px solid rgba(99, 102, 241, 0.3);">
+                        <i class="fa-solid fa-user-pen fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1" style="color: var(--text-primary);">Profile Change Request</h4>
+                        <p class="text-muted mb-0 fs-8">Modify your details below. To ensure academic integrity, profile alterations (such as class changes, contact info, or face updates) must be reviewed and approved by a portal administrator before taking effect.</p>
+                    </div>
+                </div>
+
+                {% if pending_request %}
+                <!-- Pending Alert Notice -->
+                <div class="alert alert-warning border-0 shadow-sm rounded-3 py-3 mb-4 d-flex align-items-start gap-3" style="background-color: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3) !important; color: var(--text-primary);">
+                    <i class="fa-solid fa-hourglass-half text-warning fs-5 mt-1 flex-shrink-0"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                            <h6 class="fw-bold mb-0 text-warning">Request Pending Review</h6>
+                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">Submitted {{ pending_request.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                        </div>
+                        <p class="mb-0 fs-8 text-muted">You have a pending change request under review by the Administrator. You can modify any details below and click <strong>"Update Profile Request"</strong> to submit changes.</p>
                     </div>
                 </div>
                 {% endif %}
-            </fieldset>
-            
-            <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary w-100 mt-4">
-                Back to Dashboard
-            </a>
-            {% else %}
-            <!-- Editing Form -->
-            <form method="POST" action="" enctype="multipart/form-data" class="mt-4" onsubmit="window.stopCamera('edit-profile')">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="name" class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ student.name }}" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="department" class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
-                        <select class="form-select" id="department" name="department" onchange="syncEditProfileClasses()" required>
-                            {% for dept in all_departments %}
-                            <option value="{{ dept.name }}" {% if (student.department and student.department|lower == dept.name|lower) or (not student.department and loop.first) %}selected{% endif %}>
-                                {{ dept.name }} - {{ dept.full_name or dept.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="class_id" class="form-label fw-semibold">Class Assigned <span class="text-danger">*</span></label>
-                        <select class="form-select" id="class_id" name="class_id" required>
-                            {% for class_item in classes %}
-                            <option value="{{ class_item.id }}" data-dept="{{ class_item.department or 'General' }}" {% if class_item.id == student.class_id %}selected{% endif %}>
-                                {{ class_item.name }} ({{ class_item.department or 'General' }} Dept)
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="roll_no" class="form-label fw-semibold">Roll Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="roll_no" name="roll_no" value="{{ student.roll_no }}" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="enrollment_no" class="form-label fw-semibold">Enrollment Number <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="enrollment_no" name="enrollment_no" value="{{ student.enrollment_no }}" required>
-                    </div>
-                </div>
-
-                <!-- Photo Update (Optional) -->
-                <div class="mb-4 mt-3 p-3 rounded bg-light" style="border: 1px dashed rgba(99, 102, 241, 0.25);">
-                    <label class="form-label fw-semibold mb-2">Update Face Photo (Optional - leave blank to keep current photo)</label>
+                <!-- Profile Edit Form -->
+                <form method="POST" action="{{ url_for('student.edit_profile') }}" enctype="multipart/form-data" class="mt-2" onsubmit="if(window.stopCamera) window.stopCamera('edit-profile')">
                     
-                    <input type="hidden" name="captured_image_base64" id="captured_image_base64-edit-profile">
-                    
-                    <!-- Toggle Selection Mode -->
-                    <div class="d-flex gap-2 mb-3">
-                        <button type="button" class="btn btn-sm btn-primary w-50" id="btn-local-mode-edit-profile" onclick="setPhotoMode('edit-profile', 'local')">
-                            <i class="fa-solid fa-image me-1"></i> Upload File
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-primary w-50" id="btn-camera-mode-edit-profile" onclick="setPhotoMode('edit-profile', 'camera')">
-                            <i class="fa-solid fa-camera me-1"></i> Use Camera
-                        </button>
-                    </div>
+                    <!-- 1. ACADEMIC & BASIC INFO -->
+                    <div class="p-3.5 rounded-3 mb-4" style="background: var(--surface-secondary); border: 1px solid var(--border-card);">
+                        <span class="fs-8 fw-bold text-primary text-uppercase tracking-wider d-block mb-3">
+                            <i class="fa-solid fa-id-card me-1.5"></i> Academic & Basic Information
+                        </span>
 
-                    <!-- Local File Input -->
-                    <div class="mb-3" id="file-input-container-edit-profile">
-                        <input type="file" class="form-control" id="file-input-edit-profile" name="student_photo" accept="image/*" data-originally-required="false">
-                    </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ pending_request.new_name if pending_request else student.name }}" required placeholder="e.g. Shivam Vishwakarma">
+                            </div>
 
-                    <!-- Camera Preview Section -->
-                    <div class="camera-container d-none mb-3 text-center border p-2 rounded-3" id="camera-section-edit-profile" style="background: rgba(0,0,0,0.03);">
-                        <video id="webcam-edit-profile" autoplay playsinline style="width: 100%; max-height: 200px; border-radius: var(--radius-md); transform: scaleX(-1); background: #000;"></video>
-                        <canvas id="canvas-edit-profile" class="d-none"></canvas>
-                        
-                        <!-- Captured Photo Preview -->
-                        <div id="captured-preview-container-edit-profile" class="d-none mt-2 text-center">
-                            <img id="captured-preview-edit-profile" class="img-fluid rounded border border-primary shadow-sm" style="max-height: 180px;">
-                            <p class="text-success mt-1 fw-semibold mb-0" style="font-size: 0.85rem;"><i class="fa-solid fa-circle-check"></i> Photo Captured Successfully</p>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center gap-2 mt-2">
-                            <button type="button" class="btn btn-sm btn-primary" id="btn-capture-edit-profile" onclick="capturePhoto('edit-profile')"><i class="fa-solid fa-circle-dot"></i> Capture Frame</button>
-                            <button type="button" class="btn btn-sm btn-secondary d-none" id="btn-retake-edit-profile" onclick="retakePhoto('edit-profile')"><i class="fa-solid fa-rotate-left"></i> Retake</button>
+                            <div class="col-md-6">
+                                <label for="mobile" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Student Mobile Number</label>
+                                <input type="tel" class="form-control" id="mobile" name="mobile" value="{{ (pending_request.new_mobile if pending_request and pending_request.new_mobile is not none else student.mobile) or '' }}" placeholder="+91 9876543210">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="department" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Academic Department <span class="text-danger">*</span></label>
+                                <select class="form-select" id="department" name="department" onchange="syncEditProfileClasses()" required>
+                                    {% for dept in all_departments %}
+                                    <option value="{{ dept.name }}" {% if (pending_request and pending_request.new_department and pending_request.new_department|lower == dept.name|lower) or (not pending_request and student.department and student.department|lower == dept.name|lower) %}selected{% endif %}>
+                                        {{ dept.name }} - {{ dept.full_name or dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="class_id" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Class Assigned <span class="text-danger">*</span></label>
+                                <select class="form-select" id="class_id" name="class_id" required>
+                                    {% for class_item in classes %}
+                                    <option value="{{ class_item.id }}" data-dept="{{ class_item.department or 'General' }}" {% if (pending_request and class_item.id == pending_request.new_class_id) or (not pending_request and class_item.id == student.class_id) %}selected{% endif %}>
+                                        {{ class_item.name }} ({{ class_item.department or 'General' }} Dept)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="roll_no" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Roll Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="roll_no" name="roll_no" value="{{ pending_request.new_roll_no if pending_request else student.roll_no }}" required placeholder="e.g. 67 or CSE-101">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="enrollment_no" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Enrollment Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="enrollment_no" name="enrollment_no" value="{{ pending_request.new_enrollment_no if pending_request else student.enrollment_no }}" required placeholder="e.g. EN2024001">
+                            </div>
                         </div>
                     </div>
 
-                    {% if student.image_filename %}
-                    <div class="mt-3 text-center">
-                        <small class="text-muted d-block mb-2">Current Photo:</small>
-                        <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
-                             class="rounded shadow-sm" 
-                             style="width: 100px; height: 100px; object-fit: cover; border: 2px solid var(--border-card);">
-                    </div>
-                    {% endif %}
-                </div>
+                    <!-- 2. FATHER / PARENT CONTACT DETAILS -->
+                    <div class="p-3.5 rounded-3 mb-4" style="background: var(--surface-secondary); border: 1px solid var(--border-card);">
+                        <span class="fs-8 fw-bold text-primary text-uppercase tracking-wider d-block mb-3">
+                            <i class="fa-solid fa-users me-1.5"></i> Father / Parent / Guardian Information
+                        </span>
 
-                <button type="submit" class="btn btn-primary w-100 py-2.5 shadow">
-                    Submit Change Request
-                </button>
-            </form>
-            {% endif %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="parent_name" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Parent / Guardian Name</label>
+                                <input type="text" class="form-control" id="parent_name" name="parent_name" value="{{ (pending_request.new_parent_name if pending_request and pending_request.new_parent_name is not none else student.parent_name) or '' }}" placeholder="e.g. Rajesh Vishwakarma">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="parent_email" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Parent Email Address</label>
+                                <input type="email" class="form-control" id="parent_email" name="parent_email" value="{{ (pending_request.new_parent_email if pending_request and pending_request.new_parent_email is not none else student.parent_email) or '' }}" placeholder="parent@domain.com">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="parent_mobile" class="form-label fw-bold fs-8" style="color: var(--text-primary);">Parent Mobile Number</label>
+                                <input type="tel" class="form-control" id="parent_mobile" name="parent_mobile" value="{{ (pending_request.new_parent_mobile if pending_request and pending_request.new_parent_mobile is not none else student.parent_mobile) or '' }}" placeholder="+91 9876543210">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. BIOMETRIC FACE PHOTO UPDATE -->
+                    <div class="p-3.5 rounded-3 mb-4" style="background: var(--surface-secondary); border: 1px solid var(--border-card);">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <span class="fs-8 fw-bold text-primary text-uppercase tracking-wider">
+                                <i class="fa-solid fa-camera-retro me-1.5"></i> Update Facial Recognition Photo (Optional)
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border fs-9">Optional</span>
+                        </div>
+                        <p class="text-muted fs-8 mb-3">Leave blank if you want to keep your current face photo. Uploading a new photo or clicking a live snapshot will submit it for Administrator verification.</p>
+
+                        <input type="hidden" name="captured_image_base64" id="captured_image_base64-edit-profile">
+
+                        <!-- Toggle Mode Buttons -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-primary flex-fill fw-bold py-2 rounded-3" id="btn-local-mode-edit-profile" onclick="setPhotoMode('edit-profile', 'local')">
+                                <i class="fa-solid fa-image me-1.5"></i> Select from Gallery / Files
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary flex-fill fw-bold py-2 rounded-3" id="btn-camera-mode-edit-profile" onclick="setPhotoMode('edit-profile', 'camera')">
+                                <i class="fa-solid fa-camera me-1.5"></i> Live Camera Snapshot
+                            </button>
+                        </div>
+
+                        <!-- Local File Input -->
+                        <div class="mb-3" id="file-input-container-edit-profile">
+                            <input type="file" class="form-control form-control-sm" id="file-input-edit-profile" name="student_photo" accept="image/*" data-originally-required="false" onchange="previewSelectedFile(this)">
+                        </div>
+
+                        <!-- Camera Preview Section -->
+                        <div class="camera-container d-none mb-3 text-center border p-3 rounded-3" id="camera-section-edit-profile" style="background: rgba(0,0,0,0.03);">
+                            <video id="webcam-edit-profile" autoplay playsinline style="width: 100%; max-height: 240px; border-radius: var(--radius-md); transform: scaleX(-1); background: #000;"></video>
+                            <canvas id="canvas-edit-profile" class="d-none"></canvas>
+                            
+                            <!-- Captured Photo Preview -->
+                            <div id="captured-preview-container-edit-profile" class="d-none mt-2 text-center">
+                                <img id="captured-preview-edit-profile" class="img-fluid rounded border border-primary shadow-sm" style="max-height: 180px;">
+                                <p class="text-success mt-2 fw-semibold mb-0 fs-8"><i class="fa-solid fa-circle-check me-1"></i> New Face Photo Captured</p>
+                            </div>
+                            
+                            <div class="d-flex justify-content-center gap-2 mt-3">
+                                <button type="button" class="btn btn-sm btn-primary px-4 fw-bold rounded-pill" id="btn-capture-edit-profile" onclick="capturePhoto('edit-profile')">
+                                    <i class="fa-solid fa-camera me-1"></i> Capture Photo
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary px-3 fw-semibold rounded-pill d-none" id="btn-retake-edit-profile" onclick="retakePhoto('edit-profile')">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Retake
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- File Photo Preview (if selected via file input) -->
+                        <div id="file-preview-box" class="d-none text-center my-3">
+                            <span class="fs-9 text-muted d-block mb-1">Selected New Photo:</span>
+                            <img id="file-preview-img" class="rounded shadow-sm border border-success" style="width: 110px; height: 110px; object-fit: cover;">
+                        </div>
+
+                        <!-- Photos Comparison (Current vs Requested) -->
+                        <div class="row g-3 text-center mt-2 pt-3 border-top" style="border-color: var(--border-card) !important;">
+                            <div class="col-6">
+                                <span class="fs-9 text-muted d-block mb-1.5 fw-semibold">Current Active Photo</span>
+                                {% if student.image_data %}
+                                    <img src="{% if student.image_data.startswith('data:image/') %}{{ student.image_data }}{% else %}data:image/jpeg;base64,{{ student.image_data }}{% endif %}" 
+                                         class="rounded-3 shadow-sm border" 
+                                         style="width: 100px; height: 100px; object-fit: cover; border-color: var(--border-card) !important;">
+                                {% elif student.image_filename %}
+                                    <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
+                                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ student.name|urlencode }}&background=6366f1&color=fff&size=128&bold=true';"
+                                         class="rounded-3 shadow-sm border" 
+                                         style="width: 100px; height: 100px; object-fit: cover; border-color: var(--border-card) !important;">
+                                {% else %}
+                                    <div class="rounded-3 border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 100px; height: 100px; font-size: 2rem; background: var(--surface);">
+                                        <i class="fa-solid fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-6">
+                                <span class="fs-9 text-muted d-block mb-1.5 fw-semibold">Requested Photo</span>
+                                {% if pending_request and pending_request.new_image_data %}
+                                    <img src="{% if pending_request.new_image_data.startswith('data:image/') %}{{ pending_request.new_image_data }}{% else %}data:image/jpeg;base64,{{ pending_request.new_image_data }}{% endif %}" 
+                                         class="rounded-3 shadow-sm border border-warning" 
+                                         style="width: 100px; height: 100px; object-fit: cover;">
+                                {% elif pending_request and pending_request.new_image_filename and pending_request.new_image_filename != student.image_filename %}
+                                    <img src="{{ url_for('main.uploaded_face', filename=pending_request.new_image_filename) }}" 
+                                         class="rounded-3 shadow-sm border border-warning" 
+                                         style="width: 100px; height: 100px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-3 border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 100px; height: 100px; font-size: 0.8rem; background: var(--surface);">
+                                        <span class="text-muted fs-9 px-2">No photo change requested</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-column-reverse flex-sm-row align-items-stretch align-items-sm-center justify-content-sm-end gap-2.5 pt-3 border-top" style="border-color: var(--border-card) !important;">
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold fs-8 text-center d-flex align-items-center justify-content-center">
+                            Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>{% if pending_request %}Update Profile Request{% else %}Submit Profile Change Request{% endif %}</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -185,6 +249,21 @@ function syncEditProfileClasses() {
 
     if (!currentlySelectedValid && firstValidOption) {
         classSelect.value = firstValidOption;
+    }
+}
+
+function previewSelectedFile(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewBox = document.getElementById('file-preview-box');
+            const previewImg = document.getElementById('file-preview-img');
+            if (previewImg && previewBox) {
+                previewImg.src = e.target.result;
+                previewBox.classList.remove('d-none');
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
     }
 }
 

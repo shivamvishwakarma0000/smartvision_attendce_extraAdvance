@@ -324,11 +324,15 @@ def edit_profile():
         enrollment_no = request.form.get('enrollment_no', '').strip()
         department = request.form.get('department', '').strip()
         mobile = request.form.get('mobile', '').strip()
+        parent_name = request.form.get('parent_name', '').strip()
+        parent_email = request.form.get('parent_email', '').strip()
+        parent_mobile = request.form.get('parent_mobile', '').strip()
         class_id = request.form.get('class_id')
-        captured_image = request.form.get('captured_image')
+        captured_base64 = request.form.get('captured_image_base64') or request.form.get('captured_image')
+        student_photo = request.files.get('student_photo')
 
         if not name or not roll_no or not enrollment_no or not class_id:
-            flash("All profile fields (Name, Roll No, Enrollment No, Class) are required.", "warning")
+            flash("Name, Roll Number, Enrollment Number, and Class are required.", "warning")
             return redirect(url_for('student.edit_profile'))
 
         c_id = int(class_id)
@@ -337,16 +341,67 @@ def edit_profile():
             department = chosen_class.department
 
         new_filename = student.image_filename
-        new_encoding_bytes = student.face_embedding
+        new_encoding_bytes = student.face_encoding or student.face_embedding
+        new_image_data = student.image_data
 
-        if captured_image and captured_image.startswith('data:image'):
+        # Check if new photo is submitted via live webcam or gallery file
+        if captured_base64 and captured_base64.strip().startswith('data:image'):
+            result = save_base64_image(captured_base64, roll_no, name, FACES_FOLDER)
+            if result:
+                fname, fpath = result
+                try:
+                    if face_recognition is not None:
+                        img = face_recognition.load_image_file(fpath)
+                        encs = face_recognition.face_encodings(img)
+                        if len(encs) == 1:
+                            new_filename = fname
+                            new_encoding_bytes = encs[0].tobytes()
+                            new_image_data = captured_base64
+                        elif len(encs) == 0:
+                            flash("No face detected in captured photo. Please capture a clear image of ONLY your face.", "danger")
+                            if os.path.exists(fpath): os.remove(fpath)
+                            return redirect(url_for('student.edit_profile'))
+                        else:
+                            flash(f"{len(encs)} faces found in photo. Please ensure ONLY your face is visible.", "danger")
+                            if os.path.exists(fpath): os.remove(fpath)
+                            return redirect(url_for('student.edit_profile'))
+                    else:
+                        new_filename = fname
+                        new_image_data = captured_base64
+                except Exception as e:
+                    flash(f"Facial scanning error: {e}", "danger")
+                    if os.path.exists(fpath): os.remove(fpath)
+                    return redirect(url_for('student.edit_profile'))
+        elif student_photo and student_photo.filename:
+            import base64 as b64_mod
+            os.makedirs(FACES_FOLDER, exist_ok=True)
+            fname = secure_filename(f"edit_{roll_no}_{name}_{student_photo.filename}")
+            fpath = os.path.join(FACES_FOLDER, fname)
+            student_photo.save(fpath)
             try:
-                fname, enc_bytes = save_base64_image(captured_image, prefix=f"pending_student_{student.id}_")
-                if fname:
+                if face_recognition is not None:
+                    img = face_recognition.load_image_file(fpath)
+                    encs = face_recognition.face_encodings(img)
+                    if len(encs) == 1:
+                        new_filename = fname
+                        new_encoding_bytes = encs[0].tobytes()
+                        with open(fpath, "rb") as f:
+                            new_image_data = f"data:image/jpeg;base64,{b64_mod.b64encode(f.read()).decode('utf-8')}"
+                    elif len(encs) == 0:
+                        flash("No face detected in uploaded photo. Please upload a clear image of your face.", "danger")
+                        if os.path.exists(fpath): os.remove(fpath)
+                        return redirect(url_for('student.edit_profile'))
+                    else:
+                        flash(f"{len(encs)} faces found in photo. Please use a photo with ONLY one face.", "danger")
+                        if os.path.exists(fpath): os.remove(fpath)
+                        return redirect(url_for('student.edit_profile'))
+                else:
                     new_filename = fname
-                    new_encoding_bytes = enc_bytes
+                    with open(fpath, "rb") as f:
+                        new_image_data = f"data:image/jpeg;base64,{b64_mod.b64encode(f.read()).decode('utf-8')}"
             except Exception as e:
-                flash(f"Error processing facial photo: {e}", "danger")
+                flash(f"Photo processing error: {e}", "danger")
+                if os.path.exists(fpath): os.remove(fpath)
                 return redirect(url_for('student.edit_profile'))
 
         # Check existing pending request
@@ -356,13 +411,15 @@ def edit_profile():
             pending_req.new_roll_no = roll_no
             pending_req.new_enrollment_no = enrollment_no
             pending_req.new_department = department or student.department
-            pending_req.new_mobile = mobile
+            pending_req.new_mobile = mobile or None
+            pending_req.new_parent_name = parent_name or None
+            pending_req.new_parent_email = parent_email or None
+            pending_req.new_parent_mobile = parent_mobile or None
             pending_req.new_class_id = c_id
             pending_req.new_image_filename = new_filename
+            pending_req.new_image_data = new_image_data
             pending_req.new_face_encoding = new_encoding_bytes
-            if captured_image and captured_image.startswith('data:image'):
-                pending_req.new_image_data = captured_image
-            flash("Updated your pending profile edit request! Awaiting admin review.", "success")
+            flash("Your profile change request has been updated and submitted for Administrator approval.", "success")
         else:
             new_req = StudentEditRequest(
                 student_id=student.id,
@@ -370,15 +427,18 @@ def edit_profile():
                 new_roll_no=roll_no,
                 new_enrollment_no=enrollment_no,
                 new_department=department or student.department,
-                new_mobile=mobile,
+                new_mobile=mobile or None,
+                new_parent_name=parent_name or None,
+                new_parent_email=parent_email or None,
+                new_parent_mobile=parent_mobile or None,
                 new_class_id=c_id,
                 new_image_filename=new_filename,
-                new_image_data=captured_image if (captured_image and captured_image.startswith('data:image')) else None,
+                new_image_data=new_image_data,
                 new_face_encoding=new_encoding_bytes,
                 status='Pending'
             )
             db.session.add(new_req)
-            flash("Profile edit request submitted successfully! Awaiting admin approval.", "success")
+            flash("Profile change request submitted successfully! An administrator will review and approve your changes.", "success")
 
         try:
             db.session.commit()
@@ -386,7 +446,7 @@ def edit_profile():
             db.session.rollback()
             flash(f"Error submitting edit request: {e}", "danger")
 
-        return redirect(url_for('student.dashboard'))
+        return redirect(url_for('student.edit_profile'))
 
     classes = Class.query.all()
     all_departments = Department.query.order_by(Department.name.asc()).all()

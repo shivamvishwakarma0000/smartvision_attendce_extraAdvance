@@ -46,57 +46,53 @@
 
         <!-- Issued Teacher IDs Table -->
         {% if issued_teacher_ids %}
-        <div class="table-responsive rounded-3 border">
-            <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.82rem;">
+        <div class="rounded-3 border overflow-hidden" style="background: var(--surface); border-color: var(--border-card) !important;">
+            <table class="table table-hover table-sm align-middle mb-0 w-100" style="table-layout: fixed; font-size: 0.8rem;">
                 <thead class="table-light">
-                    <tr style="font-size: 0.75rem;">
-                        <th class="py-2 px-2 text-nowrap" style="width: 110px;">ID Code</th>
-                        <th class="py-2 px-2 text-nowrap">Allotted Faculty / Email</th>
-                        <th class="py-2 px-2 text-nowrap" style="width: 120px;">Status</th>
-                        <th class="py-2 px-2 text-nowrap d-none d-md-table-cell" style="width: 140px;">Issued Date</th>
-                        <th class="py-2 px-2 text-end text-nowrap" style="width: 80px;">Action</th>
+                    <tr style="font-size: 0.72rem;">
+                        <th class="py-2 px-1.5 text-nowrap" style="width: 22%; min-width: 65px;">ID Code</th>
+                        <th class="py-2 px-1.5 text-nowrap" style="width: 44%;">Allotted / Email</th>
+                        <th class="py-2 px-1.5 text-nowrap text-center" style="width: 22%;">Status</th>
+                        <th class="py-2 px-1.5 text-end text-nowrap" style="width: 12%; min-width: 40px;">Act</th>
                     </tr>
                 </thead>
                 <tbody id="issuedTeacherIdsTbody">
                     {% for item in issued_teacher_ids %}
                     <tr class="issued-teacher-id-row">
-                        <td class="py-1.5 px-2">
-                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace px-2 py-1 border border-primary border-opacity-20 rounded-2 fw-bold" style="font-size: 0.8rem;">
+                        <td class="py-1.5 px-1.5">
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace px-1.5 py-0.5 border border-primary border-opacity-20 rounded-2 fw-bold text-truncate d-inline-block" style="font-size: 0.76rem; max-width: 100%;">
                                 {{ item.teacher_id }}
                             </span>
                         </td>
-                        <td class="py-1.5 px-2">
+                        <td class="py-1.5 px-1.5 overflow-hidden" style="min-width: 0;">
                             {% if item.allotted_email or item.email %}
-                                <div class="d-flex align-items-center gap-1.5 text-truncate" style="max-width: 220px;">
-                                    <i class="fa-solid fa-user-check text-success flex-shrink-0" style="font-size: 0.75rem;"></i>
-                                    <span class="fw-semibold text-dark text-truncate" title="{{ item.allotted_email or item.email }}" style="font-size: 0.8rem;">
+                                <div class="d-flex align-items-center gap-1 text-truncate" title="{{ item.allotted_email or item.email }}">
+                                    <i class="fa-solid fa-circle-user text-success flex-shrink-0" style="font-size: 0.72rem;"></i>
+                                    <span class="fw-semibold text-truncate text-dark" style="font-size: 0.76rem;">
                                         {{ item.allotted_email or item.email }}
                                     </span>
                                 </div>
                             {% else %}
-                                <span class="badge bg-light text-muted border px-2 py-0.5 rounded-pill fst-italic" style="font-size: 0.74rem;">
-                                    Vacant (Any Faculty)
+                                <span class="text-muted fst-italic text-truncate d-block" style="font-size: 0.72rem;">
+                                    Vacant
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="py-1.5 px-2 text-nowrap">
+                        <td class="py-1.5 px-1.5 text-center text-nowrap">
                             {% if item.is_used %}
-                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.72rem;">
-                                    <i class="fa-solid fa-circle-check me-1"></i>Allotted
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-1.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;">
+                                    <i class="fa-solid fa-check me-0.5"></i>Allotted
                                 </span>
                             {% else %}
-                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.72rem;">
-                                    <i class="fa-regular fa-clock me-1"></i>Vacant
+                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-1.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;">
+                                    <i class="fa-regular fa-clock me-0.5"></i>Vacant
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="py-1.5 px-2 text-muted fw-semibold d-none d-md-table-cell" style="font-size: 0.75rem;">
-                            {{ item.created_at|to_ist }}
-                        </td>
-                        <td class="py-1.5 px-2 text-end text-nowrap">
+                        <td class="py-1.5 px-1.5 text-end text-nowrap">
                             <form action="{{ url_for('main.revoke_teacher_id', id_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Revoke / Delete Teacher Code {{ item.teacher_id }}?');">
-                                <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-2 rounded-2 fw-semibold d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;" title="Delete Code">
-                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-lg-inline">Delete</span>
+                                <button type="submit" class="btn btn-xs btn-outline-danger p-1 rounded-2 fw-semibold d-inline-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 0.7rem;" title="Delete Code {{ item.teacher_id }}">
+                                    <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </form>
                         </td>
@@ -107,8 +103,8 @@
         </div>
 
         <!-- Teacher ID Pagination Controls (Only visible when > 10 items) -->
-        <div id="teacherIdPaginationWrapper" class="d-none mt-3 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <span class="text-muted fs-8 fw-semibold" id="teacherIdPageSummary"></span>
+        <div id="teacherIdPaginationWrapper" class="d-none mt-2.5 pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted fs-9 fw-semibold" id="teacherIdPageSummary"></span>
             <ul class="pagination pagination-sm mb-0 rounded-pill gap-1" id="teacherIdPageList"></ul>
         </div>
         {% else %}

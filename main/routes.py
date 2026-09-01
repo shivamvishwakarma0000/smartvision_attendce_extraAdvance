@@ -1868,7 +1868,13 @@ def enrolled_teachers():
             pass
 
     teachers = query.order_by(Teacher.name).all()
-    
+
+    # Auto-sync teacher department from assigned class/subjects if currently 'General'
+    for t in teachers:
+        if (not t.department or t.department.strip().lower() == 'general') and t.effective_department != 'General':
+            t.department = t.effective_department
+    db.session.commit()
+
     # Naturally sort Issued Teacher IDs and enrich with linked teacher details
     raw_issued = IssuedTeacherID.query.all()
     for item in raw_issued:
@@ -1963,6 +1969,10 @@ def assign_teacher_workload(teacher_id):
             admin_id=current_user.id
         )
         db.session.add(new_sub)
+
+    # Auto-resolve department if not explicitly set
+    if (not teacher.department or teacher.department.strip().lower() == 'general') and teacher.effective_department != 'General':
+        teacher.department = teacher.effective_department
 
     try:
         db.session.commit()

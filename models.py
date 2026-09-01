@@ -164,6 +164,46 @@ class Teacher(db.Model):
     assignments = db.relationship('TeacherAssignment', backref='teacher', lazy=True, cascade="all, delete-orphan")
     leaves = db.relationship('TeacherLeave', foreign_keys='TeacherLeave.teacher_id', backref='teacher', lazy=True)
 
+    @property
+    def effective_department(self):
+        """Returns the assigned department or intelligently resolves from directed classes or subjects."""
+        if self.department and self.department.strip().lower() not in ['general', 'none', '', 'null']:
+            return self.department.strip()
+
+        # 1. Check classes directed as class teacher
+        if self.classes_directed:
+            for c in self.classes_directed:
+                if c.department and c.department.strip().lower() not in ['general', 'none', '', 'null']:
+                    return c.department.strip()
+                cname = (c.name or '').upper()
+                for d in ['CSE', 'AIML', 'AIDS', 'IT', 'ECE', 'MECH', 'CIVIL', 'ELECTRICAL']:
+                    if d in cname:
+                        return d
+
+        # 2. Check assigned subjects
+        if self.subjects:
+            for sub in self.subjects:
+                if sub.class_assigned:
+                    if sub.class_assigned.department and sub.class_assigned.department.strip().lower() not in ['general', 'none', '', 'null']:
+                        return sub.class_assigned.department.strip()
+                    cname = (sub.class_assigned.name or '').upper()
+                    for d in ['CSE', 'AIML', 'AIDS', 'IT', 'ECE', 'MECH', 'CIVIL', 'ELECTRICAL']:
+                        if d in cname:
+                            return d
+
+        # 3. Check assignments
+        if self.assignments:
+            for a in self.assignments:
+                if a.class_assigned:
+                    if a.class_assigned.department and a.class_assigned.department.strip().lower() not in ['general', 'none', '', 'null']:
+                        return a.class_assigned.department.strip()
+                    cname = (a.class_assigned.name or '').upper()
+                    for d in ['CSE', 'AIML', 'AIDS', 'IT', 'ECE', 'MECH', 'CIVIL', 'ELECTRICAL']:
+                        if d in cname:
+                            return d
+
+        return self.department or 'General'
+
 
 class Student(db.Model):
     """

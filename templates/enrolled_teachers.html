@@ -80,13 +80,15 @@
                         </td>
                         <td class="py-1.5 px-1.5 text-center text-nowrap">
                             {% if item.is_used %}
-                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-1.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;">
-                                    <i class="fa-solid fa-check me-0.5"></i>Allotted
-                                </span>
+                                <div class="d-inline-flex align-items-center gap-1.5 px-2 py-0.5 rounded-pill bg-success bg-opacity-10 border border-success border-opacity-20">
+                                    <span class="d-inline-block rounded-circle bg-success flex-shrink-0" style="width: 6px; height: 6px;"></span>
+                                    <span class="fw-bold text-success" style="font-size: 0.72rem; line-height: 1.2;">Allotted</span>
+                                </div>
                             {% else %}
-                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-1.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;">
-                                    <i class="fa-regular fa-clock me-0.5"></i>Vacant
-                                </span>
+                                <div class="d-inline-flex align-items-center gap-1.5 px-2 py-0.5 rounded-pill bg-warning bg-opacity-10 border border-warning border-opacity-20">
+                                    <span class="d-inline-block rounded-circle bg-warning flex-shrink-0" style="width: 6px; height: 6px;"></span>
+                                    <span class="fw-bold text-warning" style="font-size: 0.72rem; line-height: 1.2;">Vacant</span>
+                                </div>
                             {% endif %}
                         </td>
                         <td class="py-1.5 px-1.5 text-end text-nowrap">
@@ -195,7 +197,7 @@
             <div class="p-3 bg-light rounded-3 text-start mb-3 fs-8 flex-grow-1">
                 <div class="mb-1.5">
                     <span class="text-muted"><i class="fa-solid fa-building-user me-1.5 text-primary"></i>Department:</span>
-                    <span class="badge bg-primary bg-opacity-10 text-primary float-end fw-bold border border-primary border-opacity-20">{{ teacher.department or 'General' }}</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary float-end fw-bold border border-primary border-opacity-20">{{ teacher.effective_department }}</span>
                 </div>
                 <div class="mb-1.5">
                     <span class="text-muted"><i class="fa-solid fa-id-badge me-1.5 text-primary"></i>Employee ID:</span>
@@ -308,7 +310,7 @@
                             <label for="dept_input_{{ teacher.id }}" class="form-label fw-bold text-dark fs-8 mb-1">
                                 <i class="fa-solid fa-building-user text-primary me-1.5"></i>Academic Department Assignment
                             </label>
-                            <input type="text" class="form-control form-control-sm" id="dept_input_{{ teacher.id }}" name="department" value="{{ teacher.department or '' }}" placeholder="e.g. CSE, AI, AI/DS, AI/ML, ORACLE, MICROSOFT" list="teacher_dept_datalist">
+                            <input type="text" class="form-control form-control-sm" id="dept_input_{{ teacher.id }}" name="department" value="{{ teacher.effective_department if teacher.effective_department != 'General' else (teacher.department or '') }}" placeholder="e.g. CSE, AI, AI/DS, AI/ML, ORACLE, MICROSOFT" list="teacher_dept_datalist">
                             <datalist id="teacher_dept_datalist">
                                 <option value="CSE">CSE (Computer Science & Engineering)</option>
                                 <option value="AI">AI (Artificial Intelligence)</option>

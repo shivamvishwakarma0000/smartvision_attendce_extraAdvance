@@ -16,30 +16,52 @@
                 <div class="card-body p-4 position-relative">
                     <div class="row align-items-center position-relative z-1">
                         <!-- Faculty Image & Profile Info -->
-                        <div
-                            class="col-lg-7 col-md-6 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
-                            <div class="position-relative me-sm-3.5 mb-2.5 mb-sm-0">
-                                {% if teacher.image_filename %}
+                        <div class="col-lg-7 col-md-6 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
+                            <div class="position-relative me-sm-3.5 mb-2.5 mb-sm-0 flex-shrink-0">
+                                {% if teacher.image_data %}
+                                <img src="data:image/jpeg;base64,{{ teacher.image_data }}"
+                                    class="rounded-circle shadow border border-2 border-white"
+                                    style="width: 82px; height: 82px; object-fit: cover;"
+                                    alt="{{ teacher.name }}"
+                                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');">
+                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold d-none"
+                                    style="width: 82px; height: 82px; font-size: 2rem;">
+                                    {{ teacher.name[0] }}
+                                </div>
+                                {% elif teacher.image_filename %}
                                 <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}"
                                     class="rounded-circle shadow border border-2 border-white"
-                                    style="width: 85px; height: 85px; object-fit: cover;">
+                                    style="width: 82px; height: 82px; object-fit: cover;"
+                                    alt="{{ teacher.name }}"
+                                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');">
+                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold d-none"
+                                    style="width: 82px; height: 82px; font-size: 2rem;">
+                                    {{ teacher.name[0] }}
+                                </div>
+                                {% elif teacher.photo_path %}
+                                <img src="{{ url_for('main.uploaded_face', filename=teacher.photo_path.split('/')[-1]) }}"
+                                    class="rounded-circle shadow border border-2 border-white"
+                                    style="width: 82px; height: 82px; object-fit: cover;"
+                                    alt="{{ teacher.name }}"
+                                    onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');">
+                                <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold d-none"
+                                    style="width: 82px; height: 82px; font-size: 2rem;">
+                                    {{ teacher.name[0] }}
+                                </div>
                                 {% else %}
                                 <div class="rounded-circle bg-white text-primary border border-2 border-white shadow d-flex align-items-center justify-content-center mx-auto fw-bold"
-                                    style="width: 85px; height: 85px; font-size: 2.2rem;">
+                                    style="width: 82px; height: 82px; font-size: 2rem;">
                                     {{ teacher.name[0] }}
                                 </div>
                                 {% endif %}
-                                <span
-                                    class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white px-1.5 py-0.5 fs-9 shadow-sm"
+                                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success border border-2 border-white px-1.5 py-0.5 fs-9 shadow-sm"
                                     title="Active Faculty Profile">
                                     <i class="fas fa-check-circle me-1"></i>Verified
                                 </span>
                             </div>
                             <div>
-                                <div
-                                    class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5">
-                                    <span
-                                        class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
+                                <div class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5 flex-wrap">
+                                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
                                         <i class="fas fa-chalkboard-user me-1"></i> Faculty Portal
                                     </span>
                                     {% if teacher.emp_id %}
@@ -48,29 +70,24 @@
                                     </span>
                                     {% endif %}
                                 </div>
-                                <h3 class="fw-bold mb-1" style="font-size: 1.5rem;">Welcome Back, {{ teacher.name }}!
-                                </h3>
+                                <h3 class="fw-bold mb-1" style="font-size: clamp(1.2rem, 1.8vw + 0.8rem, 1.55rem);">Welcome Back, {{ teacher.name }}!</h3>
 
-                                <div
-                                    class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white-75">
-                                    {% if teacher.email %}<span><i class="fas fa-envelope me-1 opacity-75"></i>{{
-                                        teacher.email }}</span>{% endif %}
-                                    {% if teacher.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{
-                                        teacher.mobile }}</span>{% endif %}
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2.5 fs-8 text-white-75">
+                                    {% if teacher.email %}<span><i class="fas fa-envelope me-1 opacity-75"></i>{{ teacher.email }}</span>{% endif %}
+                                    {% if teacher.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{ teacher.mobile }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Quick Action Buttons -->
-                        <div
-                            class="col-lg-5 col-md-6 text-center text-md-end d-flex flex-nowrap gap-2 justify-content-center justify-content-md-end align-items-center">
+                        <div class="col-lg-5 col-md-6 text-center text-md-end d-flex flex-wrap gap-2 justify-content-center justify-content-md-end align-items-center mt-3 mt-md-0">
                             <a href="{{ url_for('teacher.leave_applications') }}"
-                                class="btn btn-warning px-3.5 py-2 rounded-pill shadow-sm fw-bold text-dark fs-8 text-nowrap">
-                                <i class="fas fa-umbrella-beach me-1.5"></i>Apply for Leave
+                                class="btn btn-warning btn-sm px-3.5 py-2 rounded-pill shadow-sm fw-bold text-dark fs-8 d-inline-flex align-items-center gap-1.5">
+                                <i class="fas fa-umbrella-beach"></i> Apply for Leave
                             </a>
                             <a href="#teacherDailyGeoCard" onclick="document.getElementById('teacherDailyGeoCard').scrollIntoView({behavior: 'smooth'});"
-                                class="btn btn-light text-primary px-3.5 py-2 rounded-pill shadow-sm fw-bold fs-8 text-nowrap">
-                                <i class="fas fa-camera-retro me-1.5 text-primary"></i>Self Attendance
+                                class="btn btn-light text-primary btn-sm px-3.5 py-2 rounded-pill shadow-sm fw-bold fs-8 d-inline-flex align-items-center gap-1.5">
+                                <i class="fas fa-camera-retro text-primary"></i> Self Attendance
                             </a>
                         </div>
                     </div>

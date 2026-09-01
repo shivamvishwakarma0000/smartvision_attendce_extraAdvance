@@ -208,8 +208,8 @@
             <!-- Topbar (Responsive for all screen sizes) -->
             <div class="top-bar d-flex align-items-center justify-content-between gap-2">
                 <div class="d-flex align-items-center gap-2 overflow-hidden" style="min-width: 0;">
-                    <button class="sidebar-toggle flex-shrink-0" id="sidebarToggle" aria-label="Toggle Sidebar">
-                        &#9776;
+                    <button class="sidebar-toggle flex-shrink-0" id="sidebarToggle" onclick="window.toggleSidebar(event)" aria-label="Toggle Sidebar">
+                        <i class="fa-solid fa-bars"></i>
                     </button>
                     <div class="page-title-wrapper text-truncate">{% block page_title %}{% endblock %}</div>
                 </div>
@@ -248,8 +248,8 @@
                                 <label class="form-label fw-semibold">Current Password</label>
                                 <div class="input-group">
                                     <input type="password" name="current_password" class="form-control rounded-start-3 border-end-0" required placeholder="Enter current master password">
-                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
-                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility" style="color: var(--text-primary) !important; z-index: 5;">
+                                        <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </div>
@@ -257,8 +257,8 @@
                                 <label class="form-label fw-semibold">New Password</label>
                                 <div class="input-group">
                                     <input type="password" name="new_password" class="form-control rounded-start-3 border-end-0" minlength="6" required placeholder="Min 6 characters">
-                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
-                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility" style="color: var(--text-primary) !important; z-index: 5;">
+                                        <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </div>
@@ -266,8 +266,8 @@
                                 <label class="form-label fw-semibold">Confirm New Password</label>
                                 <div class="input-group">
                                     <input type="password" name="confirm_password" class="form-control rounded-start-3 border-end-0" minlength="6" required placeholder="Re-enter new password">
-                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
-                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility" style="color: var(--text-primary) !important; z-index: 5;">
+                                        <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </div>
@@ -302,51 +302,37 @@
         <style>
             @keyframes rotatingAIBorderRing {
                 0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .ai-floating-glow-wrapper {
-                position: relative;
-                padding: 2.5px;
-                border-radius: 9999px;
-                overflow: hidden;
+            .ai-floating-btn {
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+                border: 2px solid rgba(255, 255, 255, 0.3) !important;
+                color: #ffffff !important;
+                box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+                transition: transform 0.25s ease, box-shadow 0.25s ease;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.45);
-                transition: transform 0.25s ease, box-shadow 0.25s ease;
             }
-            .ai-floating-glow-wrapper:hover {
-                transform: translateY(-3px) scale(1.03);
-                box-shadow: 0 14px 35px rgba(99, 102, 241, 0.6);
+            .ai-floating-btn:hover {
+                transform: translateY(-3px) scale(1.04);
+                box-shadow: 0 12px 30px rgba(79, 70, 229, 0.6);
             }
-            .ai-floating-glow-wrapper::before {
-                content: '';
-                position: absolute;
-                top: -60%;
-                left: -60%;
-                width: 220%;
-                height: 220%;
-                background: conic-gradient(from 0deg, #6366f1, #a855f7, #ec4899, #38bdf8, #10b981, #6366f1);
-                animation: rotatingAIBorderRing 4.5s linear infinite;
-                z-index: 1;
-            }
-            .ai-floating-glow-wrapper .ai-btn-inner {
-                position: relative;
-                z-index: 2;
-                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-                border: none !important;
+            @media (max-width: 576px) {
+                #btn-open-ai-copilot {
+                    width: 48px !important;
+                    height: 48px !important;
+                    padding: 0 !important;
+                    border-radius: 50% !important;
+                }
             }
         </style>
-        <div id="ai-copilot-launcher" class="position-fixed bottom-0 end-0 m-3 m-md-4" style="z-index: 1060;">
-            <div class="ai-floating-glow-wrapper">
-                <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn btn-primary ai-btn-inner rounded-pill px-3.5 py-2.5 d-flex align-items-center gap-2 text-white">
-                    <span class="position-relative d-inline-flex align-items-center justify-content-center">
-                        <i class="fa-solid fa-wand-magic-sparkles fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle" style="width: 8px; height: 8px;"></span>
-                    </span>
-                    <span class="fw-extrabold fs-8 d-none d-sm-inline">SmartVision AI</span>
-                </button>
-            </div>
+        <div id="ai-copilot-launcher" class="position-fixed" style="bottom: 22px; right: 20px; z-index: 1060;">
+            <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn ai-floating-btn rounded-pill px-3.5 py-2.5 d-flex align-items-center gap-2">
+                <span class="position-relative d-inline-flex align-items-center justify-content-center">
+                    <i class="fa-solid fa-wand-magic-sparkles fs-5 text-white"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle" style="width: 8px; height: 8px;"></span>
+                </span>
+                <span class="fw-bold fs-8 text-white d-none d-sm-inline">SmartVision AI</span>
+            </button>
         </div>
 
         <!-- AI COPILOT BACKDROP FOR MOBILE -->
@@ -767,23 +753,23 @@
 
     <!-- Theme and Sidebar Scripts -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Sidebar Navigation Overlay (Logged In only)
+        window.toggleSidebar = function(e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             const sidebar = document.getElementById('sidebar');
-            const toggleButton = document.getElementById('sidebarToggle');
             const overlay = document.getElementById('overlay');
+            if (sidebar) sidebar.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        };
 
-            function toggleSidebar() {
-                if (sidebar) sidebar.classList.toggle('active');
-                if (overlay) overlay.classList.toggle('active');
-            }
-
-            if (toggleButton) {
-                toggleButton.addEventListener('click', toggleSidebar);
-            }
-
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('overlay');
             if (overlay) {
-                overlay.addEventListener('click', toggleSidebar);
+                overlay.addEventListener('click', function() {
+                    window.toggleSidebar();
+                });
             }
 
             // Global Light/Dark Theme Toggler

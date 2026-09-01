@@ -412,7 +412,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
                                     <input type="password" class="form-control border-start-0 border-end-0" id="login_password" name="password" placeholder="••••••••" required>
-                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle password visibility">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-main) !important; z-index: 5;" title="Toggle password visibility">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -510,7 +510,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
                                     <input type="password" class="form-control border-start-0 border-end-0" id="reg_password" name="password" minlength="8" placeholder="Min 8 characters" required>
-                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle password visibility">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-main) !important; z-index: 5;" title="Toggle password visibility">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -601,26 +601,37 @@
 
                             <!-- MANDATORY FACIAL PHOTO SELECTION -->
                             <div class="mb-3">
-                                <label class="form-label d-block" style="color: var(--text-main);">Register Face Photo <span class="text-danger">* (Mandatory)</span></label>
+                                <label class="form-label d-block fs-9 fw-bold mb-1" style="color: var(--text-main);">
+                                    Register Face Photo <span class="text-danger">* (Mandatory)</span>
+                                </label>
+                                <span class="fs-9 text-muted d-block mb-2">Choose one: Select from gallery to crop face, or click live photo with camera.</span>
 
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-bold" onclick="toggleLeftWebcam()">
-                                            <i class="fa-solid fa-camera me-1"></i> Open Camera
+                                        <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-1.5" onclick="toggleLeftWebcam()">
+                                            <i class="fa-solid fa-camera"></i> Live Camera
                                         </button>
                                     </div>
                                     <div class="col-6">
-                                        <input type="file" class="form-control form-control-sm" name="student_photo" id="file_photo" accept="image/*" onchange="previewFile(this)">
+                                        <label for="file_photo" class="btn btn-outline-secondary btn-sm w-100 py-2 fw-bold text-truncate d-flex align-items-center justify-content-center gap-1.5 m-0" style="cursor: pointer;">
+                                            <i class="fa-solid fa-crop-simple"></i> Gallery + Crop
+                                        </label>
+                                        <input type="file" class="d-none" name="student_photo" id="file_photo" accept="image/*" onchange="previewFile(this)">
                                     </div>
                                 </div>
 
                                 <!-- PHOTO PREVIEW STATUS -->
-                                <div id="photo-preview-status" class="p-2 border rounded-3 d-flex align-items-center gap-3 mt-2" style="display: none !important; background: var(--input-bg);">
-                                    <img id="preview-img" class="photo-preview-thumb" src="" alt="Preview">
-                                    <div>
-                                        <span class="badge bg-success mb-1"><i class="fa-solid fa-circle-check me-1"></i> Photo Attached</span>
-                                        <span class="fs-9 text-muted d-block" id="preview-label">Captured via webcam</span>
+                                <div id="photo-preview-status" class="p-2.5 border rounded-3 d-flex align-items-center justify-content-between gap-2 mt-2 shadow-xs" style="display: none !important; background: var(--input-bg); border-color: var(--card-border) !important;">
+                                    <div class="d-flex align-items-center gap-2.5 overflow-hidden">
+                                        <img id="preview-img" class="photo-preview-thumb rounded-3 border" src="" alt="Preview" style="width: 52px; height: 52px; object-fit: cover;">
+                                        <div class="text-truncate">
+                                            <span class="badge bg-success mb-1"><i class="fa-solid fa-circle-check me-1"></i> Face Attached</span>
+                                            <span class="fs-9 text-muted d-block text-truncate" id="preview-label">Ready for registration</span>
+                                        </div>
                                     </div>
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2.5 rounded-3 fw-semibold fs-9" onclick="removeSelectedPhoto()" title="Remove and choose another">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Remove
+                                    </button>
                                 </div>
                             </div>
 
@@ -705,7 +716,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
                                     <input type="password" class="form-control border-start-0 border-end-0" id="forgot_new_password" minlength="8" placeholder="Min 8 characters" required>
-                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle visibility">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-main) !important; z-index: 5;" title="Toggle visibility">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -716,7 +727,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
                                     <input type="password" class="form-control border-start-0 border-end-0" id="forgot_confirm_password" minlength="8" placeholder="Re-enter new password" required>
-                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle visibility">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-main) !important; z-index: 5;" title="Toggle visibility">
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
@@ -1225,24 +1236,28 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         document.getElementById('captured_image_base64').value = dataUrl;
+
+        // Clear gallery file input to ensure only one selection is active
+        const fileInput = document.getElementById('file_photo');
+        if (fileInput) fileInput.value = '';
 
         // Show Preview in Form
         const previewBox = document.getElementById('photo-preview-status');
         const img = document.getElementById('preview-img');
         const label = document.getElementById('preview-label');
 
-        img.src = dataUrl;
-        label.innerText = 'Captured via left panel camera (' + cameraFacing + ')';
-        previewBox.style.setProperty('display', 'flex', 'important');
+        if (img) img.src = dataUrl;
+        if (label) label.innerText = 'Captured live photo (' + cameraFacing + ' camera)';
+        if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
 
         stopWebcam();
     }
 
     // PASSWORD VISIBILITY TOGGLE HELPER
     function togglePasswordVisibility(btn) {
-        const inputGroup = btn.closest('.input-group');
+        const inputGroup = btn.closest('.input-group') || btn.parentElement;
         if (!inputGroup) return;
         const input = inputGroup.querySelector('input[type="password"], input[type="text"]');
         const icon = btn.querySelector('i');
@@ -1268,6 +1283,9 @@
 
     function previewFile(input) {
         if (input.files && input.files[0]) {
+            // Stop any active live camera
+            stopWebcam();
+
             const file = input.files[0];
             originalSelectedFileName = file.name;
             const reader = new FileReader();
@@ -1341,9 +1359,9 @@
             const img = document.getElementById('preview-img');
             const label = document.getElementById('preview-label');
 
-            img.src = croppedBase64;
-            label.innerText = 'Cropped gallery photo (' + (originalSelectedFileName || 'image.jpg') + ')';
-            previewBox.style.setProperty('display', 'flex', 'important');
+            if (img) img.src = croppedBase64;
+            if (label) label.innerText = 'Cropped face (' + (originalSelectedFileName || 'image.jpg') + ')';
+            if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
         }
 
         const cropperModalEl = document.getElementById('imageCropperModal');
@@ -1355,6 +1373,18 @@
             cropperInstance.destroy();
             cropperInstance = null;
         }
+    }
+
+    function removeSelectedPhoto() {
+        const hiddenEl = document.getElementById('captured_image_base64');
+        if (hiddenEl) hiddenEl.value = '';
+        const fileInput = document.getElementById('file_photo');
+        if (fileInput) fileInput.value = '';
+        const previewBox = document.getElementById('photo-preview-status');
+        if (previewBox) previewBox.style.setProperty('display', 'none', 'important');
+        const img = document.getElementById('preview-img');
+        if (img) img.src = '';
+        stopWebcam();
     }
 
     // REAL-TIME INLINE EMAIL VALIDATION & OTP ENGINE

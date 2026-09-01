@@ -407,7 +407,7 @@
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <label for="login_password" class="form-label" style="color: var(--text-main);">Password</label>
-                                    <a href="{{ url_for('auth.forgot_password') }}" class="fs-9 text-primary text-decoration-none fw-bold">Forgot?</a>
+                                    <a onclick="showView('forgot')" class="fs-9 text-primary text-decoration-none fw-bold" style="cursor: pointer;">Forgot?</a>
                                 </div>
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
@@ -634,6 +634,104 @@
                         </form>
                     </div>
 
+                    <!-- ==================================================================== -->
+                    <!-- 3. FORGOT PASSWORD OTP VERIFICATION WORKFLOW -->
+                    <!-- ==================================================================== -->
+                    <div id="view-forgot" style="display: none;">
+                        <div class="text-center mb-3">
+                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle p-2.5 mb-2" style="background: rgba(99, 102, 241, 0.12); color: var(--primary); width: 48px; height: 48px;">
+                                <i class="fa-solid fa-key fs-4"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1" style="color: var(--text-main);" id="forgot-step-title">Reset Password</h5>
+                            <p class="fs-9 text-muted mb-0" id="forgot-step-subtitle">Enter your registered email to receive a 6-digit OTP code</p>
+                        </div>
+
+                        <!-- Status Alert Box -->
+                        <div id="forgot-alert" class="alert py-2 px-3 fs-9 mb-3 d-none rounded-3" role="alert"></div>
+
+                        <!-- STEP 1: Enter Email -->
+                        <div id="forgot-step-1">
+                            <div class="mb-3">
+                                <label class="form-label fs-9 fw-semibold" style="color: var(--text-main);">Account Email Address <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-envelope"></i></span>
+                                    <input type="email" id="forgot_email_input" class="form-control border-start-0" placeholder="user@domain.com" required>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-primary-auth w-100 mb-2.5" id="btn-send-forgot-otp" onclick="handleSendForgotOTP()">
+                                <i class="fa-solid fa-paper-plane me-1.5"></i> Send 6-Digit Reset Code
+                            </button>
+
+                            <button type="button" onclick="showView('login')" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-semibold">
+                                <i class="fa-solid fa-arrow-left me-1"></i> Back to Sign In
+                            </button>
+                        </div>
+
+                        <!-- STEP 2: Enter & Verify 6-Digit OTP -->
+                        <div id="forgot-step-2" style="display: none;">
+                            <div class="p-2.5 rounded-3 border mb-3 text-center" style="background: rgba(99, 102, 241, 0.05); border-color: var(--card-border) !important;">
+                                <span class="fs-9 text-muted d-block mb-0.5">Verification code sent to</span>
+                                <strong id="forgot-display-email" class="text-primary fs-8 text-break"></strong>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-9 fw-semibold text-center d-block" style="color: var(--text-main);">Enter 6-Digit Verification Code</label>
+                                <input type="text" id="forgot_otp_input" maxlength="6" class="form-control text-center fs-4 fw-bold" placeholder="••••••" style="letter-spacing: 6px; font-family: monospace;">
+                            </div>
+
+                            <button type="button" class="btn btn-primary-auth w-100 mb-2.5" id="btn-verify-forgot-otp" onclick="handleVerifyForgotOTP()">
+                                <i class="fa-solid fa-shield-check me-1.5"></i> Verify OTP Code
+                            </button>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                                <button type="button" onclick="switchForgotStep(1)" class="btn btn-link text-muted p-0 text-decoration-none fs-9">
+                                    <i class="fa-solid fa-pen-to-square me-1"></i> Change Email
+                                </button>
+                                <button type="button" id="btn-resend-forgot-otp" onclick="handleSendForgotOTP()" class="btn btn-link text-primary p-0 text-decoration-none fw-bold fs-9">
+                                    <i class="fa-solid fa-arrow-rotate-right me-1"></i> Resend Code
+                                </button>
+                            </div>
+
+                            <button type="button" onclick="showView('login')" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-semibold">
+                                <i class="fa-solid fa-arrow-left me-1"></i> Back to Sign In
+                            </button>
+                        </div>
+
+                        <!-- STEP 3: Create & Confirm New Password -->
+                        <div id="forgot-step-3" style="display: none;">
+                            <div class="mb-2.5">
+                                <label class="form-label fs-9 fw-semibold" style="color: var(--text-main);">Create New Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 border-end-0" id="forgot_new_password" minlength="8" placeholder="Min 8 characters" required>
+                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle visibility">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-9 fw-semibold" style="color: var(--text-main);">Confirm New Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 border-end-0" id="forgot_confirm_password" minlength="8" placeholder="Re-enter new password" required>
+                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle visibility">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-primary-auth w-100 mb-2.5" id="btn-submit-reset-password" onclick="handleSubmitResetPassword()">
+                                <i class="fa-solid fa-check-circle me-1.5"></i> Update Password & Sign In
+                            </button>
+
+                            <button type="button" onclick="showView('login')" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-semibold">
+                                <i class="fa-solid fa-arrow-left me-1"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -734,29 +832,275 @@
                 }
             });
         }, 5000);
+
+        // Check URL Query State
+        const urlParams = new URLSearchParams(window.location.search);
+        const stateParam = urlParams.get('state');
+        const emailParam = urlParams.get('email');
+
+        if (stateParam === 'signup') {
+            showView('signup');
+        } else if (stateParam === 'forgot') {
+            showView('forgot');
+            if (emailParam) {
+                const el = document.getElementById('forgot_email_input');
+                if (el) el.value = emailParam;
+            }
+        } else if (stateParam === 'otp-verify') {
+            showView('forgot');
+            if (emailParam) {
+                forgotEmailState = emailParam;
+                switchForgotStep(2);
+            }
+        } else if (stateParam === 'reset-password') {
+            showView('forgot');
+            if (emailParam) forgotEmailState = emailParam;
+            switchForgotStep(3);
+        }
     });
 
-    // Fixed Tab Switcher Function
+    // Multi-View Tab & Panel Switcher Function
     function showView(view) {
         const viewLogin = document.getElementById('view-login');
         const viewSignup = document.getElementById('view-signup');
+        const viewForgot = document.getElementById('view-forgot');
         const tabLogin = document.getElementById('tab-login');
         const tabSignup = document.getElementById('tab-signup');
         const formTitle = document.getElementById('form-title');
 
         if (view === 'login') {
-            viewLogin.style.display = 'block';
-            viewSignup.style.display = 'none';
-            tabLogin.classList.add('active');
-            tabSignup.classList.remove('active');
-            formTitle.innerText = 'Welcome to SmartVision';
+            if (viewLogin) viewLogin.style.display = 'block';
+            if (viewSignup) viewSignup.style.display = 'none';
+            if (viewForgot) viewForgot.style.display = 'none';
+            if (tabLogin) tabLogin.classList.add('active');
+            if (tabSignup) tabSignup.classList.remove('active');
+            if (formTitle) formTitle.innerText = 'Welcome to SmartVision';
             stopWebcam();
-        } else {
-            viewLogin.style.display = 'none';
-            viewSignup.style.display = 'block';
-            tabSignup.classList.add('active');
-            tabLogin.classList.remove('active');
-            formTitle.innerText = 'Create Account';
+        } else if (view === 'signup') {
+            if (viewLogin) viewLogin.style.display = 'none';
+            if (viewSignup) viewSignup.style.display = 'block';
+            if (viewForgot) viewForgot.style.display = 'none';
+            if (tabSignup) tabSignup.classList.add('active');
+            if (tabLogin) tabLogin.classList.remove('active');
+            if (formTitle) formTitle.innerText = 'Create Account';
+        } else if (view === 'forgot') {
+            if (viewLogin) viewLogin.style.display = 'none';
+            if (viewSignup) viewSignup.style.display = 'none';
+            if (viewForgot) viewForgot.style.display = 'block';
+            if (tabLogin) tabLogin.classList.remove('active');
+            if (tabSignup) tabSignup.classList.remove('active');
+            if (formTitle) formTitle.innerText = 'Account Recovery';
+            switchForgotStep(1);
+            stopWebcam();
+        }
+    }
+
+    // FORGOT PASSWORD STEP CONTROLLER & AJAX ENGINE
+    let forgotEmailState = '';
+
+    function switchForgotStep(step) {
+        const s1 = document.getElementById('forgot-step-1');
+        const s2 = document.getElementById('forgot-step-2');
+        const s3 = document.getElementById('forgot-step-3');
+        const alertBox = document.getElementById('forgot-alert');
+        const subtitle = document.getElementById('forgot-step-subtitle');
+
+        if (alertBox) {
+            alertBox.classList.add('d-none');
+            alertBox.className = 'alert py-2 px-3 fs-9 mb-3 d-none rounded-3';
+        }
+
+        if (step === 1) {
+            if (s1) s1.style.display = 'block';
+            if (s2) s2.style.display = 'none';
+            if (s3) s3.style.display = 'none';
+            if (subtitle) subtitle.innerText = 'Enter your registered email to receive a 6-digit OTP code';
+        } else if (step === 2) {
+            if (s1) s1.style.display = 'none';
+            if (s2) s2.style.display = 'block';
+            if (s3) s3.style.display = 'none';
+            if (subtitle) subtitle.innerText = 'Enter the 6-digit verification code from your email';
+            const displayEl = document.getElementById('forgot-display-email');
+            if (displayEl) displayEl.innerText = forgotEmailState;
+            const otpInput = document.getElementById('forgot_otp_input');
+            if (otpInput) {
+                otpInput.value = '';
+                otpInput.focus();
+            }
+        } else if (step === 3) {
+            if (s1) s1.style.display = 'none';
+            if (s2) s2.style.display = 'none';
+            if (s3) s3.style.display = 'block';
+            if (subtitle) subtitle.innerText = 'Create your new password (minimum 8 characters)';
+            const p1 = document.getElementById('forgot_new_password');
+            if (p1) {
+                p1.value = '';
+                p1.focus();
+            }
+            const p2 = document.getElementById('forgot_confirm_password');
+            if (p2) p2.value = '';
+        }
+    }
+
+    function showForgotAlert(message, type = 'danger') {
+        const alertBox = document.getElementById('forgot-alert');
+        if (!alertBox) return;
+        alertBox.className = `alert alert-${type} py-2 px-3 fs-9 mb-3 rounded-3`;
+        alertBox.innerHTML = message;
+        alertBox.classList.remove('d-none');
+    }
+
+    async function handleSendForgotOTP() {
+        const emailInput = document.getElementById('forgot_email_input');
+        const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+        const btn = document.getElementById('btn-send-forgot-otp');
+        const resendBtn = document.getElementById('btn-resend-forgot-otp');
+
+        const targetEmail = email || forgotEmailState;
+        if (!targetEmail || !isValidEmail(targetEmail)) {
+            showForgotAlert('<i class="fa-solid fa-triangle-exclamation me-1"></i> Please enter a valid email address.');
+            if (emailInput) emailInput.focus();
+            return;
+        }
+
+        forgotEmailState = targetEmail;
+
+        const originalBtnHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span> Sending OTP...';
+        }
+        if (resendBtn) {
+            resendBtn.disabled = true;
+            resendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+        }
+
+        try {
+            const response = await fetch('/send-forgot-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ email: targetEmail })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                switchForgotStep(2);
+                showForgotAlert('<i class="fa-solid fa-circle-check me-1"></i> 6-Digit OTP code sent to ' + targetEmail + '. Check your inbox!', 'success');
+            } else {
+                showForgotAlert('<i class="fa-solid fa-circle-xmark me-1"></i> ' + (data.message || 'Failed to send OTP code.'));
+            }
+        } catch (err) {
+            showForgotAlert('<i class="fa-solid fa-circle-exmark me-1"></i> Network error: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+            if (resendBtn) {
+                resendBtn.disabled = false;
+                resendBtn.innerHTML = '<i class="fa-solid fa-arrow-rotate-right me-1"></i> Resend Code';
+            }
+        }
+    }
+
+    async function handleVerifyForgotOTP() {
+        const otpInput = document.getElementById('forgot_otp_input');
+        const otp = otpInput ? otpInput.value.trim() : '';
+        const btn = document.getElementById('btn-verify-forgot-otp');
+
+        if (!otp || otp.length !== 6) {
+            showForgotAlert('<i class="fa-solid fa-triangle-exclamation me-1"></i> Please enter the 6-digit OTP code.');
+            if (otpInput) otpInput.focus();
+            return;
+        }
+
+        const originalBtnHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span> Verifying...';
+        }
+
+        try {
+            const response = await fetch('/verify-forgot-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ email: forgotEmailState, otp: otp })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                switchForgotStep(3);
+                showForgotAlert('<i class="fa-solid fa-circle-check me-1"></i> OTP verified! Please create your new password.', 'success');
+            } else {
+                showForgotAlert('<i class="fa-solid fa-circle-xmark me-1"></i> ' + (data.message || 'Invalid or expired OTP code.'));
+            }
+        } catch (err) {
+            showForgotAlert('<i class="fa-solid fa-circle-exmark me-1"></i> Network error: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+    }
+
+    async function handleSubmitResetPassword() {
+        const pass1 = document.getElementById('forgot_new_password');
+        const pass2 = document.getElementById('forgot_confirm_password');
+        const password = pass1 ? pass1.value : '';
+        const confirm_password = pass2 ? pass2.value : '';
+        const btn = document.getElementById('btn-submit-reset-password');
+
+        if (!password || password.length < 8) {
+            showForgotAlert('<i class="fa-solid fa-triangle-exclamation me-1"></i> Password must be at least 8 characters long.');
+            if (pass1) pass1.focus();
+            return;
+        }
+
+        if (password !== confirm_password) {
+            showForgotAlert('<i class="fa-solid fa-triangle-exclamation me-1"></i> Passwords do not match. Please re-enter.');
+            if (pass2) pass2.focus();
+            return;
+        }
+
+        const originalBtnHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status"></span> Updating Password...';
+        }
+
+        try {
+            const response = await fetch('/reset_password_otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({
+                    email: forgotEmailState,
+                    password: password,
+                    confirm_password: confirm_password
+                })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showView('login');
+                const loginEmailInput = document.getElementById('login_email');
+                if (loginEmailInput) loginEmailInput.value = forgotEmailState;
+                const loginPassInput = document.getElementById('login_password');
+                if (loginPassInput) {
+                    loginPassInput.value = '';
+                    loginPassInput.focus();
+                }
+                alert('✅ Password Reset Successful!\nYou can now sign in with your new password.');
+            } else {
+                showForgotAlert('<i class="fa-solid fa-circle-xmark me-1"></i> ' + (data.message || 'Could not reset password.'));
+            }
+        } catch (err) {
+            showForgotAlert('<i class="fa-solid fa-circle-exmark me-1"></i> Network error: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
         }
     }
 
@@ -796,17 +1140,25 @@
         }
     }
 
-    // WebRTC Camera Controls displaying in the LEFT PANEL
+    // WebRTC Camera Controls displaying in the LEFT PANEL (with mobile support)
     async function startWebcam() {
         stopWebcam();
         const errDiv = document.getElementById('cam-err-left');
         if (errDiv) errDiv.style.display = 'none';
 
+        const leftPanel = document.getElementById('left-panel-container');
+        if (leftPanel) {
+            leftPanel.classList.remove('d-none');
+        }
+
         // Swap Left Panel view to Camera Display
-        document.getElementById('left-hero-default').style.display = 'none';
+        const heroBox = document.getElementById('left-hero-default');
+        if (heroBox) heroBox.style.display = 'none';
         const camBox = document.getElementById('left-camera-display-box');
-        camBox.style.display = 'block';
-        camBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (camBox) {
+            camBox.style.display = 'block';
+            camBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         const attempts = [
             { video: { facingMode: cameraFacing } },
@@ -827,8 +1179,10 @@
         if (stream) {
             currentStream = stream;
             const video = document.getElementById('webcam-stream-left');
-            video.srcObject = stream;
-            video.play().catch(e => console.log('Autoplay play error:', e));
+            if (video) {
+                video.srcObject = stream;
+                video.play().catch(e => console.log('Autoplay play error:', e));
+            }
         } else {
             if (errDiv) {
                 errDiv.innerText = "Camera permission denied or device unavailable. Please allow webcam permissions or upload photo.";
@@ -846,6 +1200,11 @@
         if (camBox) camBox.style.display = 'none';
         const heroBox = document.getElementById('left-hero-default');
         if (heroBox) heroBox.style.display = 'block';
+
+        const leftPanel = document.getElementById('left-panel-container');
+        if (leftPanel && window.innerWidth < 992) {
+            leftPanel.classList.add('d-none');
+        }
     }
 
     function toggleLeftWebcam() {

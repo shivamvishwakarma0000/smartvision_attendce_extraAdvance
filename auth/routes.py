@@ -977,95 +977,188 @@ def google_signup_complete():
 # FORGOT PASSWORD — OTP FLOW
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# FORGOT PASSWORD — COMPLETE REAL OTP RESET FLOW WITH EMAIL DISPATCH
+# ─────────────────────────────────────────────────────────────────────────────
+
+@auth_bp.route('/send-forgot-otp', methods=['POST'])
+def send_forgot_otp():
+    """AJAX / Form endpoint: Dispatches 6-digit OTP code to verified user email for password reset."""
+    data = request.get_json(silent=True) or request.form
+    email = data.get('email', '').strip().lower()
+
+    if not email:
+        return {'success': False, 'message': 'Please enter a valid email address.'}, 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return {'success': False, 'message': 'No account found with this email address. Please check or register.'}, 404
+
+    otp = generate_otp(6)
+    expires_at = datetime.utcnow() + timedelta(minutes=15)
+    
+    session['forgot_otp_' + email] = {
+        'otp': otp,
+        'expires_at': expires_at.isoformat(),
+        'verified': False
+    }
+
+    # Dispatch Real Email with Branded HTML Template
+    subject = f"SmartVision Password Reset Code: {otp}"
+    body_text = f"Hello {user.name},\n\nYour 6-digit password reset verification code is: {otp}\n\nThis code will expire in 15 minutes.\n\nIf you did not request this password reset, please ignore this message."
+    body_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; margin: 0; padding: 24px;">
+        <div style="max-width: 520px; margin: 0 auto; background: #111827; border-radius: 16px; border: 1px solid #1f2937; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 28px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">SmartVision Portal</h1>
+                <p style="color: #e0e7ff; margin: 6px 0 0 0; font-size: 13px;">Security & Password Recovery</p>
+            </div>
+            <div style="padding: 32px 24px; color: #e2e8f0; line-height: 1.6;">
+                <p style="margin-top: 0; font-size: 15px;">Hello <strong>{user.name}</strong>,</p>
+                <p style="font-size: 14px; color: #94a3b8;">We received a request to reset your SmartVision portal password. Use the single-use 6-digit verification code below:</p>
+                
+                <div style="margin: 28px 0; text-align: center;">
+                    <div style="display: inline-block; background: #1e1b4b; border: 2px dashed #6366f1; border-radius: 12px; padding: 14px 28px;">
+                        <span style="font-family: monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #818cf8;">{otp}</span>
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: #94a3b8; text-align: center; margin-bottom: 24px;">
+                    <strong style="color: #f59e0b;">⏳ Valid for 15 minutes.</strong> Never share this code with anyone.
+                </p>
+
+                <hr style="border: none; border-top: 1px solid #1f2937; margin: 24px 0;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 0; text-align: center;">
+                    If you did not initiate this request, you can safely ignore this email. Your password will remain unchanged.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    try:
+        send_email(to_email=email, subject=subject, body_text=body_text, body_html=body_html)
+    except Exception as e:
+        print(f"[Password Reset OTP Email Error] {e}")
+
+    print("\n" + "=" * 80)
+    print(f"[SMARTVISION FORGOT PASSWORD OTP] CODE DISPATCHED TO {email}: {otp}")
+    print("=" * 80 + "\n", flush=True)
+
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return {'success': True, 'message': f'6-digit reset code sent to {email}. Check your email inbox!'}
+    
+    flash(f'6-digit verification code sent to {email}. Check your email inbox!', 'info')
+    return redirect(url_for('main.index', state='otp-verify', email=email))
+
+@auth_bp.route('/verify-forgot-otp', methods=['POST'])
+def verify_forgot_otp():
+    """AJAX / Form endpoint: Verifies the entered 6-digit password reset OTP."""
+    data = request.get_json(silent=True) or request.form
+    email = data.get('email', '').strip().lower()
+    otp_input = data.get('otp', '').strip()
+
+    if not email or not otp_input:
+        return {'success': False, 'message': 'Email and OTP code are required.'}, 400
+
+    otp_data = session.get('forgot_otp_' + email)
+    if not otp_data:
+        return {'success': False, 'message': 'Reset session expired. Please request a new OTP code.'}, 400
+
+    expires_at = datetime.fromisoformat(otp_data['expires_at'])
+    if datetime.utcnow() > expires_at:
+        session.pop('forgot_otp_' + email, None)
+        return {'success': False, 'message': 'OTP code has expired. Please click Resend OTP.'}, 400
+
+    if otp_input != str(otp_data.get('otp')).strip():
+        return {'success': False, 'message': 'Incorrect OTP code. Please check your email inbox.'}, 400
+
+    otp_data['verified'] = True
+    session['forgot_otp_' + email] = otp_data
+    session['reset_password_allowed_email'] = email
+
+    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return {'success': True, 'message': 'OTP verified successfully! You may now set a new password.'}
+
+    return redirect(url_for('main.index', state='reset-password', email=email))
+
 @auth_bp.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
-    """Step 1: User enters their email. We generate & store an OTP in session."""
+    """Step 1 Fallback / Direct Link: Handles password reset entry."""
     if current_user.is_authenticated:
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('main.index'))
 
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        user = User.query.filter_by(email=email).first()
-
-        if user:
-            otp = generate_otp(6)
-            # Store OTP with expiry (10 minutes)
-            session['otp_data'] = {
-                'email': email,
-                'otp': otp,
-                'expires_at': (datetime.utcnow() + timedelta(minutes=10)).isoformat()
-            }
-
-            # Simulate sending OTP to email / mobile
-            print("\n" + "=" * 80)
-            print("[SMARTVISION OTP SYSTEM] PASSWORD RESET OTP GENERATED")
-            print(f"  To    : {user.name} <{user.email}>")
-            if user.mobile:
-                print(f"  Mobile: {user.mobile}")
-            print(f"  OTP   : {otp}  (valid for 10 minutes)")
-            print("=" * 80 + "\n", flush=True)
-
-        # Always redirect to OTP panel (don't reveal if email exists)
-        return redirect(url_for('main.index', state='otp-verify', email=email))
+        return send_forgot_otp()
 
     return redirect(url_for('main.index', state='forgot'))
 
 @auth_bp.route('/verify_otp', methods=['POST'])
 def verify_otp():
-    """Step 2: User enters OTP. Validate and redirect to password reset panel."""
-    entered_otp = request.form.get('otp', '').strip()
-    otp_data = session.get('otp_data')
-
-    if not otp_data:
-        flash('OTP session expired. Please try again.', 'danger')
-        return redirect(url_for('main.index', state='forgot'))
-
-    # Check expiry
-    expires_at = datetime.fromisoformat(otp_data['expires_at'])
-    if datetime.utcnow() > expires_at:
-        session.pop('otp_data', None)
-        flash('OTP has expired. Please request a new one.', 'danger')
-        return redirect(url_for('main.index', state='forgot'))
-
-    if entered_otp != otp_data['otp']:
-        flash('Incorrect OTP. Please try again.', 'danger')
-        email = otp_data.get('email', '')
-        return redirect(url_for('main.index', state='otp-verify', email=email))
-
-    # OTP correct — mark as verified and allow password reset
-    session['otp_verified_email'] = otp_data['email']
-    session.pop('otp_data', None)
-    return redirect(url_for('main.index', state='reset-password'))
+    """Step 2 Fallback: Redirects to verify_forgot_otp handler."""
+    return verify_forgot_otp()
 
 @auth_bp.route('/reset_password_otp', methods=['POST'])
 def reset_password_otp():
     """Step 3: OTP was verified — save the new password."""
-    verified_email = session.get('otp_verified_email')
-    if not verified_email:
-        flash('Password reset session expired. Please start over.', 'danger')
+    data = request.get_json(silent=True) or request.form
+    email = data.get('email', '').strip().lower() or session.get('reset_password_allowed_email')
+    password = data.get('password', '')
+    confirm_password = data.get('confirm_password', '')
+
+    if not email:
+        msg = 'Password reset session expired. Please request a new OTP.'
+        if request.is_json:
+            return {'success': False, 'message': msg}, 400
+        flash(msg, 'danger')
         return redirect(url_for('main.index', state='forgot'))
 
-    password = request.form.get('password', '')
-    confirm_password = request.form.get('confirm_password', '')
+    otp_data = session.get('forgot_otp_' + email)
+    if not otp_data or not otp_data.get('verified'):
+        msg = 'Email verification incomplete. Please verify OTP first.'
+        if request.is_json:
+            return {'success': False, 'message': msg}, 400
+        flash(msg, 'danger')
+        return redirect(url_for('main.index', state='forgot'))
 
     if len(password) < 8:
-        flash('Password must be at least 8 characters long.', 'danger')
-        return redirect(url_for('main.index', state='reset-password'))
+        msg = 'Password must be at least 8 characters long.'
+        if request.is_json:
+            return {'success': False, 'message': msg}, 400
+        flash(msg, 'danger')
+        return redirect(url_for('main.index', state='reset-password', email=email))
 
     if password != confirm_password:
-        flash('Passwords do not match.', 'danger')
-        return redirect(url_for('main.index', state='reset-password'))
+        msg = 'Passwords do not match. Please re-enter.'
+        if request.is_json:
+            return {'success': False, 'message': msg}, 400
+        flash(msg, 'danger')
+        return redirect(url_for('main.index', state='reset-password', email=email))
 
-    user = User.query.filter_by(email=verified_email).first()
+    user = User.query.filter_by(email=email).first()
     if not user:
-        flash('Account not found. Please register.', 'danger')
-        session.pop('otp_verified_email', None)
+        msg = 'Account not found. Please check your email or register.'
+        if request.is_json:
+            return {'success': False, 'message': msg}, 404
+        flash(msg, 'danger')
         return redirect(url_for('main.index', state='signup'))
 
     user.set_password(password)
     db.session.commit()
-    session.pop('otp_verified_email', None)
-    flash('Your password has been successfully reset! You can now log in.', 'success')
+
+    # Clear OTP session state
+    session.pop('forgot_otp_' + email, None)
+    session.pop('reset_password_allowed_email', None)
+
+    msg = 'Your password has been successfully reset! You can now log in with your new password.'
+    if request.is_json:
+        return {'success': True, 'message': msg}
+
+    flash(msg, 'success')
     return redirect(url_for('main.index', state='login'))
 
 # Legacy token-based reset (kept for backward compat with any emailed links still in use)

@@ -899,8 +899,47 @@
         const stateParam = urlParams.get('state');
         const emailParam = urlParams.get('email');
 
-        if (stateParam === 'signup') {
+        if (stateParam === 'signup' || stateParam === 'google-complete') {
             showView('signup');
+            {% if google_data %}
+            const gName = {{ google_data.name|tojson|safe }};
+            const gEmail = {{ google_data.email|tojson|safe }};
+            const gTeacherId = {{ (google_data.matched_teacher_id or '')|tojson|safe }};
+
+            const nameInput = document.querySelector('input[name="name"]');
+            if (nameInput && gName) nameInput.value = gName;
+
+            const emailInput = document.getElementById('reg_email');
+            if (emailInput && gEmail) {
+                emailInput.value = gEmail;
+                emailInput.readOnly = true;
+            }
+
+            const verifiedHidden = document.getElementById('reg_email_verified');
+            if (verifiedHidden) verifiedHidden.value = 'true';
+
+            const verifyStatus = document.getElementById('email-verify-status');
+            if (verifyStatus) {
+                verifyStatus.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Email Verified via Google';
+                verifyStatus.classList.remove('d-none');
+            }
+
+            const btnGetOtp = document.getElementById('btn-get-otp');
+            if (btnGetOtp) btnGetOtp.classList.add('d-none');
+
+            const passInput = document.getElementById('reg_password');
+            if (passInput && !passInput.value) {
+                passInput.value = 'GoogleAuth_' + Math.random().toString(36).slice(-8);
+            }
+
+            if (gTeacherId) {
+                switchSignupRole('teacher');
+                const tInput = document.getElementById('input_teacher_id');
+                if (tInput) tInput.value = gTeacherId;
+            } else {
+                switchSignupRole('student');
+            }
+            {% endif %}
         } else if (stateParam === 'forgot') {
             showView('forgot');
             if (emailParam) {

@@ -522,8 +522,13 @@ def register():
                 flash('A student with this Enrollment Number already exists.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
-            # Create User account with verified email status (verified via inline OTP)
-            new_user = User(name=name, email=email, role='student', mobile=mobile or None, status='Approved', is_email_verified=True)
+            # Create User account with verified email status (verified via Google OAuth or inline OTP)
+            google_data = session.get('google_signup_data')
+            google_id = None
+            if google_data and google_data.get('email', '').strip().lower() == email.strip().lower():
+                google_id = google_data.get('google_id')
+
+            new_user = User(name=name, email=email, role='student', mobile=mobile or None, status='Approved', is_email_verified=True, google_id=google_id)
             new_user.set_password(password)
 
             face_encoding_bytes = None
@@ -618,6 +623,12 @@ def register():
 
                 db.session.add(new_student)
                 db.session.commit()
+
+                if google_data and google_data.get('email', '').strip().lower() == email.strip().lower():
+                    session.pop('google_signup_data', None)
+                    login_user(new_user)
+                    flash('Student account registered and authenticated with Google successfully! An administrator will assign your class.', 'success')
+                    return redirect(url_for('student.dashboard'))
 
                 flash(
                     'Student account registered and email verified successfully! '

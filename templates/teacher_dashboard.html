@@ -6,6 +6,13 @@
 
 {% block title %}Teacher Portal | Dashboard{% endblock %}
 
+{% block page_title %}
+<span class="fs-6 fw-bold text-dark-emphasis d-flex align-items-center gap-2">
+    <i class="fa-solid fa-chalkboard-user text-primary"></i>
+    <span>Faculty Dashboard</span>
+</span>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header Welcome Banner with Faculty Image -->
@@ -19,7 +26,7 @@
                         <div class="col-lg-7 col-md-6 d-flex align-items-center flex-column flex-sm-row text-center text-sm-start mb-3 mb-md-0">
                             <div class="position-relative me-sm-3.5 mb-2.5 mb-sm-0 flex-shrink-0">
                                 {% if teacher.image_data %}
-                                <img src="data:image/jpeg;base64,{{ teacher.image_data }}"
+                                <img src="{% if teacher.image_data.startswith('data:image/') %}{{ teacher.image_data }}{% else %}data:image/jpeg;base64,{{ teacher.image_data }}{% endif %}"
                                     class="rounded-circle shadow border border-2 border-white"
                                     style="width: 82px; height: 82px; object-fit: cover;"
                                     alt="{{ teacher.name }}"
@@ -61,7 +68,7 @@
                             </div>
                             <div>
                                 <div class="d-flex align-items-center justify-content-center justify-content-sm-start gap-2 mb-1.5 flex-wrap">
-                                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8">
+                                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill fw-semibold fs-8" style="color: #ffffff !important;">
                                         <i class="fas fa-chalkboard-user me-1"></i> Faculty Portal
                                     </span>
                                     {% if teacher.emp_id %}
@@ -70,9 +77,9 @@
                                     </span>
                                     {% endif %}
                                 </div>
-                                <h3 class="fw-bold mb-1" style="font-size: clamp(1.2rem, 1.8vw + 0.8rem, 1.55rem);">Welcome Back, {{ teacher.name }}!</h3>
+                                <h3 class="fw-bold mb-1 text-white" style="font-size: clamp(1.2rem, 1.8vw + 0.8rem, 1.55rem); color: #ffffff !important;">Welcome Back, {{ teacher.name }}!</h3>
 
-                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2.5 fs-8 text-white-75">
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-2.5 fs-8" style="color: rgba(255, 255, 255, 0.9) !important;">
                                     {% if teacher.email %}<span><i class="fas fa-envelope me-1 opacity-75"></i>{{ teacher.email }}</span>{% endif %}
                                     {% if teacher.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{ teacher.mobile }}</span>{% endif %}
                                 </div>
@@ -96,19 +103,19 @@
         <!-- TEACHER DAILY GEOLOCATION + FACE RECOGNITION ATTENDANCE MODULE -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden" id="teacherDailyGeoCard">
-                    <div class="card-header bg-gradient bg-primary text-white p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden" id="teacherDailyGeoCard" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
+                    <div class="card-header p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%); color: #ffffff;">
                         <div class="d-flex align-items-center gap-2">
                             <div class="rounded-circle bg-white bg-opacity-20 p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
                                 <i class="fa-solid fa-camera-retro fs-6 text-white"></i>
                             </div>
                             <div>
-                                <h6 class="fw-bold mb-0">Teacher Daily Attendance (Geo + Face Recognition)</h6>
-                                <span class="fs-9 text-white-75">Date: <strong id="geoTodayDate">Today</strong></span>
+                                <h6 class="fw-bold mb-0 text-white" style="color: #ffffff !important;">Teacher Daily Attendance (Geo + Face Recognition)</h6>
+                                <span class="fs-9" style="color: rgba(255, 255, 255, 0.85) !important;">Date: <strong id="geoTodayDate" class="text-white">Today</strong></span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-white text-primary rounded-pill px-3 py-1.5 fs-8 font-monospace fw-bold" id="geoOfficeBadge">
+                            <span class="badge bg-white text-primary rounded-pill px-3 py-1.5 fs-8 font-monospace fw-bold shadow-xs" id="geoOfficeBadge">
                                 <i class="fa-solid fa-building me-1"></i>Office: Admin Office (50m Radius)
                             </span>
                         </div>
@@ -956,25 +963,25 @@
                 const mornGraceMins = data.settings.grace_period_mins || 60;
 
                 if (data.attendance.check_in_at) {
-                    mBadge.className = "badge bg-success text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.className = "badge bg-success text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     mBadge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Checked In at ${data.attendance.check_in_at} (${data.attendance.check_in_distance}m) ${data.attendance.check_in_face_verified ? '<span class="ms-1 text-warning"><i class="fa-solid fa-shield-check"></i> Face Verified</span>' : ''}`;
                     btnM.disabled = true;
                     btnM.className = "btn btn-success btn-sm rounded-pill fw-bold w-100 py-2 disabled";
                     btnM.innerHTML = `<i class="fa-solid fa-check-double me-1.5"></i>Morning Marked`;
                 } else if (isTimeAfterWindow(data.settings.morning_deadline, mornGraceMins)) {
-                    mBadge.className = "badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.className = "badge bg-danger text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     mBadge.innerHTML = `<i class="fa-solid fa-clock-rotate-left me-1"></i>Window Closed`;
                     btnM.disabled = true;
                     btnM.className = "btn btn-secondary btn-sm rounded-pill fw-bold w-100 py-2 disabled";
                     btnM.innerHTML = `<i class="fa-solid fa-ban me-1.5"></i>Out of Time (Closed)`;
                 } else if (isTimeAfterWindow(data.settings.morning_deadline, 0)) {
-                    mBadge.className = "badge bg-warning bg-opacity-25 text-dark border border-warning border-opacity-50 fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.className = "badge bg-warning text-dark fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     mBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Late Window Active`;
                     btnM.disabled = false;
                     btnM.className = "btn btn-warning text-dark btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";
                     btnM.innerHTML = `<i class="fa-solid fa-camera me-1.5"></i>Check-In (Late Grace)`;
                 } else {
-                    mBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    mBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     mBadge.innerHTML = `<i class="fa-solid fa-clock me-1"></i>Not Marked`;
                     btnM.disabled = false;
                     btnM.className = "btn btn-primary btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";
@@ -984,19 +991,19 @@
                 const eBadge = document.getElementById('eveningBadge');
                 const btnE = document.getElementById('btnMarkEvening');
                 if (data.attendance.check_out_at) {
-                    eBadge.className = "badge bg-info text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.className = "badge bg-info text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     eBadge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i>Checked Out at ${data.attendance.check_out_at} (${data.attendance.check_out_distance}m) ${data.attendance.check_out_face_verified ? '<span class="ms-1 text-warning"><i class="fa-solid fa-shield-check"></i> Face Verified</span>' : ''}`;
                     btnE.disabled = true;
                     btnE.className = "btn btn-info text-white btn-sm rounded-pill fw-bold w-100 py-2 disabled";
                     btnE.innerHTML = `<i class="fa-solid fa-check-double me-1.5"></i>Evening Marked`;
                 } else if (isTimeAfterWindow(data.settings.evening_end, 60)) {
-                    eBadge.className = "badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25 fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.className = "badge bg-danger text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     eBadge.innerHTML = `<i class="fa-solid fa-clock-rotate-left me-1"></i>Window Closed`;
                     btnE.disabled = true;
                     btnE.className = "btn btn-secondary btn-sm rounded-pill fw-bold w-100 py-2 disabled";
                     btnE.innerHTML = `<i class="fa-solid fa-ban me-1.5"></i>Out of Time (Closed)`;
                 } else {
-                    eBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill";
+                    eBadge.className = "badge bg-secondary text-white fs-8 px-2.5 py-1.5 rounded-pill shadow-xs";
                     eBadge.innerHTML = `<i class="fa-solid fa-clock me-1"></i>Not Marked`;
                     btnE.disabled = false;
                     btnE.className = "btn btn-info text-white btn-sm rounded-pill fw-bold w-100 py-2 shadow-xs";

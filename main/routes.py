@@ -27,7 +27,7 @@ from models import (
     TeacherAssignment, Timetable, Holiday, TeacherLeave, DailySchedule,
     AttendanceSession, AttendanceRecord, CorrectionRequest, AttendanceAuditLog,
     TeacherDailyAttendance, TimetablePeriodSetting, Department, ProxyAttendanceTransfer,
-    TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings
+    TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings, TeacherEditRequest
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -2238,6 +2238,10 @@ def approvals():
         Student.class_id.in_(admin_classes),
         StudentEditRequest.status == 'Pending'
     ).order_by(StudentEditRequest.created_at.desc()).all()
+
+    teacher_edit_requests = TeacherEditRequest.query.join(Teacher).filter(
+        TeacherEditRequest.status == 'Pending'
+    ).order_by(TeacherEditRequest.created_at.desc()).all()
     
     pending_teachers = Teacher.query.filter(Teacher.status.in_(['Pending', 'Email_Verified'])).order_by(Teacher.id.desc()).all()
     all_teachers = get_admin_teachers()
@@ -2250,6 +2254,7 @@ def approvals():
     return render_template(
         'admin_approvals.html',
         requests=edit_requests,
+        teacher_edit_requests=teacher_edit_requests,
         pending_teachers=pending_teachers,
         all_teachers=all_teachers,
         pending_leaves=pending_leaves,
@@ -2487,6 +2492,73 @@ def handle_approval(request_id, action):
         except Exception as e:
             db.session.rollback()
             flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for('main.approvals'))
+
+@main_bp.route('/admin/teacher_edit_approval/<int:request_id>/<action>', methods=['POST'])
+@login_required
+@admin_required
+def handle_teacher_edit_approval(request_id, action):
+    req = TeacherEditRequest.query.get_or_404(request_id)
+    teacher = req.teacher
+
+    if action == 'approve':
+        try:
+            # Delete old face photo from disk if new photo was uploaded
+            if req.new_image_filename and req.new_image_filename != teacher.image_filename:
+                old_path = os.path.join(FACES_FOLDER, teacher.image_filename) if teacher.image_filename else None
+                if old_path and os.path.exists(old_path):
+                    try:
+                        os.remove(old_path)
+                    except Exception:
+                        pass
+
+            # Update teacher entity fields
+            teacher.name = req.new_name
+            if req.new_emp_id:
+                teacher.emp_id = req.new_emp_id
+                teacher.employee_code = req.new_emp_id
+            if req.new_department:
+                teacher.department = req.new_department
+            teacher.mobile = req.new_mobile
+            teacher.primary_subject = req.new_primary_subject
+            teacher.secondary_subject = req.new_secondary_subject
+            teacher.tertiary_subject = req.new_tertiary_subject
+
+            if req.new_image_filename:
+                teacher.image_filename = req.new_image_filename
+                teacher.image_data = req.new_image_data
+                teacher.face_encoding = req.new_face_encoding
+
+            # Update linked User account
+            if teacher.user_id:
+                u_acc = User.query.get(teacher.user_id)
+                if u_acc:
+                    u_acc.name = req.new_name
+                    if req.new_mobile:
+                        u_acc.mobile = req.new_mobile
+
+            db.session.delete(req) # Remove request from queue upon approval
+            db.session.commit()
+            flash(f"Profile change request for faculty member '{teacher.name}' approved and applied live successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error approving teacher profile changes: {e}", "danger")
+    elif action == 'reject':
+        try:
+            if req.new_image_filename and req.new_image_filename != teacher.image_filename:
+                photo_path = os.path.join(FACES_FOLDER, req.new_image_filename)
+                if os.path.exists(photo_path):
+                    try:
+                        os.remove(photo_path)
+                    except Exception:
+                        pass
+            db.session.delete(req) # Remove request from queue
+            db.session.commit()
+            flash(f"Profile change request for faculty member '{teacher.name}' rejected.", "info")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error rejecting teacher profile changes: {e}", "danger")
 
     return redirect(url_for('main.approvals'))
 
@@ -3964,7 +4036,8 @@ def inject_pending_approvals():
                 StudentEditRequest.status == 'Pending'
             ).count()
             teacher_pending_count = Teacher.query.filter_by(status='Pending').count()
-            total_pending = student_req_count + teacher_pending_count
+            teacher_edit_req_count = TeacherEditRequest.query.filter_by(status='Pending').count()
+            total_pending = student_req_count + teacher_pending_count + teacher_edit_req_count
             unclassified_count = Student.query.filter(Student.class_id == None).count()
             return {
                 'pending_approvals_count': total_pending,

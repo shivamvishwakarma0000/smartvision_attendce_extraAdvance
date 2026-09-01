@@ -128,6 +128,9 @@
                     <a href="{{ url_for('teacher.teacher_id_card') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_id_card' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-warning"></i> My Digital ID Card
                     </a>
+                    <a href="{{ url_for('teacher.edit_profile') }}" class="nav-link {% if request.endpoint == 'teacher.edit_profile' %}active{% endif %}">
+                        <i class="fa-solid fa-user-pen me-2 text-primary"></i> Edit Profile
+                    </a>
                     <a href="{{ url_for('teacher.my_attendance') }}" class="nav-link {% if request.endpoint == 'teacher.my_attendance' %}active{% endif %}">
                         <i class="fa-solid fa-calendar-check me-2 text-success"></i> My Attendance
                     </a>

@@ -266,6 +266,27 @@ class StudentEditRequest(db.Model):
     class_assigned = db.relationship('Class')
 
 
+class TeacherEditRequest(db.Model):
+    """Faculty profile modification requests submitted for Admin approval."""
+    __tablename__ = 'teacher_edit_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    new_name = db.Column(db.String(100), nullable=False)
+    new_emp_id = db.Column(db.String(50), nullable=True)
+    new_department = db.Column(db.String(100), nullable=True)
+    new_mobile = db.Column(db.String(20), nullable=True)
+    new_primary_subject = db.Column(db.String(100), nullable=True)
+    new_secondary_subject = db.Column(db.String(100), nullable=True)
+    new_tertiary_subject = db.Column(db.String(100), nullable=True)
+    new_image_filename = db.Column(db.String(255), nullable=True)
+    new_image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
+    new_face_encoding = db.Column(db.LargeBinary, nullable=True)
+    status = db.Column(db.String(20), default='Pending') # 'Pending', 'Approved', 'Rejected'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    teacher = db.relationship('Teacher', backref=db.backref('edit_requests', lazy=True, cascade='all, delete-orphan'))
+
+
 # ==============================================================================
 # SECTION 4: TIMETABLE & DAILY SCHEDULE ENGINE MODELS
 # ==============================================================================

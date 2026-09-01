@@ -27,7 +27,7 @@ from models import (
     TeacherAssignment, Timetable, Holiday, TeacherLeave, DailySchedule,
     AttendanceSession, AttendanceRecord, CorrectionRequest, AttendanceDiscrepancyRequest, AttendanceAuditLog,
     ProxyAttendanceTransfer, TeacherDailyAttendance, TeacherAttendanceSettings, TeacherOfficeLocation,
-    TeacherDismissedNotice, TeacherReadNotice
+    TeacherDismissedNotice, TeacherReadNotice, Department, TeacherEditRequest
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -258,6 +258,7 @@ def dashboard():
     # Teacher's Leave History
     my_leaves = TeacherLeave.query.filter_by(teacher_id=teacher.id).order_by(TeacherLeave.id.desc()).all()
     all_subject_names = [s[0] for s in db.session.query(Subject.name).distinct().order_by(Subject.name).all()]
+    pending_edit_request = TeacherEditRequest.query.filter_by(teacher_id=teacher.id, status='Pending').first()
 
     return render_template(
         'teacher_dashboard.html',
@@ -272,6 +273,7 @@ def dashboard():
         pending_discrepancies=pending_discrepancies,
         recent_records=recent_records,
         my_leaves=my_leaves,
+        pending_edit_request=pending_edit_request,
         today_name=today.strftime('%A'),
         all_subject_names=all_subject_names,
         today=today.strftime('%Y-%m-%d')
@@ -1970,6 +1972,142 @@ def teacher_id_card():
         qr_data=qr_data,
         today=date.today()
     )
+
+
+@teacher_bp.route('/teacher/edit-profile', methods=['GET', 'POST'])
+@login_required
+@teacher_required
+def edit_profile():
+    """Allows teachers to update their profile and submit for Admin verification."""
+    teacher = get_current_teacher()
+    if not teacher:
+        flash("Faculty profile not found.", "danger")
+        return redirect(url_for('teacher.dashboard'))
+
+    pending_request = TeacherEditRequest.query.filter_by(teacher_id=teacher.id, status='Pending').first()
+    all_departments = Department.query.order_by(Department.name.asc()).all()
+    all_subjects = Subject.query.order_by(Subject.name.asc()).all()
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        emp_id = request.form.get('emp_id', '').strip()
+        department = request.form.get('department', '').strip()
+        mobile = request.form.get('mobile', '').strip()
+        primary_subject = request.form.get('primary_subject', '').strip()
+        secondary_subject = request.form.get('secondary_subject', '').strip()
+        tertiary_subject = request.form.get('tertiary_subject', '').strip()
+
+        if not name:
+            flash("Full name is required.", "danger")
+            return redirect(url_for('teacher.edit_profile'))
+
+        # Check for new photo (from live camera base64 or file upload)
+        captured_base64 = request.form.get('captured_image_base64', '').strip()
+        photo_file = request.files.get('teacher_photo')
+
+        new_img_filename = None
+        new_img_data = None
+        new_encoding = None
+
+        if captured_base64:
+            res = save_base64_image(captured_base64, f"pending_teacher_{teacher.id}", name, FACES_FOLDER)
+            if res:
+                new_img_filename, filepath = res
+                new_img_data = captured_base64
+                if face_recognition and os.path.exists(filepath):
+                    try:
+                        img = face_recognition.load_image_file(filepath)
+                        encs = face_recognition.face_encodings(img)
+                        if encs:
+                            new_encoding = encs[0].tobytes()
+                    except Exception as e:
+                        print(f"Face encoding error: {e}")
+        elif photo_file and photo_file.filename:
+            safe_name = secure_filename(name) or 'teacher'
+            ext = photo_file.filename.rsplit('.', 1)[-1].lower() if '.' in photo_file.filename else 'jpg'
+            new_img_filename = f"pending_teacher_{teacher.id}_{safe_name}.{ext}"
+            filepath = os.path.join(FACES_FOLDER, new_img_filename)
+            os.makedirs(FACES_FOLDER, exist_ok=True)
+            photo_file.save(filepath)
+            try:
+                with open(filepath, 'rb') as f:
+                    new_img_data = base64.b64encode(f.read()).decode('utf-8')
+            except Exception:
+                pass
+            if face_recognition and os.path.exists(filepath):
+                try:
+                    img = face_recognition.load_image_file(filepath)
+                    encs = face_recognition.face_encodings(img)
+                    if encs:
+                        new_encoding = encs[0].tobytes()
+                except Exception as e:
+                    print(f"Face encoding error: {e}")
+
+        # If user already had a pending request, update it
+        if pending_request:
+            pending_request.new_name = name
+            pending_request.new_emp_id = emp_id or teacher.emp_id
+            pending_request.new_department = department
+            pending_request.new_mobile = mobile
+            pending_request.new_primary_subject = primary_subject
+            pending_request.new_secondary_subject = secondary_subject
+            pending_request.new_tertiary_subject = tertiary_subject
+            if new_img_filename:
+                pending_request.new_image_filename = new_img_filename
+                pending_request.new_image_data = new_img_data
+                pending_request.new_face_encoding = new_encoding
+            pending_request.created_at = datetime.utcnow()
+            db.session.commit()
+            flash("Your profile modification request has been updated and is pending Administrator approval.", "info")
+        else:
+            new_req = TeacherEditRequest(
+                teacher_id=teacher.id,
+                new_name=name,
+                new_emp_id=emp_id or teacher.emp_id,
+                new_department=department,
+                new_mobile=mobile,
+                new_primary_subject=primary_subject,
+                new_secondary_subject=secondary_subject,
+                new_tertiary_subject=tertiary_subject,
+                new_image_filename=new_img_filename,
+                new_image_data=new_img_data,
+                new_face_encoding=new_encoding,
+                status='Pending',
+                created_at=datetime.utcnow()
+            )
+            db.session.add(new_req)
+            db.session.commit()
+            flash("Profile modification request submitted successfully! It will take effect once approved by Administrator.", "success")
+
+        return redirect(url_for('teacher.edit_profile'))
+
+    return render_template(
+        'teacher_profile_edit.html',
+        teacher=teacher,
+        pending_request=pending_request,
+        all_departments=all_departments,
+        all_subjects=all_subjects
+    )
+
+
+@teacher_bp.route('/teacher/cancel-edit-request/<int:req_id>', methods=['POST'])
+@login_required
+@teacher_required
+def cancel_edit_request(req_id):
+    """Cancels a pending profile modification request."""
+    teacher = get_current_teacher()
+    req = TeacherEditRequest.query.filter_by(id=req_id, teacher_id=teacher.id, status='Pending').first_or_404()
+    if req.new_image_filename:
+        photo_path = os.path.join(FACES_FOLDER, req.new_image_filename)
+        if os.path.exists(photo_path):
+            try:
+                os.remove(photo_path)
+            except Exception:
+                pass
+    db.session.delete(req)
+    db.session.commit()
+    flash("Profile change request has been cancelled.", "info")
+    return redirect(url_for('teacher.edit_profile'))
 
 
 

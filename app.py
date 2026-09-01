@@ -238,13 +238,16 @@ def create_app():
         try:
             from flask_login import current_user
             if current_user.is_authenticated and current_user.role == 'admin':
-                from models import TeacherLeave, StudentEditRequest
+                from models import TeacherLeave, StudentEditRequest, TeacherEditRequest, Teacher
                 pending_leaves = TeacherLeave.query.filter_by(status='PENDING').count()
                 pending_corrections = StudentEditRequest.query.filter_by(status='Pending').count()
+                pending_teacher_edits = TeacherEditRequest.query.filter_by(status='Pending').count()
+                pending_teachers = Teacher.query.filter_by(status='Pending').count()
                 return {
                     'admin_pending_leaves_count': pending_leaves,
                     'admin_pending_corrections_count': pending_corrections,
-                    'admin_pending_approvals_count': pending_leaves + pending_corrections
+                    'admin_pending_teacher_edits_count': pending_teacher_edits,
+                    'admin_pending_approvals_count': pending_leaves + pending_corrections + pending_teacher_edits + pending_teachers
                 }
         except Exception as e:
             print(f"Error in inject_admin_notifications: {e}")
@@ -341,7 +344,23 @@ def ensure_postgresql_columns():
             "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_face_encoding BYTEA",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS logo_data TEXT",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS name_image_data TEXT",
-            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT"
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT",
+            """CREATE TABLE IF NOT EXISTS teacher_edit_requests (
+                id SERIAL PRIMARY KEY,
+                teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+                new_name VARCHAR(100) NOT NULL,
+                new_emp_id VARCHAR(50),
+                new_department VARCHAR(100),
+                new_mobile VARCHAR(20),
+                new_primary_subject VARCHAR(100),
+                new_secondary_subject VARCHAR(100),
+                new_tertiary_subject VARCHAR(100),
+                new_image_filename VARCHAR(255),
+                new_image_data TEXT,
+                new_face_encoding BYTEA,
+                status VARCHAR(20) DEFAULT 'Pending',
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )"""
         ]
         for stmt in statements:
             try:
@@ -349,6 +368,10 @@ def ensure_postgresql_columns():
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+        try:
+            db.create_all()
+        except Exception:
+            pass
         print("[PostgreSQL Schema Sync] Verified and updated all database columns successfully!")
     except Exception as e:
         print(f"[PostgreSQL Schema Sync Notice] {e}")

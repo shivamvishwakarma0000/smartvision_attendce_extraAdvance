@@ -88,6 +88,10 @@
 
                         <!-- Quick Action Buttons -->
                         <div class="col-lg-5 col-md-6 text-center text-md-end d-flex flex-wrap gap-2 justify-content-center justify-content-md-end align-items-center mt-3 mt-md-0">
+                            <a href="{{ url_for('teacher.edit_profile') }}"
+                                class="btn btn-outline-light btn-sm px-3.5 py-2 rounded-pill shadow-sm fw-bold fs-8 d-inline-flex align-items-center gap-1.5" style="border-color: rgba(255,255,255,0.7) !important; color: #ffffff !important;">
+                                <i class="fa-solid fa-user-pen"></i> Edit Profile
+                            </a>
                             <a href="{{ url_for('teacher.leave_applications') }}"
                                 class="btn btn-warning btn-sm px-3.5 py-2 rounded-pill shadow-sm fw-bold text-dark fs-8 d-inline-flex align-items-center gap-1.5">
                                 <i class="fas fa-umbrella-beach"></i> Apply for Leave
@@ -100,6 +104,28 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Pending Profile Change Request Alert Banner -->
+    {% if pending_edit_request %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning border-0 shadow-sm rounded-4 py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background: rgba(245, 158, 11, 0.12); border-left: 5px solid #f59e0b !important;">
+                <div class="d-flex align-items-center gap-2.5">
+                    <i class="fa-solid fa-hourglass-half text-warning fs-5"></i>
+                    <div>
+                        <strong class="text-warning d-block fs-8">Profile Change Request Under Review</strong>
+                        <span class="text-muted fs-9">You submitted a profile change request on {{ pending_edit_request.created_at.strftime('%b %d, %Y at %I:%M %p') }}. It will take effect once an Administrator approves it.</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('teacher.edit_profile') }}" class="btn btn-xs btn-warning text-dark fw-bold rounded-pill px-3.5 py-1.5 fs-9">
+                    View / Modify Request <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
         <!-- TEACHER DAILY GEOLOCATION + FACE RECOGNITION ATTENDANCE MODULE -->
         <div class="row mb-4">
             <div class="col-12">

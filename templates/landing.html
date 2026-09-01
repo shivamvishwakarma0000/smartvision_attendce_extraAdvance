@@ -831,9 +831,11 @@
                 </div>
             </div>
             <div class="modal-footer border-top py-2.5 px-4 d-flex justify-content-between" style="border-color: var(--card-border) !important;">
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" onclick="cancelCrop()">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" onclick="useFullPhoto()">
+                    <i class="fa-solid fa-expand me-1"></i> Use Full Photo
+                </button>
                 <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="saveCroppedPhoto()">
-                    <i class="fa-solid fa-check me-1.5"></i> Crop & Set Photo
+                    <i class="fa-solid fa-check me-1.5"></i> Crop & Set Face
                 </button>
             </div>
         </div>
@@ -1338,32 +1340,50 @@
             originalSelectedFileName = file.name;
             const reader = new FileReader();
             reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                
+                // Immediately set preview & hidden field so the photo is NEVER lost
+                const hiddenInput = document.getElementById('captured_image_base64');
+                if (hiddenInput) hiddenInput.value = dataUrl;
+
+                const previewBox = document.getElementById('photo-preview-status');
+                const img = document.getElementById('preview-img');
+                const label = document.getElementById('preview-label');
+                if (img) img.src = dataUrl;
+                if (label) label.innerText = 'Gallery photo attached';
+                if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
+
+                // Launch the interactive Crop Modal
                 const cropperModalEl = document.getElementById('imageCropperModal');
                 const cropperImage = document.getElementById('cropperImage');
                 
-                cropperImage.src = e.target.result;
-                
-                const bsModal = new bootstrap.Modal(cropperModalEl);
-                bsModal.show();
+                if (cropperModalEl && cropperImage) {
+                    cropperImage.src = dataUrl;
+                    const bsModal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
+                    bsModal.show();
 
-                cropperModalEl.addEventListener('shown.bs.modal', function () {
-                    if (cropperInstance) {
-                        cropperInstance.destroy();
-                    }
-                    cropperInstance = new Cropper(cropperImage, {
-                        aspectRatio: 1, // 1:1 square crop for facial recognition
-                        viewMode: 1,
-                        dragMode: 'move',
-                        autoCropArea: 0.85,
-                        restore: false,
-                        guides: true,
-                        center: true,
-                        highlight: false,
-                        cropBoxMovable: true,
-                        cropBoxResizable: true,
-                        toggleDragModeOnDblclick: false
-                    });
-                }, { once: true });
+                    cropperModalEl.addEventListener('shown.bs.modal', function () {
+                        if (cropperInstance) {
+                            cropperInstance.destroy();
+                            cropperInstance = null;
+                        }
+                        if (typeof Cropper !== 'undefined') {
+                            cropperInstance = new Cropper(cropperImage, {
+                                aspectRatio: 1, // 1:1 square crop for facial recognition
+                                viewMode: 1,
+                                dragMode: 'move',
+                                autoCropArea: 0.9,
+                                restore: false,
+                                guides: true,
+                                center: true,
+                                highlight: false,
+                                cropBoxMovable: true,
+                                cropBoxResizable: true,
+                                toggleDragModeOnDblclick: false
+                            });
+                        }
+                    }, { once: true });
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -1381,7 +1401,22 @@
         if (cropperInstance) cropperInstance.reset();
     }
 
+    function useFullPhoto() {
+        const label = document.getElementById('preview-label');
+        if (label) label.innerText = 'Full gallery photo';
+        closeCropModal();
+    }
+
     function cancelCrop() {
+        closeCropModal();
+    }
+
+    function closeCropModal() {
+        const cropperModalEl = document.getElementById('imageCropperModal');
+        if (cropperModalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(cropperModalEl) || bootstrap.Modal.getOrCreateInstance(cropperModalEl);
+            if (modalInstance) modalInstance.hide();
+        }
         if (cropperInstance) {
             cropperInstance.destroy();
             cropperInstance = null;
@@ -1389,38 +1424,34 @@
     }
 
     function saveCroppedPhoto() {
-        if (!cropperInstance) return;
-        
-        // Export high-resolution square cropped image (400x400)
-        const canvas = cropperInstance.getCroppedCanvas({
-            width: 400,
-            height: 400,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high'
-        });
-
-        if (canvas) {
-            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-            document.getElementById('captured_image_base64').value = croppedBase64;
-
-            const previewBox = document.getElementById('photo-preview-status');
-            const img = document.getElementById('preview-img');
-            const label = document.getElementById('preview-label');
-
-            if (img) img.src = croppedBase64;
-            if (label) label.innerText = 'Cropped gallery face';
-            if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
-        }
-
-        const cropperModalEl = document.getElementById('imageCropperModal');
-        const modalInstance = bootstrap.Modal.getInstance(cropperModalEl);
-        if (modalInstance) {
-            modalInstance.hide();
-        }
         if (cropperInstance) {
-            cropperInstance.destroy();
-            cropperInstance = null;
+            try {
+                // Export high-resolution square cropped image (400x400)
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 400,
+                    height: 400,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+
+                if (canvas) {
+                    const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+                    const hiddenInput = document.getElementById('captured_image_base64');
+                    if (hiddenInput) hiddenInput.value = croppedBase64;
+
+                    const previewBox = document.getElementById('photo-preview-status');
+                    const img = document.getElementById('preview-img');
+                    const label = document.getElementById('preview-label');
+
+                    if (img) img.src = croppedBase64;
+                    if (label) label.innerText = 'Cropped face photo';
+                    if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
+                }
+            } catch (err) {
+                console.warn('Cropping canvas error:', err);
+            }
         }
+        closeCropModal();
     }
 
     function removeSelectedPhoto() {

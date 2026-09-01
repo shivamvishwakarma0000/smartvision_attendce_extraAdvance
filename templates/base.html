@@ -305,9 +305,16 @@
                 {% endif %}
             {% endwith %}
         </div>
-        {% if current_user.is_authenticated %}
-        <!-- FLOATING SMARTVISION AI COPILOT LAUNCHER WITH CIRCULAR OUTER RING -->
+        <!-- FLOATING SMARTVISION AI COPILOT LAUNCHER WITH ROTATING AI ORBITAL RING -->
         <style>
+            @keyframes aiOrbitalSpin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            @keyframes aiAmbientPulse {
+                0%, 100% { filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.6)) drop-shadow(0 0 20px rgba(168, 85, 247, 0.4)); }
+                50% { filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.9)) drop-shadow(0 0 28px rgba(236, 72, 153, 0.6)); }
+            }
             #ai-copilot-launcher {
                 position: fixed !important;
                 bottom: 22px !important;
@@ -317,28 +324,45 @@
                 align-items: center !important;
                 justify-content: center !important;
             }
-            .ai-outer-ring {
+            .ai-spinner-container {
                 position: relative;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 padding: 4px;
                 border-radius: 9999px;
-                border: 2px solid rgba(99, 102, 241, 0.7);
-                background: rgba(99, 102, 241, 0.12);
-                box-shadow: 0 0 18px rgba(99, 102, 241, 0.4);
-                transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+                animation: aiAmbientPulse 3.5s ease-in-out infinite;
             }
-            .ai-outer-ring:hover {
-                border-color: rgba(168, 85, 247, 0.95);
-                box-shadow: 0 0 26px rgba(168, 85, 247, 0.65);
-                transform: scale(1.03);
+            /* Rotating Conic Gradient Outer Orbital Ring */
+            .ai-rotating-orbital {
+                position: absolute;
+                inset: -3px;
+                border-radius: 9999px;
+                background: conic-gradient(from 0deg, #4f46e5, #a855f7, #ec4899, #06b6d4, #4f46e5);
+                animation: aiOrbitalSpin 3s linear infinite;
+                z-index: 1;
+                pointer-events: none;
+                opacity: 0.95;
+            }
+            .ai-outer-ring {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 3px;
+                border-radius: 9999px;
+                background: #0f172a;
+                z-index: 2;
+                transition: transform 0.25s ease;
+            }
+            .ai-spinner-container:hover .ai-outer-ring {
+                transform: scale(1.04);
             }
             .ai-floating-btn {
                 background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-                border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+                border: 1px solid rgba(255, 255, 255, 0.5) !important;
                 color: #ffffff !important;
-                box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5) !important;
+                box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4) !important;
                 transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease !important;
                 display: inline-flex !important;
                 align-items: center !important;
@@ -357,8 +381,7 @@
                     bottom: 18px !important;
                     right: 16px !important;
                 }
-                .ai-outer-ring {
-                    padding: 3.5px !important;
+                .ai-spinner-container, .ai-outer-ring, .ai-rotating-orbital {
                     border-radius: 50% !important;
                 }
                 .ai-floating-btn {
@@ -370,14 +393,17 @@
             }
         </style>
         <div id="ai-copilot-launcher">
-            <div class="ai-outer-ring">
-                <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn ai-floating-btn rounded-pill px-3.5 py-2.5 d-flex align-items-center gap-2" aria-label="Open SmartVision AI Assistant">
-                    <span class="position-relative d-inline-flex align-items-center justify-content-center">
-                        <i class="fa-solid fa-wand-magic-sparkles fs-5 text-white"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-2 border-white rounded-circle shadow-sm" style="width: 10px; height: 10px;"></span>
-                    </span>
-                    <span class="fw-bold fs-8 text-white d-none d-sm-inline text-nowrap">SmartVision AI</span>
-                </button>
+            <div class="ai-spinner-container">
+                <div class="ai-rotating-orbital"></div>
+                <div class="ai-outer-ring">
+                    <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn ai-floating-btn rounded-pill px-3.5 py-2 d-flex align-items-center gap-2" aria-label="Open SmartVision AI Assistant">
+                        <span class="position-relative d-inline-flex align-items-center justify-content-center">
+                            <i class="fa-solid fa-wand-magic-sparkles fs-5 text-white"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-2 border-white rounded-circle shadow-sm" style="width: 10px; height: 10px;"></span>
+                        </span>
+                        <span class="fw-bold fs-8 text-white d-none d-sm-inline text-nowrap">SmartVision AI</span>
+                    </button>
+                </div>
             </div>
         </div>
 

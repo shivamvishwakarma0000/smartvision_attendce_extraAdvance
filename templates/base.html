@@ -17,10 +17,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     <script>
-        // Apply theme immediately to prevent flashing
+        // Apply theme immediately before paint to prevent flashing
         (function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            try {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark' || (savedTheme !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
         })();
     </script>
     <style>
@@ -819,18 +827,23 @@
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
                 
                 document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
+                try {
+                    localStorage.setItem('theme', newTheme);
+                } catch (e) {}
                 
                 updateToggleIcons(newTheme);
+                window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }));
             }
             
             function updateToggleIcons(theme) {
                 const iconClass = theme === 'dark' ? 'fa-sun' : 'fa-moon';
                 if (themeToggleBtn) {
                     themeToggleBtn.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                    themeToggleBtn.setAttribute('title', theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
                 }
                 if (themeToggleLandingBtn) {
                     themeToggleLandingBtn.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                    themeToggleLandingBtn.setAttribute('title', theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
                 }
             }
             
@@ -844,6 +857,18 @@
             // Set initial toggle icons
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
             updateToggleIcons(currentTheme);
+
+            // Listen for OS system theme changes if user has not explicitly set a theme
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                    if (!localStorage.getItem('theme')) {
+                        const newSystemTheme = e.matches ? 'dark' : 'light';
+                        document.documentElement.setAttribute('data-theme', newSystemTheme);
+                        updateToggleIcons(newSystemTheme);
+                        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newSystemTheme } }));
+                    }
+                });
+            }
 
             // Auto-dismiss Flash Alert Messages after 5 seconds
             setTimeout(function() {

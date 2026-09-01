@@ -80,6 +80,8 @@ def index():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
             return redirect(url_for('main.dashboard'))
+        elif current_user.role == 'teacher':
+            return redirect(url_for('teacher.dashboard'))
         elif current_user.role == 'student':
             return redirect(url_for('student.dashboard'))
 

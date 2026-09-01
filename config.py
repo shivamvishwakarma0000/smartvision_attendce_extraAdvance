@@ -37,6 +37,21 @@ class Config:
         _raw_db_url = _raw_db_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = _raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # --------------------------------------------------------------------------
+    # 2.1 DATABASE CONNECTION RESILIENCE (Neon Serverless PostgreSQL Pooling)
+    # --------------------------------------------------------------------------
+    if _raw_db_url and 'sqlite' not in _raw_db_url:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'pool_recycle': 280,
+            'pool_timeout': 30,
+            'max_overflow': 10
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True
+        }
 
     # --------------------------------------------------------------------------
     # 3. GOOGLE OAUTH 2.0 SSO CREDENTIALS

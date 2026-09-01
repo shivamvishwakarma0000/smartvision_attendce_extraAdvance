@@ -250,15 +250,30 @@
                         <div class="modal-body p-4">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Current Password</label>
-                                <input type="password" name="current_password" class="form-control rounded-3" required placeholder="Enter current master password">
+                                <div class="input-group">
+                                    <input type="password" name="current_password" class="form-control rounded-start-3 border-end-0" required placeholder="Enter current master password">
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
+                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">New Password</label>
-                                <input type="password" name="new_password" class="form-control rounded-3" minlength="6" required placeholder="Min 6 characters">
+                                <div class="input-group">
+                                    <input type="password" name="new_password" class="form-control rounded-start-3 border-end-0" minlength="6" required placeholder="Min 6 characters">
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
+                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Confirm New Password</label>
-                                <input type="password" name="confirm_password" class="form-control rounded-3" minlength="6" required placeholder="Re-enter new password">
+                                <div class="input-group">
+                                    <input type="password" name="confirm_password" class="form-control rounded-start-3 border-end-0" minlength="6" required placeholder="Re-enter new password">
+                                    <button class="btn btn-outline-secondary rounded-end-3 border-start-0" type="button" onclick="togglePasswordVisibility(this)" title="Toggle visibility">
+                                        <i class="fa-solid fa-eye text-muted"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer border-0 p-4 pt-0">
@@ -459,9 +474,30 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- Global WebRTC Camera Capture Scripts -->
+    <!-- Global WebRTC Camera Capture & Password Visibility Scripts -->
     <script>
         let streams = {};
+
+        window.togglePasswordVisibility = function(btn) {
+            const inputGroup = btn.closest('.input-group') || btn.parentElement;
+            if (!inputGroup) return;
+            const input = inputGroup.querySelector('input[type="password"], input[type="text"]');
+            const icon = btn.querySelector('i');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        };
 
         window.setPhotoMode = function(id, mode) {
             const localModeBtn = document.getElementById('btn-local-mode-' + id);

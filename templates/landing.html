@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Cropper.js CSS for Square Face Cropping -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     
     <style>
         /* Theme Tokens - Left Hero is Permanently Cosmic Dark, Right Auth Card Toggles Dark/Light */
@@ -409,7 +411,10 @@
                                 </div>
                                 <div class="input-group">
                                     <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
-                                    <input type="password" class="form-control" id="login_password" name="password" placeholder="••••••••" required>
+                                    <input type="password" class="form-control border-start-0 border-end-0" id="login_password" name="password" placeholder="••••••••" required>
+                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle password visibility">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -502,7 +507,13 @@
 
                             <div class="mb-2">
                                 <label class="form-label" style="color: var(--text-main);">Create Password <span class="text-danger">*</span></label>
-                                <input type="password" class="form-control" name="password" minlength="8" placeholder="Min 8 characters" required>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0 text-muted" style="background: var(--input-bg); border-color: var(--input-border); color: var(--text-muted) !important;"><i class="fa-solid fa-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 border-end-0" id="reg_password" name="password" minlength="8" placeholder="Min 8 characters" required>
+                                    <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" onclick="togglePasswordVisibility(this)" style="background: var(--input-bg); border-color: var(--input-border);" title="Toggle password visibility">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- STUDENT FIELDS -->
@@ -630,8 +641,52 @@
     </div>
 </div>
 
+<!-- IMAGE CROPPER MODAL FOR GALLERY SELECTION -->
+<div class="modal fade" id="imageCropperModal" tabindex="-1" aria-labelledby="imageCropperModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content rounded-4 border-0 shadow-lg" style="background: var(--card-bg); color: var(--text-main); border: 1.5px solid var(--card-border) !important;">
+            <div class="modal-header border-bottom py-3 px-4" style="border-color: var(--card-border) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-crop-simple text-primary fs-5"></i>
+                    <h5 class="modal-title fw-bold mb-0" id="imageCropperModalLabel">Adjust & Crop Face Photo</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="cancelCrop()"></button>
+            </div>
+            <div class="modal-body p-3 text-center">
+                <p class="fs-9 text-muted mb-2"><i class="fa-solid fa-info-circle me-1 text-primary"></i>Position and center your face inside the square frame for optimal AI face recognition.</p>
+                <div class="img-container" style="max-height: 360px; width: 100%; overflow: hidden; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <img id="cropperImage" src="" alt="Photo to Crop" style="max-width: 100%; max-height: 340px; display: block;">
+                </div>
+                <!-- Cropper controls -->
+                <div class="d-flex justify-content-center flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cropperZoom(0.1)" title="Zoom In">
+                        <i class="fa-solid fa-magnifying-glass-plus me-1"></i> Zoom In
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cropperZoom(-0.1)" title="Zoom Out">
+                        <i class="fa-solid fa-magnifying-glass-minus me-1"></i> Zoom Out
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cropperRotate(-90)" title="Rotate Left">
+                        <i class="fa-solid fa-rotate-left me-1"></i> Rotate
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="cropperReset()" title="Reset Crop">
+                        <i class="fa-solid fa-arrow-rotate-right me-1"></i> Reset
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5 px-4 d-flex justify-content-between" style="border-color: var(--card-border) !important;">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" onclick="cancelCrop()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="saveCroppedPhoto()">
+                    <i class="fa-solid fa-check me-1.5"></i> Crop & Set Photo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/bootstrap.bundle.min.js"></script>
+<!-- Cropper.js Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 
 <script>
     let currentStream = null;
@@ -826,20 +881,120 @@
         stopWebcam();
     }
 
+    // PASSWORD VISIBILITY TOGGLE HELPER
+    function togglePasswordVisibility(btn) {
+        const inputGroup = btn.closest('.input-group');
+        if (!inputGroup) return;
+        const input = inputGroup.querySelector('input[type="password"], input[type="text"]');
+        const icon = btn.querySelector('i');
+        if (!input) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    }
+
+    // CROPPER.JS GALLERY SELECTION WORKFLOW
+    let cropperInstance = null;
+    let originalSelectedFileName = '';
+
     function previewFile(input) {
         if (input.files && input.files[0]) {
+            const file = input.files[0];
+            originalSelectedFileName = file.name;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const previewBox = document.getElementById('photo-preview-status');
-                const img = document.getElementById('preview-img');
-                const label = document.getElementById('preview-label');
+                const cropperModalEl = document.getElementById('imageCropperModal');
+                const cropperImage = document.getElementById('cropperImage');
+                
+                cropperImage.src = e.target.result;
+                
+                const bsModal = new bootstrap.Modal(cropperModalEl);
+                bsModal.show();
 
-                img.src = e.target.result;
-                label.innerText = input.files[0].name;
-                previewBox.style.setProperty('display', 'flex', 'important');
-                document.getElementById('captured_image_base64').value = '';
+                cropperModalEl.addEventListener('shown.bs.modal', function () {
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                    }
+                    cropperInstance = new Cropper(cropperImage, {
+                        aspectRatio: 1, // 1:1 square crop for facial recognition
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 0.85,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false
+                    });
+                }, { once: true });
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function cropperZoom(delta) {
+        if (cropperInstance) cropperInstance.zoom(delta);
+    }
+
+    function cropperRotate(deg) {
+        if (cropperInstance) cropperInstance.rotate(deg);
+    }
+
+    function cropperReset() {
+        if (cropperInstance) cropperInstance.reset();
+    }
+
+    function cancelCrop() {
+        if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+    }
+
+    function saveCroppedPhoto() {
+        if (!cropperInstance) return;
+        
+        // Export high-resolution square cropped image (400x400)
+        const canvas = cropperInstance.getCroppedCanvas({
+            width: 400,
+            height: 400,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+        });
+
+        if (canvas) {
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+            document.getElementById('captured_image_base64').value = croppedBase64;
+
+            const previewBox = document.getElementById('photo-preview-status');
+            const img = document.getElementById('preview-img');
+            const label = document.getElementById('preview-label');
+
+            img.src = croppedBase64;
+            label.innerText = 'Cropped gallery photo (' + (originalSelectedFileName || 'image.jpg') + ')';
+            previewBox.style.setProperty('display', 'flex', 'important');
+        }
+
+        const cropperModalEl = document.getElementById('imageCropperModal');
+        const modalInstance = bootstrap.Modal.getInstance(cropperModalEl);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+        if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
         }
     }
 

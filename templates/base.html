@@ -298,19 +298,39 @@
             {% endwith %}
         </div>
         {% if current_user.is_authenticated %}
-        <!-- FLOATING SMARTVISION AI COPILOT LAUNCHER -->
+        <!-- FLOATING SMARTVISION AI COPILOT LAUNCHER WITH CIRCULAR OUTER RING -->
         <style>
             #ai-copilot-launcher {
                 position: fixed !important;
                 bottom: 22px !important;
                 right: 20px !important;
                 z-index: 1060 !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            .ai-outer-ring {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px;
+                border-radius: 9999px;
+                border: 2px solid rgba(99, 102, 241, 0.7);
+                background: rgba(99, 102, 241, 0.12);
+                box-shadow: 0 0 18px rgba(99, 102, 241, 0.4);
+                transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+            }
+            .ai-outer-ring:hover {
+                border-color: rgba(168, 85, 247, 0.95);
+                box-shadow: 0 0 26px rgba(168, 85, 247, 0.65);
+                transform: scale(1.03);
             }
             .ai-floating-btn {
                 background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-                border: 2px solid rgba(255, 255, 255, 0.4) !important;
+                border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
                 color: #ffffff !important;
-                box-shadow: 0 8px 25px rgba(79, 70, 229, 0.55), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+                box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5) !important;
                 transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease !important;
                 display: inline-flex !important;
                 align-items: center !important;
@@ -319,34 +339,38 @@
                 text-decoration: none !important;
             }
             .ai-floating-btn:hover, .ai-floating-btn:focus {
-                transform: translateY(-4px) scale(1.04) !important;
-                box-shadow: 0 14px 32px rgba(79, 70, 229, 0.7), 0 4px 10px rgba(0, 0, 0, 0.2) !important;
                 color: #ffffff !important;
             }
             .ai-floating-btn:active {
-                transform: translateY(-1px) scale(0.98) !important;
+                transform: translateY(0) scale(0.97) !important;
             }
             @media (max-width: 575.98px) {
                 #ai-copilot-launcher {
                     bottom: 18px !important;
                     right: 16px !important;
                 }
+                .ai-outer-ring {
+                    padding: 3.5px !important;
+                    border-radius: 50% !important;
+                }
                 .ai-floating-btn {
-                    width: 50px !important;
-                    height: 50px !important;
+                    width: 48px !important;
+                    height: 48px !important;
                     padding: 0 !important;
                     border-radius: 50% !important;
                 }
             }
         </style>
         <div id="ai-copilot-launcher">
-            <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn ai-floating-btn rounded-pill px-3.5 py-2.5 d-flex align-items-center gap-2 shadow-lg" aria-label="Open SmartVision AI Assistant">
-                <span class="position-relative d-inline-flex align-items-center justify-content-center">
-                    <i class="fa-solid fa-wand-magic-sparkles fs-5 text-white"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-2 border-white rounded-circle shadow-sm" style="width: 10px; height: 10px;"></span>
-                </span>
-                <span class="fw-bold fs-8 text-white d-none d-sm-inline text-nowrap">SmartVision AI</span>
-            </button>
+            <div class="ai-outer-ring">
+                <button type="button" id="btn-open-ai-copilot" onclick="toggleAICopilotDrawer()" class="btn ai-floating-btn rounded-pill px-3.5 py-2.5 d-flex align-items-center gap-2" aria-label="Open SmartVision AI Assistant">
+                    <span class="position-relative d-inline-flex align-items-center justify-content-center">
+                        <i class="fa-solid fa-wand-magic-sparkles fs-5 text-white"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-2 border-white rounded-circle shadow-sm" style="width: 10px; height: 10px;"></span>
+                    </span>
+                    <span class="fw-bold fs-8 text-white d-none d-sm-inline text-nowrap">SmartVision AI</span>
+                </button>
+            </div>
         </div>
 
         <!-- AI COPILOT BACKDROP FOR MOBILE -->

@@ -45,8 +45,8 @@
                             <i class="fa-regular fa-calendar-days text-warning"></i>
                             <span class="d-none d-sm-inline opacity-90 fw-semibold">Date:</span>
                         </label>
-                        <input type="date" id="admin_teacher_att_date" name="date" class="form-control form-control-sm rounded-pill border-0 fw-bold text-primary shadow-none py-1 px-2 fs-8" 
-                               value="{{ selected_date }}" onchange="this.form.submit()" style="width: auto; min-width: 130px; min-height: 32px; background: #ffffff;">
+                        <input type="date" id="admin_teacher_att_date" name="date" class="form-control form-control-sm rounded-pill border-0 fw-bold shadow-none py-1 px-2 fs-8" 
+                               value="{{ selected_date }}" onchange="this.form.submit()" style="width: auto; min-width: 130px; min-height: 32px; background: var(--input-bg); color: var(--input-text);">
                         {% if selected_department %}
                         <input type="hidden" name="department" value="{{ selected_department }}">
                         {% endif %}

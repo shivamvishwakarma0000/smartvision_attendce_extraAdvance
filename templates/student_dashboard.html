@@ -68,7 +68,7 @@
     {% if today_cancelled_classes %}
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border-left: 5px solid #ef4444 !important;">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: var(--surface); border-left: 5px solid #ef4444 !important;">
                 <div class="card-header bg-danger bg-opacity-10 border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="fw-bold text-danger fs-7 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-ban fs-5"></i> Academic Notice: Class Cancellation for Today ({{ today_cancelled_classes|length }})
@@ -534,6 +534,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 2. Subject-wise Bar Chart
     const ctxBar = document.getElementById('subjectBarChart');
     if (ctxBar) {
+        const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+        const axisTextColor = isDark ? '#94a3b8' : '#64748b';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
         new Chart(ctxBar, {
             type: 'bar',
             data: {
@@ -541,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Attendance %',
                     data: {{ attendance_percentages | tojson }},
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: '#4f46e5',
                     borderRadius: 8,
                     barThickness: 28
                 }]
@@ -554,10 +558,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         beginAtZero: true,
                         max: 100,
                         ticks: {
+                            color: axisTextColor,
                             callback: function(value) { return value + '%'; }
-                        }
+                        },
+                        grid: { color: gridColor }
                     },
                     x: {
+                        ticks: { color: axisTextColor },
                         grid: { display: false }
                     }
                 },

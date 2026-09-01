@@ -813,6 +813,10 @@ document.addEventListener('DOMContentLoaded', function () {
     updateClock();
 
     // 2. Donut Chart: Faculty Pulse
+    const isDarkTheme = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+    const chartSliceBorder = isDarkTheme ? '#111827' : '#ffffff';
+    const chartLegendColor = isDarkTheme ? '#94a3b8' : '#475569';
+
     const facultyDonutCtx = document.getElementById('facultyDonutChart')?.getContext('2d');
     if (facultyDonutCtx) {
         new Chart(facultyDonutCtx, {
@@ -823,10 +827,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     data: [{{ teachers_ontime_count }}, {{ teachers_late_count }}, {{ teachers_absent_count }} || ({{ teachers_ontime_count }} === 0 && {{ teachers_late_count }} === 0 ? 1 : 0)],
                     backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)'],
                     borderWidth: 2,
-                    borderColor: '#ffffff'
+                    borderColor: chartSliceBorder
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: chartLegendColor, boxWidth: 10, font: { size: 10 } } } } }
         });
     }
 
@@ -841,10 +845,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     data: [{{ today_records_present }} || ({{ today_records_absent }} === 0 ? 1 : 0), {{ today_records_absent }}],
                     backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(239, 68, 68, 0.85)'],
                     borderWidth: 2,
-                    borderColor: '#ffffff'
+                    borderColor: chartSliceBorder
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { color: chartLegendColor, boxWidth: 10, font: { size: 10 } } } } }
         });
     }
 

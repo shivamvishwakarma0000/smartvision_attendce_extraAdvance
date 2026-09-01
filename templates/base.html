@@ -305,6 +305,7 @@
                 {% endif %}
             {% endwith %}
         </div>
+        {% if current_user.is_authenticated %}
         <!-- FLOATING SMARTVISION AI COPILOT LAUNCHER WITH ROTATING AI ORBITAL RING -->
         <style>
             @keyframes aiOrbitalSpin {
@@ -409,9 +410,8 @@
 
         <!-- AI COPILOT BACKDROP FOR MOBILE -->
         <div id="ai-copilot-backdrop" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50" style="z-index: 1068;" onclick="toggleAICopilotDrawer()"></div>
-
         <!-- AI COPILOT CHAT DRAWER / POPUP -->
-        <div id="ai-copilot-drawer" class="card position-fixed bottom-0 end-0 m-2 m-sm-4 border-0 shadow-2xl rounded-4 d-none overflow-hidden" style="z-index: 1070; width: 420px; max-width: calc(100vw - 20px); height: 560px; max-height: calc(100vh - 80px); background: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.2) !important;">
+        <div id="ai-copilot-drawer" class="card position-fixed bottom-0 end-0 m-2 m-sm-4 border shadow-2xl rounded-4 d-none overflow-hidden" style="z-index: 1070; width: 420px; max-width: calc(100vw - 20px); height: 560px; max-height: calc(100vh - 80px); background: var(--surface); border-color: var(--border-card) !important; box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important;">
             <!-- Copilot Header -->
             <div class="p-3 text-white d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
                 <div class="d-flex align-items-center gap-2.5">
@@ -437,66 +437,66 @@
             </div>
 
             <!-- Quick Prompt Chips (Role-Aware) -->
-            <div class="px-3 py-2 bg-light border-bottom overflow-x-auto text-nowrap d-flex gap-1.5 scrollbar-none" id="ai-quick-chips" style="scrollbar-width: none;">
+            <div class="px-3 py-2 border-bottom overflow-x-auto text-nowrap d-flex gap-1.5 scrollbar-none" id="ai-quick-chips" style="background: var(--surface-secondary); border-color: var(--border-card) !important; scrollbar-width: none;">
                 {% if current_user.role == 'admin' %}
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('What makes SmartVision different and what is its speciality?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('What makes SmartVision different and what is its speciality?')">
                     🌟 Speciality
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Who is late or absent among faculty today?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Who is late or absent among faculty today?')">
                     🕒 Faculty Check-ins
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('List all students with attendance below 75%')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('List all students with attendance below 75%')">
                     ⚠️ Defaulters
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Show today\'s master timetable and period timings')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Show today\'s master timetable and period timings')">
                     📅 Timetable
                 </button>
                 {% elif current_user.role == 'teacher' %}
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('What is my check in status today and attendance summary?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('What is my check in status today and attendance summary?')">
                     🕒 My Attendance Today
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('What are my scheduled lectures and classes today?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('What are my scheduled lectures and classes today?')">
                     📅 My Schedule Today
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Do I have any proxy classes assigned today?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Do I have any proxy classes assigned today?')">
                     🔄 Proxy Classes
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('What are the features of SmartVision portal?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('What are the features of SmartVision portal?')">
                     🌟 Portal Features
                 </button>
                 {% else %}
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('What is my overall attendance percentage and academic standing?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('What is my overall attendance percentage and academic standing?')">
                     📊 My Attendance %
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Who teaches me subjects in my class?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Who teaches me subjects in my class?')">
                     👨‍🏫 My Teachers
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Show my class timetable today')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Show my class timetable today')">
                     📅 Today\'s Classes
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Is there any proxy class today or any teacher on leave?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Is there any proxy class today or any teacher on leave?')">
                     🔄 Proxy Status
                 </button>
-                <button type="button" class="btn btn-xs btn-white border rounded-pill text-dark fw-semibold fs-8 shadow-xs" onclick="sendQuickPrompt('Is there any free period or library slot today?')">
+                <button type="button" class="btn btn-xs border rounded-pill fw-semibold fs-8 shadow-xs" style="background: var(--surface); color: var(--text-primary); border-color: var(--border-card) !important;" onclick="sendQuickPrompt('Is there any free period or library slot today?')">
                     🍱 Free Periods
                 </button>
                 {% endif %}
             </div>
 
             <!-- Chat Messages Stream -->
-            <div id="ai-chat-messages" class="card-body p-3 overflow-y-auto d-flex flex-column gap-2.5 fs-8" style="background: #f8fafc; height: calc(100% - 155px);">
+            <div id="ai-chat-messages" class="card-body p-3 overflow-y-auto d-flex flex-column gap-2.5 fs-8" style="background: var(--background); height: calc(100% - 155px);">
                 <!-- Welcome Message -->
                 <div class="d-flex gap-2 align-items-start">
                     <div class="rounded-circle bg-primary text-white p-1.5 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 28px; height: 28px; font-size: 0.75rem;">
                         <i class="fa-solid fa-robot"></i>
                     </div>
-                    <div class="p-3 rounded-4 bg-white border shadow-xs text-dark" style="max-width: 88%;">
-                        <p class="mb-1 fw-semibold text-primary">👋 Welcome, {{ current_user.name }}!</p>
-                        <p class="mb-0 text-muted fs-8">
+                    <div class="p-2.5 rounded-3 border" style="background: var(--surface); border-color: var(--border-card) !important; color: var(--text-primary); max-width: 88%;">
+                        <p class="mb-0">
+                            Hello <strong>{{ current_user.name }}</strong>! 
                             {% if current_user.role == 'admin' %}
-                            I am your <strong>SmartVision AI Copilot</strong>. Ask me about faculty records, student attendance, parent contacts, defaulters, or portal capabilities.
+                            I am your <strong>SmartVision AI Intelligence Co-Pilot</strong>. Ask me anything about faculty check-ins, attendance rates, proxy alerts, defaulters, or timetable analytics!
                             {% elif current_user.role == 'teacher' %}
-                            I am your <strong>SmartVision Faculty Copilot</strong>. Ask me about your check-in records, your class schedule, proxy classes, or students in your assigned classes.
+                            I am your <strong>SmartVision Faculty Co-Pilot</strong>. Ask me about your check-in records, lecture schedules, student attendance trends, or proxy assignments!
                             {% else %}
                             I am your <strong>SmartVision Student Assistant</strong>. Ask me about your attendance %, your subject teachers, today's timetable, proxy classes, or free periods!
                             {% endif %}
@@ -506,7 +506,7 @@
             </div>
 
             <!-- Input Bar -->
-            <div class="p-2.5 bg-white border-top">
+            <div class="p-2.5 border-top" style="background: var(--surface); border-color: var(--border-card) !important;">
                 <form id="ai-copilot-form" onsubmit="handleAICopilotSubmit(event)">
                     <div class="input-group">
                         <input type="text" id="ai-copilot-input" class="form-control form-control-sm rounded-start-pill ps-3 fs-8 border" placeholder="Ask about faculty, student, attendance..." autocomplete="off" required>

@@ -666,15 +666,19 @@
 
                                 <!-- PHOTO PREVIEW STATUS -->
                                 <div id="photo-preview-status" class="p-2.5 border rounded-3 d-flex align-items-center justify-content-between gap-2 mt-2 shadow-xs" style="display: none !important; background: var(--input-bg); border-color: var(--card-border) !important;">
-                                    <div class="d-flex align-items-center gap-2.5 overflow-hidden">
-                                        <img id="preview-img" class="photo-preview-thumb rounded-3 border" src="" alt="Preview" style="width: 52px; height: 52px; object-fit: cover;">
-                                        <div class="text-truncate">
-                                            <span class="badge bg-success mb-1"><i class="fa-solid fa-circle-check me-1"></i> Face Attached</span>
-                                            <span class="fs-9 text-muted d-block text-truncate" id="preview-label">Ready for registration</span>
+                                    <div class="d-flex align-items-center gap-2.5 overflow-hidden" style="min-width: 0;">
+                                        <img id="preview-img" class="photo-preview-thumb rounded-3 border flex-shrink-0" src="" alt="Preview" style="width: 48px; height: 48px; object-fit: cover; border-color: var(--card-border) !important;">
+                                        <div class="d-flex flex-column justify-content-center text-truncate" style="min-width: 0;">
+                                            <div class="d-flex align-items-center gap-1 mb-0.5">
+                                                <span class="badge bg-success text-white py-0.5 px-2 rounded-pill fw-bold" style="font-size: 0.72rem;">
+                                                    <i class="fa-solid fa-circle-check me-1"></i>Face Attached
+                                                </span>
+                                            </div>
+                                            <span class="text-muted text-truncate" id="preview-label" style="font-size: 0.75rem;">Photo ready for enrollment</span>
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2.5 rounded-3 fw-semibold fs-9" onclick="removeSelectedPhoto()" title="Remove and choose another">
-                                        <i class="fa-solid fa-trash-can me-1"></i> Remove
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2.5 rounded-pill fw-bold fs-9 text-nowrap flex-shrink-0 d-inline-flex align-items-center gap-1 shadow-none" onclick="removeSelectedPhoto()" title="Remove and choose another">
+                                        <i class="fa-solid fa-trash-can"></i> Remove
                                     </button>
                                 </div>
                             </div>
@@ -1293,7 +1297,7 @@
         const label = document.getElementById('preview-label');
 
         if (img) img.src = dataUrl;
-        if (label) label.innerText = 'Captured live photo (' + cameraFacing + ' camera)';
+        if (label) label.innerText = 'Live camera photo';
         if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
 
         stopWebcam();
@@ -1404,7 +1408,7 @@
             const label = document.getElementById('preview-label');
 
             if (img) img.src = croppedBase64;
-            if (label) label.innerText = 'Cropped face (' + (originalSelectedFileName || 'image.jpg') + ')';
+            if (label) label.innerText = 'Cropped gallery face';
             if (previewBox) previewBox.style.setProperty('display', 'flex', 'important');
         }
 

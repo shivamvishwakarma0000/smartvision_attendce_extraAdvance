@@ -11,13 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Upgrade pip & install pre-compiled dlib binary wheel + face-recognition without C++ compilation
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir dlib-bin face-recognition-models && \
-    pip install --no-cache-dir --no-deps face-recognition
-
+# Copy requirements and install dependencies cleanly
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefer-binary -r requirements.txt && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt && \
+    pip install --no-cache-dir dlib-bin face-recognition-models && \
+    pip install --no-cache-dir --no-deps --no-warn-conflicts face-recognition && \
     pip install --no-cache-dir psycopg2-binary
 
 COPY . .

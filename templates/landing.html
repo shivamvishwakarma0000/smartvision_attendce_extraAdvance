@@ -54,13 +54,23 @@
             --divider-color: rgba(0, 0, 0, 0.1);
         }
 
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-gradient);
             color: var(--text-main);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: manipulation;
             transition: background 0.3s ease, color 0.3s ease;
         }
 
@@ -157,20 +167,39 @@
             width: 100%;
             max-width: 480px;
             margin: 0 auto;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding-right: 4px;
         }
 
-        .auth-card-container::-webkit-scrollbar {
-            width: 6px;
+        @media (min-width: 992px) {
+            .auth-card-container {
+                max-height: calc(100vh - 120px);
+                overflow-y: auto;
+                padding-right: 4px;
+            }
+            .auth-card-container::-webkit-scrollbar {
+                width: 6px;
+            }
+            .auth-card-container::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.05);
+            }
+            .auth-card-container::-webkit-scrollbar-thumb {
+                background: rgba(99, 102, 241, 0.4);
+                border-radius: 10px;
+            }
         }
-        .auth-card-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-        }
-        .auth-card-container::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.4);
-            border-radius: 10px;
+
+        @media (max-width: 991.98px) {
+            .auth-card-container {
+                max-height: none !important;
+                overflow: visible !important;
+                padding-right: 0 !important;
+            }
+            .auth-card {
+                padding: 1.5rem !important;
+                border-radius: 1.25rem !important;
+            }
+            .navbar {
+                padding: 0.75rem 1rem !important;
+            }
         }
 
         .auth-card {

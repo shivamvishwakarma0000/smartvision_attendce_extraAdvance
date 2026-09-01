@@ -469,6 +469,10 @@ def register():
                 db.session.add(new_teacher)
                 if issued_rec:
                     issued_rec.is_used = True
+                    issued_rec.used_by_user_id = user.id
+                    issued_rec.name = name
+                    if not issued_rec.email:
+                        issued_rec.email = email
                     issued_rec.used_at = datetime.utcnow()
                 db.session.commit()
 

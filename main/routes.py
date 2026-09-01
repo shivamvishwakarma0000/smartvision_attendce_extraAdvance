@@ -1146,12 +1146,26 @@ def delete_teacher(teacher_id):
 
         email_freed = user_account.email if user_account else (teacher_to_delete.email or teacher_to_delete.name)
 
+        # Free up any linked IssuedTeacherID keys so they immediately show as Vacant
+        try:
+            issued_keys = IssuedTeacherID.query.filter(
+                (IssuedTeacherID.teacher_id == teacher_to_delete.emp_id) |
+                (IssuedTeacherID.used_by_user_id == (user_account.id if user_account else -1)) |
+                (IssuedTeacherID.email == (teacher_to_delete.email.strip().lower() if teacher_to_delete.email else ''))
+            ).all()
+            for ik in issued_keys:
+                ik.is_used = False
+                ik.used_by_user_id = None
+                ik.name = None
+        except Exception:
+            pass
+
         if user_account:
             db.session.delete(user_account)
 
         db.session.delete(teacher_to_delete)
         db.session.commit()
-        flash(f"Teacher '{teacher_to_delete.name}' ({email_freed}) and login account deleted successfully. Email is now free for re-registration.", 'success')
+        flash(f"Teacher '{teacher_to_delete.name}' ({email_freed}) deleted. Linked registration key is now Vacant and free for re-use.", 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting teacher: {e}", "danger")
@@ -1854,7 +1868,40 @@ def enrolled_teachers():
             pass
 
     teachers = query.order_by(Teacher.name).all()
-    issued_teacher_ids = IssuedTeacherID.query.order_by(IssuedTeacherID.created_at.desc()).all()
+    
+    # Naturally sort Issued Teacher IDs and enrich with linked teacher details
+    raw_issued = IssuedTeacherID.query.all()
+    for item in raw_issued:
+        t_rec = None
+        if item.teacher_id:
+            t_rec = Teacher.query.filter_by(emp_id=item.teacher_id).first()
+        if not t_rec and item.used_by_user_id:
+            t_rec = Teacher.query.filter_by(user_id=item.used_by_user_id).first()
+        if not t_rec and item.email:
+            t_rec = Teacher.query.filter_by(email=item.email.strip().lower()).first()
+
+        if t_rec:
+            item.is_used = True
+            item.allotted_email = t_rec.email
+            item.allotted_name = t_rec.name
+        else:
+            # If no teacher matches, mark as vacant / unused
+            if item.is_used and not item.email:
+                item.is_used = False
+                item.used_by_user_id = None
+            item.allotted_email = item.email
+            item.allotted_name = item.name
+
+    def natural_key_sort(item):
+        val = str(item.teacher_id or '').strip()
+        digits = ''.join(c for c in val if c.isdigit())
+        if digits and val.isdigit():
+            return (0, int(digits), val)
+        elif digits:
+            return (1, int(digits), val)
+        return (2, 0, val)
+
+    issued_teacher_ids = sorted(raw_issued, key=natural_key_sort)
     all_subject_names = [s[0] for s in db.session.query(Subject.name).distinct().order_by(Subject.name).all()]
 
     return render_template(

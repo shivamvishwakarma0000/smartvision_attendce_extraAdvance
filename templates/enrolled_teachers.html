@@ -23,7 +23,7 @@
         </button>
     </div>
     
-    <div class="card-body p-4">
+    <div class="card-body p-2.5 p-md-4">
         <!-- Collapse Form for Generating Teacher ID -->
         <div class="collapse mb-4" id="issueTeacherIdForm">
             <div class="p-3.5 rounded-3 bg-light border">
@@ -46,48 +46,57 @@
 
         <!-- Issued Teacher IDs Table -->
         {% if issued_teacher_ids %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 fs-8">
+        <div class="table-responsive rounded-3 border">
+            <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.82rem;">
                 <thead class="table-light">
-                    <tr>
-                        <th>Teacher ID Code</th>
-                        <th>Target Email</th>
-                        <th>Status</th>
-                        <th>Issued Date</th>
-                        <th class="text-end">Actions</th>
+                    <tr style="font-size: 0.75rem;">
+                        <th class="py-2 px-2 text-nowrap" style="width: 110px;">ID Code</th>
+                        <th class="py-2 px-2 text-nowrap">Allotted Faculty / Email</th>
+                        <th class="py-2 px-2 text-nowrap" style="width: 120px;">Status</th>
+                        <th class="py-2 px-2 text-nowrap d-none d-md-table-cell" style="width: 140px;">Issued Date</th>
+                        <th class="py-2 px-2 text-end text-nowrap" style="width: 80px;">Action</th>
                     </tr>
                 </thead>
                 <tbody id="issuedTeacherIdsTbody">
                     {% for item in issued_teacher_ids %}
                     <tr class="issued-teacher-id-row">
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace fs-7 px-2.5 py-1.5 border border-primary border-opacity-20 rounded-3">
+                        <td class="py-1.5 px-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary font-monospace px-2 py-1 border border-primary border-opacity-20 rounded-2 fw-bold" style="font-size: 0.8rem;">
                                 {{ item.teacher_id }}
                             </span>
                         </td>
-                        <td>
-                            {% if item.email %}
-                                <span class="fw-semibold text-dark"><i class="fa-solid fa-envelope me-1 text-muted"></i>{{ item.email }}</span>
+                        <td class="py-1.5 px-2">
+                            {% if item.allotted_email or item.email %}
+                                <div class="d-flex align-items-center gap-1.5 text-truncate" style="max-width: 220px;">
+                                    <i class="fa-solid fa-user-check text-success flex-shrink-0" style="font-size: 0.75rem;"></i>
+                                    <span class="fw-semibold text-dark text-truncate" title="{{ item.allotted_email or item.email }}" style="font-size: 0.8rem;">
+                                        {{ item.allotted_email or item.email }}
+                                    </span>
+                                </div>
                             {% else %}
-                                <span class="text-muted fst-italic">Any Teacher</span>
+                                <span class="badge bg-light text-muted border px-2 py-0.5 rounded-pill fst-italic" style="font-size: 0.74rem;">
+                                    Vacant (Any Faculty)
+                                </span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="py-1.5 px-2 text-nowrap">
                             {% if item.is_used %}
-                                <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill">
-                                    <i class="fa-solid fa-circle-check me-1"></i>Used / Registered
+                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.72rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Allotted
                                 </span>
                             {% else %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning px-2.5 py-1 rounded-pill">
-                                    <i class="fa-solid fa-clock me-1"></i>Unused (Pending Registration)
+                                <span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25 px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.72rem;">
+                                    <i class="fa-regular fa-clock me-1"></i>Vacant
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="text-muted fw-semibold">{{ item.created_at|to_ist }}</td>
-                        <td class="text-end">
-                            <form action="{{ url_for('main.revoke_teacher_id', id_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete / Revoke this issued Teacher Code?');">
-                                <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-2 rounded-2 fw-semibold">
-                                    <i class="fa-solid fa-trash me-1"></i> Revoke / Delete
+                        <td class="py-1.5 px-2 text-muted fw-semibold d-none d-md-table-cell" style="font-size: 0.75rem;">
+                            {{ item.created_at|to_ist }}
+                        </td>
+                        <td class="py-1.5 px-2 text-end text-nowrap">
+                            <form action="{{ url_for('main.revoke_teacher_id', id_id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Revoke / Delete Teacher Code {{ item.teacher_id }}?');">
+                                <button type="submit" class="btn btn-xs btn-outline-danger py-0.5 px-2 rounded-2 fw-semibold d-inline-flex align-items-center gap-1" style="font-size: 0.72rem;" title="Delete Code">
+                                    <i class="fa-solid fa-trash-can"></i><span class="d-none d-lg-inline">Delete</span>
                                 </button>
                             </form>
                         </td>

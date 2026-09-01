@@ -2027,11 +2027,60 @@ def delete_student(student_id):
 def uploaded_face(filename):
     faces_dir1 = os.path.join(os.getcwd(), 'uploads', 'faces')
     faces_dir2 = os.path.join(os.getcwd(), 'temp_uploads', 'faces')
-    if os.path.exists(os.path.join(faces_dir1, filename)):
-        return send_from_directory(faces_dir1, filename)
-    if os.path.exists(os.path.join(faces_dir2, filename)):
+    os.makedirs(faces_dir1, exist_ok=True)
+    os.makedirs(faces_dir2, exist_ok=True)
+
+    # 1. If file already exists on local container disk, return it directly
+    target2 = os.path.join(faces_dir2, filename)
+    target1 = os.path.join(faces_dir1, filename)
+    if os.path.exists(target2) and os.path.getsize(target2) > 0:
         return send_from_directory(faces_dir2, filename)
-    return send_from_directory(faces_dir1, filename)
+    if os.path.exists(target1) and os.path.getsize(target1) > 0:
+        return send_from_directory(faces_dir1, filename)
+
+    # 2. Self-healing from Persistent Neon PostgreSQL Database Base64 Storage
+    try:
+        # Check Teacher
+        teacher = Teacher.query.filter_by(image_filename=filename).first()
+        if teacher and teacher.image_data:
+            data = teacher.image_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target2, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.lower().endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+
+        # Check Student
+        student = Student.query.filter_by(image_filename=filename).first()
+        if student and student.image_data:
+            data = student.image_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target2, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.lower().endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+
+        # Check StudentEditRequest
+        req_item = StudentEditRequest.query.filter_by(new_image_filename=filename).first()
+        if req_item and req_item.new_image_data:
+            data = req_item.new_image_data
+            if ',' in data:
+                data = data.split(',', 1)[1]
+            img_bytes = base64.b64decode(data)
+            with open(target2, 'wb') as f:
+                f.write(img_bytes)
+            mimetype = 'image/png' if filename.lower().endswith('.png') else 'image/jpeg'
+            return send_file(io.BytesIO(img_bytes), mimetype=mimetype)
+    except Exception as e:
+        print(f"[Uploaded Face Recovery Error] Could not restore {filename} from Neon DB: {e}")
+
+    # 3. Graceful SVG default avatar fallback (prevents broken ? icon)
+    name_seed = filename.replace('_', ' ').replace('-', ' ').split('.')[0][:15]
+    return redirect(f"https://ui-avatars.com/api/?name={name_seed}&background=6366f1&color=fff&size=128&bold=true")
 
 @main_bp.route('/uploads/university/<path:filename>')
 def uploaded_university_logo(filename):
@@ -2281,6 +2330,8 @@ def handle_approval(request_id, action):
                     student.department = c.department
             student.image_filename = req.new_image_filename
             student.face_encoding = req.new_face_encoding
+            if req.new_image_data:
+                student.image_data = req.new_image_data
             
             # If student has a linked User account, update their display name there too
             if student.user_id:

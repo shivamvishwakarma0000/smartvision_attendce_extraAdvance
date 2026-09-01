@@ -92,7 +92,10 @@ def run_migrations(db_path="smartvision.db"):
             ("university_settings", "header_display_mode", "VARCHAR(20) DEFAULT 'BOTH'"),
             ("university_settings", "logo_data", "TEXT"),
             ("university_settings", "name_image_data", "TEXT"),
-            ("university_settings", "signature_data", "TEXT")
+            ("university_settings", "signature_data", "TEXT"),
+            ("teachers", "image_data", "TEXT"),
+            ("students", "image_data", "TEXT"),
+            ("student_edit_requests", "new_image_data", "TEXT")
         ]
 
         for table, column, col_type in migrations:

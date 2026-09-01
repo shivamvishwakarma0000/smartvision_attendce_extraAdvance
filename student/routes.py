@@ -360,6 +360,8 @@ def edit_profile():
             pending_req.new_class_id = c_id
             pending_req.new_image_filename = new_filename
             pending_req.new_face_encoding = new_encoding_bytes
+            if captured_image and captured_image.startswith('data:image'):
+                pending_req.new_image_data = captured_image
             flash("Updated your pending profile edit request! Awaiting admin review.", "success")
         else:
             new_req = StudentEditRequest(
@@ -371,6 +373,7 @@ def edit_profile():
                 new_mobile=mobile,
                 new_class_id=c_id,
                 new_image_filename=new_filename,
+                new_image_data=captured_image if (captured_image and captured_image.startswith('data:image')) else None,
                 new_face_encoding=new_encoding_bytes,
                 status='Pending'
             )

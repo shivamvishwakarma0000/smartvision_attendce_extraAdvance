@@ -402,8 +402,10 @@ def register():
 
             face_encoding_bytes = None
             image_filename = None
+            image_base64_data = None
 
             if captured_base64 and captured_base64.strip():
+                image_base64_data = captured_base64.strip()
                 result = save_base64_image(captured_base64, f"teacher_{teacher_id}", name, FACES_FOLDER)
                 if result:
                     image_filename, filepath = result
@@ -424,7 +426,10 @@ def register():
                 os.makedirs(FACES_FOLDER, exist_ok=True)
                 filename = secure_filename(f"teacher_{teacher_id}_{name}_{photo.filename}")
                 filepath = os.path.join(FACES_FOLDER, filename)
-                photo.save(filepath)
+                file_bytes = photo.read()
+                image_base64_data = base64.b64encode(file_bytes).decode('utf-8')
+                with open(filepath, 'wb') as f:
+                    f.write(file_bytes)
                 image_filename = filename
 
                 if face_recognition:
@@ -453,6 +458,7 @@ def register():
                     emp_id=teacher_id,
                     mobile=mobile or None,
                     image_filename=image_filename,
+                    image_data=image_base64_data,
                     face_encoding=face_encoding_bytes,
                     status='Pending',
                     user_id=new_user.id,
@@ -512,8 +518,10 @@ def register():
 
             face_encoding_bytes = None
             image_filename = None
+            image_base64_data = None
 
             if captured_base64 and captured_base64.strip():
+                image_base64_data = captured_base64.strip()
                 result = save_base64_image(captured_base64, roll_no, name, FACES_FOLDER)
                 if result:
                     image_filename, filepath = result
@@ -542,7 +550,10 @@ def register():
                 os.makedirs(FACES_FOLDER, exist_ok=True)
                 filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
                 filepath = os.path.join(FACES_FOLDER, filename)
-                student_photo.save(filepath)
+                file_bytes = student_photo.read()
+                image_base64_data = base64.b64encode(file_bytes).decode('utf-8')
+                with open(filepath, 'wb') as f:
+                    f.write(file_bytes)
                 image_filename = filename
 
                 if face_recognition:
@@ -591,6 +602,7 @@ def register():
                     class_id=class_id_int,
                     face_encoding=face_encoding_bytes,
                     image_filename=image_filename,
+                    image_data=image_base64_data,
                     user_id=new_user.id
                 )
 

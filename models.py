@@ -143,6 +143,7 @@ class Teacher(db.Model):
     email = db.Column(db.String(100), nullable=True)
     mobile = db.Column(db.String(20), nullable=True)
     image_filename = db.Column(db.String(255), nullable=True)
+    image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     face_encoding = db.Column(db.LargeBinary, nullable=True)
     status = db.Column(db.String(20), default='Approved')
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
@@ -185,6 +186,7 @@ class Student(db.Model):
     face_encoding = db.Column(db.LargeBinary, nullable=True)
     face_embedding = db.Column(db.LargeBinary, nullable=True)
     image_filename = db.Column(db.String(255), nullable=True)
+    image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
 
     def __init__(self, **kwargs):
         if 'roll_no' in kwargs and 'roll_number' not in kwargs:
@@ -212,6 +214,7 @@ class StudentEditRequest(db.Model):
     new_mobile = db.Column(db.String(20), nullable=True)
     new_class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
     new_image_filename = db.Column(db.String(255), nullable=True)
+    new_image_data = db.Column(db.Text, nullable=True) # Permanent base64 persistence in Neon DB
     new_face_encoding = db.Column(db.LargeBinary, nullable=True)
     status = db.Column(db.String(20), default='Pending') # 'Pending', 'Approved', 'Rejected'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

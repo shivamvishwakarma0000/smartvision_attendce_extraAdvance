@@ -304,7 +304,10 @@ def ensure_postgresql_columns():
         statements = [
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS logo_data TEXT",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS name_image_data TEXT",
-            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT"
+            "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS image_data TEXT",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS image_data TEXT",
+            "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_image_data TEXT"
         ]
         for stmt in statements:
             try:

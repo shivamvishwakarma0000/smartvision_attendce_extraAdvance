@@ -13,5 +13,9 @@ temp_uploads/
 .idea/
 .DS_Store
 *.md
+*.tex
+smartvision_research_paper.tex
 research_paper.tex
 Project_QA/
+*.log
+.gemini/

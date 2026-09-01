@@ -2340,11 +2340,66 @@ def handle_teacher_approval(teacher_id, action):
             flash(f"Error approving teacher: {e}", "danger")
     elif action == 'reject':
         try:
+            # 1. Unassign subjects assigned to this teacher
+            for sub in teacher.subjects:
+                sub.teacher_id = None
+
+            # 2. Release & reset any linked IssuedTeacherID keys so they immediately show as Vacant
+            try:
+                issued_keys = IssuedTeacherID.query.filter(
+                    (IssuedTeacherID.teacher_id == teacher.emp_id) |
+                    (IssuedTeacherID.used_by_user_id == (user_acc.id if user_acc else -1)) |
+                    (IssuedTeacherID.email == (teacher.email.strip().lower() if teacher.email else ''))
+                ).all()
+                for ik in issued_keys:
+                    ik.is_used = False
+                    ik.used_by_user_id = None
+                    ik.name = None
+            except Exception:
+                pass
+
+            # 3. Clean up teacher preferences / auxiliary records
+            try:
+                TeacherSubjectChoice.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+            try:
+                TeacherLeave.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+            try:
+                TeacherDailyAttendance.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+            try:
+                TeacherWeeklyTimetable.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+            try:
+                TeacherDismissedNotice.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+            try:
+                TeacherReadNotice.query.filter_by(teacher_id=teacher.id).delete()
+            except Exception:
+                pass
+
+            # 4. Remove face photo from disk if present
+            if teacher.image_filename:
+                photo_path = os.path.join(FACES_FOLDER, teacher.image_filename)
+                if os.path.exists(photo_path):
+                    try:
+                        os.remove(photo_path)
+                    except Exception:
+                        pass
+
+            # 5. Delete Teacher entity and linked User account safely
             db.session.delete(teacher)
             if user_acc:
                 db.session.delete(user_acc)
+
             db.session.commit()
-            flash(f"Teacher registration for '{teacher.name}' rejected and removed.", "info")
+            flash(f"Teacher registration for '{teacher.name}' rejected and removed. Issued Teacher ID is now free for re-use.", "info")
         except Exception as e:
             db.session.rollback()
             flash(f"Error rejecting teacher: {e}", "danger")

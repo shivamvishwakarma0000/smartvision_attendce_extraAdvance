@@ -766,31 +766,18 @@ def handle_google_callback():
         token = oauth.google.authorize_access_token()
         resp = oauth.google.get('userinfo')
         user_info = resp.json()
-        email = user_info.get('email')
-        name = user_info.get('name')
+        raw_email = user_info.get('email', '').strip()
+        name = user_info.get('name', '').strip()
         google_id = user_info.get('id')
 
-        user = User.query.filter_by(email=email).first()
+        # Case-insensitive lookup by email
+        user = User.query.filter(db.func.lower(User.email) == raw_email.lower()).first()
         if user:
+            # Google OAuth proves email ownership: ensure account is verified
+            user.is_email_verified = True
             if not user.google_id:
                 user.google_id = google_id
-                db.session.commit()
-
-            if user.role == 'teacher' and not getattr(user, 'is_email_verified', True):
-                otp = generate_otp(6)
-                session['teacher_verify_data'] = {
-                    'email': user.email,
-                    'otp': otp,
-                    'teacher_id': user.teacher_profile.emp_id if user.teacher_profile else '',
-                    'expires_at': (datetime.utcnow() + timedelta(minutes=15)).isoformat()
-                }
-                print("\n" + "=" * 80)
-                print("[SMARTVISION TEACHER GOOGLE LOGIN] EMAIL UNVERIFIED - OTP GENERATED")
-                print(f"  To      : {user.name} <{user.email}>")
-                print(f"  OTP Code: {otp}  (valid for 15 minutes)")
-                print("=" * 80 + "\n", flush=True)
-                flash('Your teacher account email requires verification before login.', 'warning')
-                return redirect(url_for('main.index', state='teacher-verify-email', email=user.email))
+            db.session.commit()
 
             login_user(user)
             flash(f'Logged in with Google as {user.name}!', 'success')
@@ -801,9 +788,12 @@ def handle_google_callback():
             elif user.role == 'student':
                 return redirect(url_for('student.dashboard'))
         else:
-            issued = IssuedTeacherID.query.filter_by(email=email, is_used=False).first()
+            issued = IssuedTeacherID.query.filter(
+                db.func.lower(IssuedTeacherID.email) == raw_email.lower(),
+                IssuedTeacherID.is_used == False
+            ).first()
             session['google_signup_data'] = {
-                'email': email,
+                'email': raw_email,
                 'name': name,
                 'google_id': google_id,
                 'matched_teacher_id': issued.teacher_id if issued else None

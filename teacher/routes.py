@@ -1788,8 +1788,8 @@ def my_attendance():
     if not teacher:
         flash("Teacher profile not found.", "danger")
         return redirect(url_for('teacher.dashboard'))
-
-    month_filter = request.args.get('month', '').strip()
+    today = get_current_date()
+    month_filter = request.args.get('month', '').strip() or today.strftime('%Y-%m')
     date_filter = request.args.get('date', '').strip()
     
     query = TeacherDailyAttendance.query.filter_by(teacher_id=teacher.id)

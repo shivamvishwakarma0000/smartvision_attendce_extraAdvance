@@ -133,16 +133,16 @@
 
             <!-- Filter Controls -->
             <form method="GET" action="{{ url_for('teacher.my_attendance') }}" class="d-flex align-items-center gap-2">
-                <div class="input-group input-group-sm" style="max-width: 220px;">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-calendar"></i></span>
-                    <input type="month" class="form-control form-control-sm border-start-0" name="month" value="{{ month_filter }}" title="Select Month & Year">
+                <div class="input-group input-group-sm rounded-pill overflow-hidden border" style="max-width: 220px; background: var(--surface);">
+                    <span class="input-group-text border-0 text-primary bg-transparent px-2.5"><i class="fa-solid fa-calendar"></i></span>
+                    <input type="month" class="form-control form-control-sm border-0 bg-transparent fw-semibold text-dark fs-8 ps-0" name="month" value="{{ month_filter }}" title="Select Month & Year">
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
-                    Filter
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3.5 fw-bold fs-8 shadow-sm">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
-                {% if month_filter or date_filter %}
-                <a href="{{ url_for('teacher.my_attendance') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2.5">
-                    Clear
+                {% if month_filter %}
+                <a href="{{ url_for('teacher.my_attendance') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fs-8 fw-semibold">
+                    Reset
                 </a>
                 {% endif %}
             </form>

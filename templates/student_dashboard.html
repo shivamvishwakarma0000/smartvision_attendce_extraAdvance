@@ -42,10 +42,10 @@
                                     </span>
                                     {% endif %}
                                 </div>
-                                <h3 class="fw-bold mb-1" style="font-size: 1.5rem;">Welcome, {{ student.name }}!</h3>
-                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white-75">
-                                    {% if student.enrollment_no %}<span><i class="fas fa-hashtag me-1 opacity-75"></i>Enrollment: <strong>{{ student.enrollment_no }}</strong></span>{% endif %}
-                                    {% if student.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i>{{ student.mobile }}</span>{% endif %}
+                                <h3 class="fw-bold mb-1 text-white" style="font-size: 1.6rem; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">Welcome, {{ student.name }}!</h3>
+                                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-sm-start gap-3 fs-8 text-white text-opacity-85">
+                                    {% if student.enrollment_no %}<span><i class="fas fa-hashtag me-1 opacity-75"></i>Enrollment: <strong class="text-white">{{ student.enrollment_no }}</strong></span>{% endif %}
+                                    {% if student.mobile %}<span><i class="fas fa-phone me-1 opacity-75"></i><span class="text-white">{{ student.mobile }}</span></span>{% endif %}
                                 </div>
                             </div>
                         </div>
@@ -53,7 +53,7 @@
                         <!-- Overall Attendance Gauge Badge -->
                         <div class="col-md-4 text-center text-md-end">
                             <div class="d-inline-block backdrop-blur rounded-4 p-3 border border-white border-opacity-25 shadow-sm text-center" style="background: rgba(255, 255, 255, 0.18) !important; color: #ffffff !important;">
-                                <span style="color: rgba(255, 255, 255, 0.85) !important;" class="fs-8 text-uppercase tracking-wider fw-semibold d-block mb-1">Overall Attendance</span>
+                                <span style="color: rgba(255, 255, 255, 0.9) !important;" class="fs-8 text-uppercase tracking-wider fw-semibold d-block mb-1">Overall Attendance</span>
                                 <h2 class="fw-extrabold mb-0 text-white" style="color: #ffffff !important; font-size: 2.2rem;">{{ overall_attendance_pct }}%</h2>
                                 <span class="badge {% if overall_attendance_pct >= 75 %}bg-success{% elif overall_attendance_pct >= 60 %}bg-warning text-dark{% else %}bg-danger{% endif %} px-2.5 py-1 rounded-pill fs-9 mt-1">
                                     {% if overall_attendance_pct >= 75 %}<i class="fas fa-shield-check me-1"></i>Satisfactory (≥75%){% else %}<i class="fas fa-triangle-exclamation me-1"></i>Action Needed (<75%){% endif %}
@@ -137,76 +137,85 @@
     </div>
     {% endif %}
 
-    <!-- Time-Period Breakdown Cards (5 Columns Grid) -->
+    <!-- PREMIUM BLENDED TIME-PERIOD BREAKDOWN CARDS (5 Columns Grid) -->
     <div class="row g-3 mb-4">
-        <!-- Daily Attendance (CLICKABLE) -->
+        <!-- 1. Daily Attendance (CLICKABLE) -->
         <div class="col-xl-2 col-md-4 col-6">
-            <div class="card border-primary border-opacity-20 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center cursor-pointer hover-card" data-bs-toggle="modal" data-bs-target="#dailyAttendanceModal" style="cursor: pointer;">
-                <div class="card-body p-2">
-                    <div class="rounded-circle mx-auto mb-2 bg-primary bg-opacity-10 text-primary p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+            <div class="card shadow-sm rounded-4 h-100 p-3 text-start cursor-pointer hover-card border" data-bs-toggle="modal" data-bs-target="#dailyAttendanceModal" style="cursor: pointer; background: rgba(99, 102, 241, 0.04); border-top: 4px solid #6366f1 !important; border-color: var(--border-card);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-9 text-uppercase tracking-wider fw-bold" style="color: #6366f1;">Daily (Today)</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(99, 102, 241, 0.15); color: #6366f1; font-size: 0.75rem;">
                         <i class="fas fa-calendar-day"></i>
-                    </div>
-                    <span class="text-primary fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Daily (Today) <i class="fa-solid fa-up-right-from-square ms-0.5 fs-9"></i></span>
-                    <h5 class="fw-bold text-dark mb-1">{{ daily_stats.pct }}%</h5>
-                    <span class="fs-9 text-muted">{{ daily_stats.attended }}/{{ daily_stats.total }} Sessions</span>
-                    <span class="badge bg-primary bg-opacity-10 text-primary fs-9 mt-1 d-block">Click to View</span>
+                    </span>
                 </div>
+                <h3 class="fw-bold mb-1" style="color: #6366f1; font-size: 1.85rem;">{{ daily_stats.pct }}%</h3>
+                <span class="badge rounded-pill px-2.5 py-1 fw-bold fs-9 text-truncate d-inline-block mt-auto" style="background: rgba(99, 102, 241, 0.14); color: #6366f1;">
+                    {{ daily_stats.attended }}/{{ daily_stats.total }} Sessions • View
+                </span>
             </div>
         </div>
 
-        <!-- Weekly Attendance -->
+        <!-- 2. Weekly Attendance -->
         <div class="col-xl-2 col-md-4 col-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
-                <div class="card-body p-2">
-                    <div class="rounded-circle mx-auto mb-2 bg-info bg-opacity-10 text-info p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+            <div class="card shadow-sm rounded-4 h-100 p-3 text-start border" style="background: rgba(16, 185, 129, 0.04); border-top: 4px solid #10b981 !important; border-color: var(--border-card);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-9 text-uppercase tracking-wider fw-bold" style="color: #10b981;">Weekly (This Week)</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem;">
                         <i class="fas fa-calendar-week"></i>
-                    </div>
-                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Weekly (This Week)</span>
-                    <h5 class="fw-bold text-dark mb-1">{{ weekly_stats.pct }}%</h5>
-                    <span class="fs-9 text-muted">{{ weekly_stats.attended }}/{{ weekly_stats.total }} Attended</span>
+                    </span>
                 </div>
+                <h3 class="fw-bold mb-1" style="color: #10b981; font-size: 1.85rem;">{{ weekly_stats.pct }}%</h3>
+                <span class="badge rounded-pill px-2.5 py-1 fw-bold fs-9 text-truncate d-inline-block mt-auto" style="background: rgba(16, 185, 129, 0.14); color: #10b981;">
+                    {{ weekly_stats.attended }}/{{ weekly_stats.total }} Attended
+                </span>
             </div>
         </div>
 
-        <!-- Monthly Attendance -->
+        <!-- 3. Monthly Attendance -->
         <div class="col-xl-2 col-md-4 col-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
-                <div class="card-body p-2">
-                    <div class="rounded-circle mx-auto mb-2 bg-warning bg-opacity-10 text-warning p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+            <div class="card shadow-sm rounded-4 h-100 p-3 text-start border" style="background: rgba(245, 158, 11, 0.04); border-top: 4px solid #f59e0b !important; border-color: var(--border-card);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-9 text-uppercase tracking-wider fw-bold" style="color: #f59e0b;">Monthly (This Month)</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; font-size: 0.75rem;">
                         <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Monthly (This Month)</span>
-                    <h5 class="fw-bold text-dark mb-1">{{ monthly_stats.pct }}%</h5>
-                    <span class="fs-9 text-muted">{{ monthly_stats.attended }}/{{ monthly_stats.total }} Attended</span>
+                    </span>
                 </div>
+                <h3 class="fw-bold mb-1" style="color: #f59e0b; font-size: 1.85rem;">{{ monthly_stats.pct }}%</h3>
+                <span class="badge rounded-pill px-2.5 py-1 fw-bold fs-9 text-truncate d-inline-block mt-auto" style="background: rgba(245, 158, 11, 0.14); color: #f59e0b;">
+                    {{ monthly_stats.attended }}/{{ monthly_stats.total }} Attended
+                </span>
             </div>
         </div>
 
-        <!-- Semester Attendance -->
+        <!-- 4. Semester Attendance -->
         <div class="col-xl-3 col-md-6 col-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
-                <div class="card-body p-2">
-                    <div class="rounded-circle mx-auto mb-2 bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+            <div class="card shadow-sm rounded-4 h-100 p-3 text-start border" style="background: rgba(6, 182, 212, 0.04); border-top: 4px solid #06b6d4 !important; border-color: var(--border-card);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-9 text-uppercase tracking-wider fw-bold" style="color: #06b6d4;">Semester To-Date</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(6, 182, 212, 0.15); color: #06b6d4; font-size: 0.75rem;">
                         <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Semester To-Date</span>
-                    <h5 class="fw-bold text-dark mb-1">{{ semester_stats.pct }}%</h5>
-                    <span class="fs-9 text-muted">{{ semester_stats.attended }}/{{ semester_stats.total }} Total Classes</span>
+                    </span>
                 </div>
+                <h3 class="fw-bold mb-1" style="color: #06b6d4; font-size: 1.85rem;">{{ semester_stats.pct }}%</h3>
+                <span class="badge rounded-pill px-2.5 py-1 fw-bold fs-9 text-truncate d-inline-block mt-auto" style="background: rgba(6, 182, 212, 0.14); color: #06b6d4;">
+                    {{ semester_stats.attended }}/{{ semester_stats.total }} Total Classes
+                </span>
             </div>
         </div>
 
-        <!-- Total Missed Classes -->
+        <!-- 5. Total Missed Classes -->
         <div class="col-xl-3 col-md-6 col-12">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-2.5 bg-white text-center">
-                <div class="card-body p-2">
-                    <div class="rounded-circle mx-auto mb-2 bg-danger bg-opacity-10 text-danger p-2 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem;">
+            <div class="card shadow-sm rounded-4 h-100 p-3 text-start border" style="background: rgba(239, 68, 68, 0.04); border-top: 4px solid #ef4444 !important; border-color: var(--border-card);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fs-9 text-uppercase tracking-wider fw-bold text-danger">Missed Classes</span>
+                    <span class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.75rem;">
                         <i class="fas fa-user-clock"></i>
-                    </div>
-                    <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block mb-1">Missed Classes</span>
-                    <h5 class="fw-bold text-danger mb-1">{{ missed_classes }} Class{% if missed_classes != 1 %}es{% endif %}</h5>
-                    <span class="fs-9 text-muted">Out of {{ total_classes_conducted }} Total Conducted</span>
+                    </span>
                 </div>
+                <h3 class="fw-bold mb-1 text-danger" style="font-size: 1.85rem;">{{ missed_classes }} <span class="fs-7 fw-semibold">Class{% if missed_classes != 1 %}es{% endif %}</span></h3>
+                <span class="badge rounded-pill px-2.5 py-1 fw-bold fs-9 text-truncate d-inline-block mt-auto" style="background: rgba(239, 68, 68, 0.14); color: #ef4444;">
+                    Out of {{ total_classes_conducted }} Conducted
+                </span>
             </div>
         </div>
     </div>
@@ -215,22 +224,30 @@
     <div class="row g-4 mb-4">
         <!-- Chart 1: Overall Attendance Doughnut -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
-                <h6 class="fw-bold text-dark mb-3 fs-7"><i class="fas fa-chart-pie text-primary me-2"></i>Overall Attendance Status</h6>
-                <div class="d-flex align-items-center justify-content-center flex-grow-1" style="min-height: 220px;">
-                    <canvas id="overallGaugeChart" style="max-height: 200px; max-width: 200px;"></canvas>
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3.5" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold mb-0 fs-7" style="color: var(--text-primary);"><i class="fas fa-chart-pie text-primary me-2"></i>Overall Attendance Status</h6>
+                    <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-bold {% if overall_attendance_pct >= 75 %}bg-success bg-opacity-10 text-success border border-success border-opacity-25{% else %}bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25{% endif %}">
+                        {{ overall_attendance_pct }}% Ratio
+                    </span>
                 </div>
-                <div class="d-flex justify-content-center gap-3 mt-2 fs-8">
-                    <span class="text-success"><i class="fas fa-circle me-1"></i>Attended ({{ total_classes_attended }})</span>
-                    <span class="text-danger"><i class="fas fa-circle me-1"></i>Missed ({{ missed_classes }})</span>
+                <div class="d-flex align-items-center justify-content-center flex-grow-1 position-relative" style="min-height: 220px;">
+                    <canvas id="overallGaugeChart" style="max-height: 210px; max-width: 210px;"></canvas>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mt-2 fs-8 pt-2 border-top" style="border-color: var(--border-card) !important;">
+                    <span class="fw-semibold text-success"><i class="fas fa-circle me-1"></i>Attended ({{ total_classes_attended }})</span>
+                    <span class="fw-semibold text-danger"><i class="fas fa-circle me-1"></i>Missed ({{ missed_classes }})</span>
                 </div>
             </div>
         </div>
 
         <!-- Chart 2: Subject-Wise Attendance Bar Chart -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white">
-                <h6 class="fw-bold text-dark mb-3 fs-7"><i class="fas fa-chart-bar text-primary me-2"></i>Subject-Wise Attendance Breakdown (%)</h6>
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-3.5" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h6 class="fw-bold mb-0 fs-7" style="color: var(--text-primary);"><i class="fas fa-chart-bar text-primary me-2"></i>Subject-Wise Attendance Breakdown (%)</h6>
+                    <span class="fs-9 text-muted fw-semibold">Goal: 75%+</span>
+                </div>
                 <div class="flex-grow-1" style="min-height: 220px;">
                     <canvas id="subjectBarChart" style="max-height: 230px; width: 100%;"></canvas>
                 </div>
@@ -378,8 +395,9 @@
                             </button>
                         </div>
 
-                        <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
-                            <input type="date" id="studentDateFilter" class="form-control form-control-sm border-0 bg-transparent px-2.5 py-1 fw-bold text-dark fs-8" value="{{ today }}" style="width: 135px;" onchange="setStudentHistoryMode('custom', this.value)" title="Select specific date">
+                        <div class="d-flex align-items-center gap-1.5 p-1 rounded-pill border" style="background: var(--surface-secondary); border-color: var(--border-card) !important;">
+                            <span class="ps-2.5 text-primary fs-8"><i class="fa-solid fa-calendar"></i></span>
+                            <input type="date" id="studentDateFilter" class="form-control form-control-sm border-0 bg-transparent px-2 py-1 fw-bold fs-8" style="color: var(--text-primary); width: 140px;" value="{{ today }}" onchange="setStudentHistoryMode('custom', this.value)" title="Select specific date">
                         </div>
                     </div>
                 </div>
@@ -506,46 +524,81 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+    const axisTextColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+    // Center Text Plugin for Doughnut Gauge
+    const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw(chart) {
+            const { ctx, width, height } = chart;
+            ctx.save();
+            const pctText = '{{ overall_attendance_pct }}%';
+            const labelText = {{ total_classes_conducted }} > 0 ? 'ATTENDANCE' : 'NO SESSIONS';
+
+            ctx.font = 'bold 24px Inter, system-ui, -apple-system, sans-serif';
+            ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pctText, width / 2, height / 2 - 8);
+
+            ctx.font = 'bold 10px Inter, system-ui, -apple-system, sans-serif';
+            ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+            ctx.letterSpacing = '1px';
+            ctx.fillText(labelText, width / 2, height / 2 + 14);
+            ctx.restore();
+        }
+    };
+
     // 1. Overall Attendance Doughnut Chart
     const ctxGauge = document.getElementById('overallGaugeChart');
     if (ctxGauge) {
+        const attended = {{ total_classes_attended }};
+        const missed = {{ missed_classes }};
+        const hasData = (attended + missed) > 0;
+
         new Chart(ctxGauge, {
             type: 'doughnut',
             data: {
-                labels: ['Attended', 'Missed'],
+                labels: hasData ? ['Attended', 'Missed'] : ['No Classes Yet'],
                 datasets: [{
-                    data: [{{ total_classes_attended }}, {{ missed_classes }}],
-                    backgroundColor: ['#10b981', '#ef4444'],
+                    data: hasData ? [attended, missed] : [1],
+                    backgroundColor: hasData ? ['#10b981', '#ef4444'] : [isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'],
                     borderWidth: 0,
-                    hoverOffset: 4
+                    hoverOffset: hasData ? 4 : 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '72%',
+                cutout: '74%',
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: hasData
+                    }
                 }
-            }
+            },
+            plugins: [centerTextPlugin]
         });
     }
 
     // 2. Subject-wise Bar Chart
     const ctxBar = document.getElementById('subjectBarChart');
     if (ctxBar) {
-        const isDark = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
-        const axisTextColor = isDark ? '#94a3b8' : '#64748b';
-        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+        const subLabels = {{ subject_names | tojson }};
+        const subData = {{ attendance_percentages | tojson }};
 
         new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: {{ subject_names | tojson }},
+                labels: subLabels.length > 0 ? subLabels : ['General'],
                 datasets: [{
                     label: 'Attendance %',
-                    data: {{ attendance_percentages | tojson }},
-                    backgroundColor: '#4f46e5',
+                    data: subData.length > 0 ? subData : [0],
+                    backgroundColor: '#6366f1',
+                    hoverBackgroundColor: '#4f46e5',
                     borderRadius: 8,
                     barThickness: 28
                 }]
@@ -569,7 +622,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Attendance: ' + context.raw + '%';
+                            }
+                        }
+                    }
                 }
             }
         });

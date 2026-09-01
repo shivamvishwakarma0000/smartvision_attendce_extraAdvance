@@ -294,17 +294,25 @@
                     <div class="row g-3" id="studentScheduleGrid">
                         {% for slot_item in full_student_timetable %}
                         <div class="col-xl-4 col-md-6 student-slot-card" data-day="{{ slot_item.day }}">
-                            <div class="p-3 rounded-4 border h-100 d-flex flex-column justify-content-between {% if slot_item.is_cancelled %}bg-danger bg-opacity-10 border-danger border-opacity-50{% elif slot_item.is_proxy %}bg-primary bg-opacity-10 border-primary border-opacity-50{% else %}bg-light border-light-subtle{% endif %}">
+                            <div class="p-3 rounded-4 border h-100 d-flex flex-column justify-content-between {% if slot_item.is_cancelled %}bg-danger bg-opacity-10 border-danger border-opacity-50{% elif slot_item.is_proxy %}bg-primary bg-opacity-10 border-primary border-opacity-50{% elif slot_item.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-40{% elif slot_item.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-40{% else %}bg-light border-light-subtle{% endif %}">
                                 <div class="d-flex align-items-start justify-content-between mb-2">
                                     <div>
                                         <div class="d-flex align-items-center gap-1.5 mb-1 flex-wrap">
-                                            <span class="badge {% if slot_item.is_cancelled %}bg-danger{% else %}bg-primary{% endif %} bg-opacity-10 text-{% if slot_item.is_cancelled %}danger{% else %}primary{% endif %} border border-{% if slot_item.is_cancelled %}danger{% else %}primary{% endif %} border-opacity-20 px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                            <span class="badge {% if slot_item.is_cancelled %}bg-danger text-danger border-danger{% elif slot_item.slot.slot_type == 'LIBRARY' %}bg-info text-info border-info{% elif slot_item.slot.slot_type == 'OTHER' %}bg-secondary text-secondary border-secondary{% else %}bg-primary text-primary border-primary{% endif %} bg-opacity-10 border border-opacity-20 px-2 py-0.5 rounded-pill fs-9 fw-bold">
                                                 Period {{ slot_item.period }}
                                             </span>
                                             <span class="badge bg-secondary bg-opacity-10 text-dark px-2 py-0.5 rounded-pill fs-9 fw-semibold">
                                                 {{ slot_item.day }} {% if slot_item.date_str %}({{ slot_item.date_str }}){% endif %}
                                             </span>
-                                            {% if slot_item.is_proxy %}
+                                            {% if slot_item.slot.slot_type == 'LIBRARY' %}
+                                            <span class="badge bg-info text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                <i class="fa-solid fa-book-bookmark me-1"></i>Library
+                                            </span>
+                                            {% elif slot_item.slot.slot_type == 'OTHER' %}
+                                            <span class="badge bg-secondary text-white px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                <i class="fa-solid fa-shapes me-1"></i>Activity
+                                            </span>
+                                            {% elif slot_item.is_proxy %}
                                             <span class="badge bg-info text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold">
                                                 <i class="fa-solid fa-user-shield me-1"></i>Proxy
                                             </span>
@@ -312,10 +320,17 @@
                                         </div>
                                         <h6 class="fw-bold text-dark mb-0 fs-7 {% if slot_item.is_cancelled %}text-decoration-line-through opacity-75{% endif %}">{{ slot_item.subject }}</h6>
                                         <span class="fs-8 text-muted d-block mt-0.5">
+                                            {% if slot_item.slot.slot_type == 'LIBRARY' %}
+                                            <i class="fa-solid fa-book-open-reader me-1 text-info"></i>
+                                            <span>{{ slot_item.teacher }}</span>
+                                            {% elif slot_item.slot.slot_type == 'OTHER' %}
+                                            <i class="fa-solid fa-shapes me-1 text-secondary"></i>
+                                            <span>{{ slot_item.teacher }}</span>
+                                            {% elif slot_item.is_proxy %}
                                             <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>
-                                            {% if slot_item.is_proxy %}
                                             <strong>Prof. {{ slot_item.proxy_teacher_name }}</strong> <small class="text-muted">(Proxy for {{ slot_item.teacher }})</small>
                                             {% else %}
+                                            <i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>
                                             {{ slot_item.teacher }}
                                             {% endif %}
                                         </span>

@@ -158,7 +158,55 @@ def dashboard():
         d_slots = [s for s in all_weekly_slots if s.day_of_week == d_name]
         
         for tt in d_slots:
-            if tt.slot_type != 'CLASS':
+            if tt.slot_type == 'LIBRARY':
+                item_dict = {
+                    'session_id': None,
+                    'slot': tt,
+                    'period': tt.period_no or 1,
+                    'subject': tt.custom_title or 'Library & Self-Study',
+                    'teacher': tt.teacher_assigned.name if tt.teacher_assigned else 'Library In-charge',
+                    'is_proxy': False,
+                    'proxy_teacher_name': None,
+                    'is_cancelled': False,
+                    'cancellation_reason': "",
+                    'day': tt.day_of_week,
+                    'date_str': d_date.strftime('%b %d'),
+                    'date': d_date,
+                    'time_slot': f"{tt.start_time} - {tt.end_time}",
+                    'room_number': tt.room or 'Central Library',
+                    'status_label': 'Library',
+                    'status_class': 'info',
+                    'status_icon': 'fa-book-open-reader',
+                    'marked_time': 'Library & Self-Study'
+                }
+                full_student_timetable.append(item_dict)
+                if d_date == today:
+                    daily_timetable_status.append(item_dict)
+                continue
+            elif tt.slot_type == 'OTHER':
+                item_dict = {
+                    'session_id': None,
+                    'slot': tt,
+                    'period': tt.period_no or 1,
+                    'subject': tt.custom_title or 'Activity / Practical',
+                    'teacher': tt.teacher_assigned.name if tt.teacher_assigned else 'Faculty Coordinator',
+                    'is_proxy': False,
+                    'proxy_teacher_name': None,
+                    'is_cancelled': False,
+                    'cancellation_reason': "",
+                    'day': tt.day_of_week,
+                    'date_str': d_date.strftime('%b %d'),
+                    'date': d_date,
+                    'time_slot': f"{tt.start_time} - {tt.end_time}",
+                    'room_number': tt.room or 'Campus / Lab',
+                    'status_label': tt.custom_title or 'Activity',
+                    'status_class': 'secondary',
+                    'status_icon': 'fa-shapes',
+                    'marked_time': 'Non-Lecture Slot'
+                }
+                full_student_timetable.append(item_dict)
+                if d_date == today:
+                    daily_timetable_status.append(item_dict)
                 continue
 
             sess = AttendanceSession.query.filter(
@@ -684,5 +732,35 @@ def student_id_card():
         qr_data=qr_data,
         today=date.today()
     )
+
+
+@student_bp.route('/student/timetable')
+@login_required
+@student_required
+def timetable():
+    """Renders the comprehensive weekly class timetable matrix for the student's assigned class."""
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('auth.logout'))
+
+    selected_class = student.class_assigned
+    timetable_entries = []
+    if student.class_id:
+        timetable_entries = Timetable.query.filter_by(
+            class_id=student.class_id
+        ).order_by(Timetable.day_of_week, Timetable.start_time).all()
+
+    from main.routes import get_or_create_period_settings
+    period_settings = get_or_create_period_settings()
+
+    return render_template(
+        'student_timetable.html',
+        student=student,
+        selected_class=selected_class,
+        timetable_entries=timetable_entries,
+        period_settings=period_settings
+    )
+
 
 

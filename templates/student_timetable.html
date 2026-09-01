@@ -1,0 +1,160 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - STUDENT TIMETABLE VIEW TEMPLATE #}
+{# ============================================================================== #}
+
+{% extends "base.html" %}
+
+{% block title %}Class Timetable Matrix - SmartVision{% endblock %}
+{% block page_title %}Academic Class Timetable{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 overflow-hidden" style="background: var(--surface) !important; border: 1px solid var(--border-card) !important;">
+        <!-- Header Banner -->
+        <div class="card-header bg-gradient bg-primary text-white p-4 d-flex align-items-center justify-content-between flex-wrap gap-3" style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-white shadow-sm d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; min-width: 48px;">
+                    <i class="fa-solid fa-calendar-days fs-4 text-primary"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0 text-white" style="color: #ffffff !important;">Weekly Class Timetable Matrix</h4>
+                    <span class="fs-8 text-white-50" style="color: rgba(255, 255, 255, 0.85) !important;">Complete 6-day lecture, library & lab schedule (Monday to Saturday)</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-light btn-sm rounded-pill px-3.5 py-2 fw-bold fs-8 text-primary shadow-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body p-3 p-md-4">
+            <!-- Active Class & Legend Summary Bar -->
+            <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border flex-wrap gap-3" style="background: var(--surface-secondary); border-color: var(--border-card) !important;">
+                <div class="d-flex align-items-center gap-3 fs-8 fw-semibold flex-wrap">
+                    <span class="text-dark"><i class="fa-solid fa-school text-primary me-1"></i> Class: <strong>{{ selected_class.name if selected_class else 'Unassigned' }}</strong></span>
+                    <span class="text-muted">|</span>
+                    <span class="text-dark"><i class="fa-solid fa-building text-primary me-1"></i> Dept: <strong>{{ student.department or (selected_class.department if selected_class else 'General') }}</strong></span>
+                    <span class="text-muted">|</span>
+                    <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-8">
+                        {{ timetable_entries|length }} Active Slots / Week
+                    </span>
+                </div>
+
+                <!-- Slot Legend -->
+                <div class="d-flex align-items-center gap-2 flex-wrap fs-9">
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 fw-bold">
+                        <i class="fa-solid fa-book-open me-1"></i>Class Lecture
+                    </span>
+                    <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-30 rounded-pill px-2.5 py-1 fw-bold">
+                        <i class="fa-solid fa-book-bookmark me-1"></i>Library & Self Study
+                    </span>
+                    <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-30 rounded-pill px-2.5 py-1 fw-bold">
+                        <i class="fa-solid fa-utensils me-1"></i>Lunch Break
+                    </span>
+                </div>
+            </div>
+
+            <!-- 6-DAY WEEKLY GRID MATRIX -->
+            <div class="table-responsive rounded-3 border" style="border-color: var(--border-card) !important;">
+                <table class="table table-bordered align-middle text-center mb-0 fs-8">
+                    <thead class="table-dark" style="background: #1e1b4b;">
+                        <tr style="font-size: 0.75rem;">
+                            <th style="width: 105px;" class="py-2 text-center text-nowrap">Time Window</th>
+                            <th class="py-2 text-center">Monday</th>
+                            <th class="py-2 text-center">Tuesday</th>
+                            <th class="py-2 text-center">Wednesday</th>
+                            <th class="py-2 text-center">Thursday</th>
+                            <th class="py-2 text-center">Friday</th>
+                            <th class="py-2 text-center">Saturday</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
+
+                        {% for ps in period_settings %}
+                        <tr>
+                            <!-- Time Column -->
+                            {% if not ps.is_lunch %}
+                            <td class="table-light align-middle text-center py-1.5 px-1" style="background: var(--surface-secondary);">
+                                <div class="fw-bold text-dark text-nowrap" style="font-size: 0.75rem;">{{ ps.label }}</div>
+                                <div class="text-muted text-nowrap" style="font-size: 0.68rem; opacity: 0.85;">{{ ps.start_time }} – {{ ps.end_time }}</div>
+                            </td>
+                            {% endif %}
+
+                            {% if ps.is_lunch %}
+                            <!-- Full-Width Lunch Break Row -->
+                            <td colspan="7" class="align-middle py-1 px-2 bg-warning bg-opacity-15 border-warning border-opacity-30">
+                                <div class="d-flex align-items-center justify-content-center gap-2 text-dark py-0.5">
+                                    <span class="badge bg-warning text-dark px-2.5 py-0.5 rounded-pill fw-bold" style="font-size: 0.68rem;"><i class="fa-solid fa-utensils me-1"></i>Lunch</span>
+                                    <span class="fw-bold text-dark me-2" style="font-size: 0.75rem;">🍱 {{ ps.label|upper }} ({{ ps.start_time }} – {{ ps.end_time }})</span>
+                                </div>
+                            </td>
+                            {% else %}
+                            <!-- 6 Day Columns -->
+                            {% for d in days %}
+                                {% set ns = namespace(found=false, slot=None) %}
+                                {% for entry in timetable_entries %}
+                                    {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
+                                        {% set ns.found = true %}
+                                        {% set ns.slot = entry %}
+                                    {% endif %}
+                                endfor %}
+
+                                <td class="align-middle p-1" style="min-width: 110px;">
+                                    {% if ns.found %}
+                                        <div class="p-1.5 rounded-3 border {% if ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30{% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30{% else %}bg-primary bg-opacity-10 border-primary border-opacity-25{% endif %} shadow-2xs text-start">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                {% if ns.slot.slot_type == 'LIBRARY' %}
+                                                <span class="badge bg-info text-dark text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ ns.slot.custom_title or 'Library & Self Study' }}">
+                                                    <i class="fa-solid fa-book-bookmark me-0.5"></i>{{ ns.slot.custom_title or 'Library' }}
+                                                </span>
+                                                {% elif ns.slot.slot_type == 'OTHER' %}
+                                                <span class="badge bg-secondary text-white text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ ns.slot.custom_title or 'Activity' }}">
+                                                    <i class="fa-solid fa-shapes me-0.5"></i>{{ ns.slot.custom_title or 'Activity' }}
+                                                </span>
+                                                {% else %}
+                                                <span class="badge bg-primary text-white text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else (ns.slot.subject.name if ns.slot.subject else 'Subject') }}">
+                                                    {{ ns.slot.subject_assigned.name if ns.slot.subject_assigned else (ns.slot.subject.name if ns.slot.subject else 'Subject') }}
+                                                </span>
+                                                {% endif %}
+
+                                                <span class="badge bg-dark bg-opacity-75 text-white font-monospace" style="font-size: 0.6rem;">P{{ ns.slot.period_no or ps.period_no }}</span>
+                                            </div>
+
+                                            <div class="text-dark fw-bold text-truncate" style="font-size: 0.72rem;">
+                                                {% if ns.slot.slot_type == 'LIBRARY' %}
+                                                <i class="fa-solid fa-book-open-reader text-info me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else 'Library In-charge' }}
+                                                {% elif ns.slot.slot_type == 'OTHER' %}
+                                                <i class="fa-solid fa-shapes text-secondary me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else 'Coordinator' }}
+                                                {% else %}
+                                                <i class="fa-solid fa-chalkboard-user text-primary me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else (ns.slot.teacher.name if ns.slot.teacher else 'Faculty Unassigned') }}
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="text-muted text-truncate mt-0.5" style="font-size: 0.65rem;">
+                                                {% if ns.slot.room %}
+                                                <i class="fa-solid fa-location-dot me-1 text-primary"></i>{{ ns.slot.room }}
+                                                {% elif ns.slot.slot_type == 'LIBRARY' %}
+                                                <i class="fa-solid fa-book me-1 text-info"></i>Central Library
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="rounded-2 border border-dashed p-1.5 text-center text-muted" style="font-size: 0.7rem; background: var(--surface-secondary);">
+                                            <span class="opacity-50">Free Slot</span>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

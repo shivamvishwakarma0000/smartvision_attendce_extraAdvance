@@ -236,11 +236,29 @@ def login():
             return redirect(url_for('student.dashboard'))
 
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        login_role = request.form.get('login_role', 'student')  # role hint from UI tab ('student', 'teacher', 'admin')
+        ident = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        login_role = request.form.get('login_role', '')
 
-        user = User.query.filter_by(email=email).first()
+        # Case-insensitive lookup by email
+        user = User.query.filter(db.func.lower(User.email) == ident.lower()).first()
+        
+        # If not found by email, check Student Roll Number / Enrollment Number
+        if not user:
+            from models import Student, Teacher
+            stu = Student.query.filter(
+                (db.func.lower(Student.roll_no) == ident.lower()) | 
+                (db.func.lower(Student.enrollment_no) == ident.lower())
+            ).first()
+            if stu and stu.user:
+                user = stu.user
+
+        # If not found, check Teacher Employee ID
+        if not user:
+            from models import Teacher
+            tch = Teacher.query.filter(db.func.lower(Teacher.emp_id) == ident.lower()).first()
+            if tch and tch.user:
+                user = tch.user
 
         if user and user.check_password(password):
             # Check email verification requirement for Student and Teacher
@@ -267,17 +285,6 @@ def login():
                 flash('Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
                 return redirect(url_for('main.index', state='login'))
 
-            # Verify the user is logging in via the correct portal if role hint is passed
-            if login_role == 'admin' and user.role != 'admin':
-                flash('This account is not an administrator account. Please select the correct login portal.', 'danger')
-                return redirect(url_for('main.index', state='login'))
-            if login_role == 'teacher' and user.role != 'teacher':
-                flash('This account is not a teacher account. Please select the correct login portal.', 'danger')
-                return redirect(url_for('main.index', state='login'))
-            if login_role == 'student' and user.role != 'student':
-                flash('This account is not a student account. Please select the correct login portal.', 'danger')
-                return redirect(url_for('main.index', state='login'))
-
             login_user(user)
             flash(f'Welcome back, {user.name}!', 'success')
             if user.role == 'admin':
@@ -287,7 +294,7 @@ def login():
             elif user.role == 'student':
                 return redirect(url_for('student.dashboard'))
         else:
-            flash('Invalid email or password.', 'danger')
+            flash('Invalid email or password. Please check your credentials and try again.', 'danger')
             return redirect(url_for('main.index', state='login'))
 
     # Redirect GET requests to the unified index page with state='login'

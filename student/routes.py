@@ -177,6 +177,11 @@ def dashboard():
             is_proxy = False
             proxy_teacher_name = None
 
+            status_label = 'Upcoming'
+            status_class = 'info'
+            status_icon = 'fa-calendar'
+            marked_time = 'Upcoming'
+
             if ds and (ds.is_cancelled or ds.resolved_status == 'CANCELLED'):
                 status_label = 'Cancelled'
                 status_class = 'danger'

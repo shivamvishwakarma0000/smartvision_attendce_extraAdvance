@@ -929,9 +929,29 @@
 
         // PWA Install prompt trigger for discreet download arrow
         let deferredPrompt;
+
+        function checkBaseDownloadArrow() {
+            const isInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true || 
+                                localStorage.getItem('smartvision_app_installed') === 'true';
+            const arrowBtn = document.getElementById('baseDownloadArrowBtn');
+            if (arrowBtn && isInstalled) {
+                arrowBtn.style.setProperty('display', 'none', 'important');
+            }
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            localStorage.setItem('smartvision_app_installed', 'true');
+            checkBaseDownloadArrow();
+        });
+
+        window.addEventListener('load', () => {
+            checkBaseDownloadArrow();
         });
 
         function triggerAppInstall() {
@@ -940,6 +960,8 @@
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('User accepted app install');
+                        localStorage.setItem('smartvision_app_installed', 'true');
+                        checkBaseDownloadArrow();
                     }
                     deferredPrompt = null;
                 });

@@ -343,10 +343,18 @@
             <span class="fs-4 fw-bold text-white tracking-tight" style="letter-spacing: -0.5px;">SmartVision</span>
         </a>
 
-        <!-- Theme Toggle Button -->
-        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5" onclick="toggleTheme()">
-            <i class="fa-solid fa-moon text-warning" id="theme-icon"></i> <span id="theme-text" class="text-white fs-8">Dark</span>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Download Android APK Button -->
+            <a href="/download-apk" class="btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 text-white text-decoration-none shadow-sm" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: 1px solid rgba(255,255,255,0.25);">
+                <i class="fa-brands fa-android fs-7"></i>
+                <span class="fs-8">Download App (APK)</span>
+            </a>
+
+            <!-- Theme Toggle Button -->
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5" onclick="toggleTheme()">
+                <i class="fa-solid fa-moon text-warning" id="theme-icon"></i> <span id="theme-text" class="text-white fs-8">Dark</span>
+            </button>
+        </div>
     </div>
 </nav>
 
@@ -366,6 +374,18 @@
                 <p class="hero-subtitle">
                     Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure platform.
                 </p>
+
+                <!-- Hero Direct APK Download Card -->
+                <div class="d-inline-flex flex-wrap align-items-center gap-3 mb-4 p-2.5 rounded-4" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px);">
+                    <a href="/download-apk" class="btn btn-lg py-2.5 px-4 rounded-3 fw-bold text-white d-inline-flex align-items-center gap-2 shadow-lg" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none;">
+                        <i class="fa-brands fa-android fs-5"></i>
+                        <span>Download Android APK</span>
+                    </a>
+                    <div class="text-start ps-1 pe-2">
+                        <div class="text-white fw-bold fs-8"><i class="fa-solid fa-circle-check text-success me-1"></i> Standalone Mobile App</div>
+                        <div class="text-white-50 fs-9">Works on all Android devices • v1.0.0</div>
+                    </div>
+                </div>
 
 
 
@@ -407,6 +427,20 @@
         <div class="col-lg-6 col-12 ms-auto ps-lg-4">
             <div class="auth-card-container">
                 <div class="auth-card">
+
+                    <!-- Mobile-Only Quick APK Install Banner -->
+                    <div class="d-lg-none mb-3 p-2.5 rounded-3 d-flex align-items-center justify-content-between text-white" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%); border: 1px solid rgba(16, 185, 129, 0.35);">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa-brands fa-android text-success fs-4"></i>
+                            <div class="text-start">
+                                <div class="fw-bold fs-8" style="color: var(--text-main);">SmartVision Mobile App</div>
+                                <div class="fs-9" style="color: var(--text-muted);">Install directly on your phone</div>
+                            </div>
+                        </div>
+                        <a href="/download-apk" class="btn btn-sm btn-success fw-bold px-3 py-1.5 rounded-pill shadow-sm">
+                            <i class="fa-solid fa-download me-1"></i> APK
+                        </a>
+                    </div>
 
                     <!-- Flash Messages -->
                     {% with messages = get_flashed_messages(with_categories=true) %}

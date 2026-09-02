@@ -95,6 +95,13 @@ def create_app():
         from flask import send_from_directory
         return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js', mimetype='application/javascript')
 
+    @app.route('/download-apk')
+    @app.route('/download/apk')
+    def download_apk():
+        """Serves downloadable SmartVision Android APK file."""
+        from flask import send_from_directory
+        return send_from_directory(os.path.join(app.root_path, 'static', 'downloads'), 'SmartVision.apk', as_attachment=True, download_name='SmartVision.apk')
+
 
     # --------------------------------------------------------------------------
     # 4. CUSTOM JINJA TEMPLATE FILTERS

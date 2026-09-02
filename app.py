@@ -81,6 +81,22 @@ def create_app():
         }, 200
 
     # --------------------------------------------------------------------------
+    # PWA (PROGRESSIVE WEB APP) ROOT ENDPOINTS
+    # --------------------------------------------------------------------------
+    @app.route('/manifest.json')
+    def serve_manifest():
+        """Serves web app manifest at root scope for PWA installation & TWA/PWABuilder."""
+        from flask import send_from_directory
+        return send_from_directory(os.path.join(app.root_path, 'static'), 'manifest.json', mimetype='application/manifest+json')
+
+    @app.route('/sw.js')
+    def serve_service_worker():
+        """Serves service worker from root to give it maximum scope over the entire application."""
+        from flask import send_from_directory
+        return send_from_directory(os.path.join(app.root_path, 'static'), 'sw.js', mimetype='application/javascript')
+
+
+    # --------------------------------------------------------------------------
     # 4. CUSTOM JINJA TEMPLATE FILTERS
     # --------------------------------------------------------------------------
     @app.template_filter('to_ist')

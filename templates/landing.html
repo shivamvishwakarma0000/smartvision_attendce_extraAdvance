@@ -6,8 +6,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>SmartVision Attendance Portal</title>
+
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0c1021">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SmartVision">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/icon-192.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/icon-192.png') }}">
     <script>
         // Apply theme immediately before paint to prevent flashing
         (function() {
@@ -1752,6 +1761,26 @@
                 }
             });
         }
+    });
+    // Service Worker Registration & PWA Install Banner Support
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function(reg) {
+                    console.log('SmartVision PWA ServiceWorker successfully registered with scope:', reg.scope);
+                })
+                .catch(function(err) {
+                    console.log('SmartVision ServiceWorker registration failed:', err);
+                });
+        });
+    }
+
+    // Capture install prompt if needed
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default mini-infobar on mobile Chrome if needed, or let standard prompt run
+        deferredPrompt = e;
+        console.log('SmartVision PWA is ready for installation on this device');
     });
 </script>
 </body>

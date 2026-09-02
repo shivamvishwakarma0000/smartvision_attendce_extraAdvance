@@ -1577,7 +1577,7 @@ def api_live_detect():
             })
 
         # Fast resize for real-time latency optimization
-        max_dim = 640
+        max_dim = 960
         width, height = pil_img.size
         scale = 1.0
         if max(width, height) > max_dim:

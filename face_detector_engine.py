@@ -107,7 +107,28 @@ def detect_face_locations_robust(img_np, enable_cnn=True):
     except Exception as e:
         print(f"[FaceEngine Stage 3 Upsampled HOG]: {e}")
 
-    # Stage 4: Dlib CNN MMOD Detector (maximum accuracy under challenging conditions)
+    # Stage 4: Distance Scale-Up pass (upscales distant/small faces 1.4x for high distance recall)
+    try:
+        h, w = enhanced_rgb.shape[:2]
+        if max(h, w) <= 1280:
+            scale_factor = 1.4
+            scaled_img = cv2.resize(enhanced_rgb, (0, 0), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
+            locs_scaled = face_recognition.face_locations(scaled_img, number_of_times_to_upsample=1, model="hog")
+            if locs_scaled:
+                locs = [
+                    (
+                        int(t / scale_factor),
+                        int(r / scale_factor),
+                        int(b / scale_factor),
+                        int(l / scale_factor)
+                    )
+                    for (t, r, b, l) in locs_scaled
+                ]
+                return locs, enhanced_rgb
+    except Exception as e:
+        print(f"[FaceEngine Stage 4 Distance Upscale]: {e}")
+
+    # Stage 5: Dlib CNN MMOD Detector (maximum accuracy under challenging conditions)
     if enable_cnn:
         try:
             target_img = enhanced_rgb if is_low_light else img_np
@@ -124,7 +145,7 @@ def detect_face_locations_robust(img_np, enable_cnn=True):
             if locs:
                 return locs, enhanced_rgb
         except Exception as e:
-            print(f"[FaceEngine Stage 4 CNN]: {e}")
+            print(f"[FaceEngine Stage 5 CNN]: {e}")
 
     return [], enhanced_rgb
 

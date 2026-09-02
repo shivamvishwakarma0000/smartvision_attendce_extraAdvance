@@ -38,6 +38,17 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c  # Distance in meters
 
+def get_current_ist_datetime():
+    """Returns (now_dt: datetime, today_date: date) in Indian Standard Time (IST - UTC+5:30)."""
+    try:
+        from timezone_utils import get_ist_now
+        ist_dt = get_ist_now()
+        return ist_dt.replace(tzinfo=None), ist_dt.date()
+    except Exception:
+        now = datetime.now()
+        return now, now.date()
+
+
 def get_or_create_settings():
     settings = TeacherAttendanceSettings.query.first()
     if not settings:
@@ -51,20 +62,6 @@ def get_or_create_settings():
         )
         db.session.add(settings)
         db.session.commit()
-    else:
-        # Align with latest system timing requirement: 8:00-9:00 AM on-time, 30m grace up to 9:30 AM
-        updated = False
-        if settings.morning_start_time != "08:00 AM":
-            settings.morning_start_time = "08:00 AM"
-            updated = True
-        if settings.morning_deadline in ("11:00 AM", "10:00 AM"):
-            settings.morning_deadline = "09:00 AM"
-            updated = True
-        if settings.grace_period_mins in (15, 60):
-            settings.grace_period_mins = 30
-            updated = True
-        if updated:
-            db.session.commit()
     return settings
 
 def get_active_office_location():
@@ -160,8 +157,7 @@ def recalculate_daily_status(rec, settings=None):
             rec.late_status = 'On Time'
             rec.late_minutes = 0
 
-        now = datetime.now()
-        today = date.today()
+        now, today = get_current_ist_datetime()
         evening_end_time = parse_time_str(settings.evening_end_time) or time(17, 0)
         eve_cutoff_dt = datetime.combine(today, evening_end_time) + timedelta(minutes=30)
         eve_cutoff_time = eve_cutoff_dt.time()
@@ -181,8 +177,7 @@ def recalculate_daily_status(rec, settings=None):
         return rec.status
 
     # Neither marked
-    now = datetime.now()
-    today = date.today()
+    now, today = get_current_ist_datetime()
     morn_deadline = parse_time_str(settings.morning_deadline) or time(9, 0)
     grace_mins = settings.grace_period_mins if settings.grace_period_mins is not None else 30
     cutoff_dt = datetime.combine(today, morn_deadline) + timedelta(minutes=grace_mins)
@@ -311,7 +306,7 @@ def get_teacher_daily_status():
         return jsonify({'success': False, 'message': 'Access denied'}), 403
 
     teacher = current_user.teacher_profile
-    today = date.today()
+    now, today = get_current_ist_datetime()
     office = get_active_office_location()
     settings = get_or_create_settings()
 
@@ -368,8 +363,7 @@ def mark_morning_attendance():
 
     captured_image_base64 = data.get('captured_image_base64')
     teacher = current_user.teacher_profile
-    today = date.today()
-    now = datetime.now()
+    now, today = get_current_ist_datetime()
     office = get_active_office_location()
     settings = get_or_create_settings()
 
@@ -481,8 +475,7 @@ def mark_evening_attendance():
 
     captured_image_base64 = data.get('captured_image_base64')
     teacher = current_user.teacher_profile
-    today = date.today()
-    now = datetime.now()
+    now, today = get_current_ist_datetime()
     office = get_active_office_location()
     settings = get_or_create_settings()
 
@@ -582,7 +575,7 @@ def admin_teacher_attendance():
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('main.dashboard'))
 
-    today = date.today()
+    now, today = get_current_ist_datetime()
     selected_date_str = request.args.get('date', today.strftime('%Y-%m-%d'))
     try:
         selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()

@@ -1577,7 +1577,8 @@ def api_live_detect():
             })
 
         # Fast resize for real-time latency optimization
-        max_dim = 960
+        # Fast resize for real-time latency optimization (640px gives crisp detail at sub-100ms speed)
+        max_dim = 640
         width, height = pil_img.size
         scale = 1.0
         if max(width, height) > max_dim:
@@ -1588,9 +1589,9 @@ def api_live_detect():
 
         img_np = np.array(pil_img)
 
-        # Detect face bounding boxes & 128-d embeddings using robust multi-pass engine (low-light enabled)
+        # Detect face bounding boxes & 128-d embeddings using robust multi-pass engine (fast HOG first)
         from face_detector_engine import get_face_biometrics_robust, match_face_encoding
-        face_locations, face_encodings = get_face_biometrics_robust(img_np)
+        face_locations, face_encodings = get_face_biometrics_robust(img_np, enable_cnn=False)
 
         if not face_locations:
             return jsonify({
@@ -1601,34 +1602,37 @@ def api_live_detect():
                 'img_height': height
             })
 
-        # Filter target students based on provided class/subject or fallback to all registered students
+        # Query valid students directly from DB without disk I/O on live loop
         target_students = []
         if class_id and str(class_id).isdigit():
-            target_students = Student.query.filter_by(class_id=int(class_id)).all()
+            target_students = Student.query.filter(
+                Student.class_id == int(class_id),
+                Student.face_encoding.isnot(None)
+            ).all()
         elif subject_id and str(subject_id).isdigit():
             sub = Subject.query.get(int(subject_id))
             if sub and sub.class_id:
-                target_students = Student.query.filter_by(class_id=sub.class_id).all()
+                target_students = Student.query.filter(
+                    Student.class_id == sub.class_id,
+                    Student.face_encoding.isnot(None)
+                ).all()
 
         if not target_students:
-            target_students = Student.query.all()
+            target_students = Student.query.filter(Student.face_encoding.isnot(None)).all()
 
-        # Auto-repair missing student face encodings from profile photos
-        for s in target_students:
-            if s.face_encoding is None and s.image_filename and face_recognition is not None:
-                try:
-                    photo_path = os.path.join(FACES_FOLDER, s.image_filename)
-                    if os.path.exists(photo_path):
-                        img = face_recognition.load_image_file(photo_path)
-                        _, encs = get_face_biometrics_robust(img)
-                        if encs and encs[0] is not None:
-                            s.face_encoding = encs[0].tobytes()
-                            db.session.commit()
-                except Exception as repair_err:
-                    print(f"Could not auto-generate encoding for student {s.id}: {repair_err}")
-
-        valid_students = [s for s in target_students if s.face_encoding is not None and len(s.face_encoding) == 1024]
+        valid_students = [s for s in target_students if s.face_encoding and len(s.face_encoding) == 1024]
         known_encodings = [np.frombuffer(s.face_encoding, dtype=np.float64) for s in valid_students]
+
+        # Additional fallback pool: all registered students across classes
+        all_students = []
+        all_student_encodings = []
+        if (class_id or subject_id) and len(valid_students) < 50:
+            all_students = [s for s in Student.query.filter(Student.face_encoding.isnot(None)).all() if len(s.face_encoding) == 1024]
+            all_student_encodings = [np.frombuffer(s.face_encoding, dtype=np.float64) for s in all_students]
+
+        # Faculty pool: ensure teachers testing the camera are accurately recognized
+        teachers = [t for t in Teacher.query.filter(Teacher.face_encoding.isnot(None)).all() if len(t.face_encoding) == 1024]
+        teacher_encodings = [np.frombuffer(t.face_encoding, dtype=np.float64) for t in teachers]
 
         detected_faces = []
         for loc, encoding in zip(face_locations, face_encodings):
@@ -1644,13 +1648,33 @@ def api_live_detect():
             match_found = False
             confidence_str = "0%"
 
-            # Calibrated distance matching against registered students
+            # 1. Check target students pool
             if encoding is not None and known_encodings:
-                best_idx, min_dist, is_match, conf_str = match_face_encoding(encoding, known_encodings, tolerance=0.58)
+                best_idx, min_dist, is_match, conf_str = match_face_encoding(encoding, known_encodings, tolerance=0.60)
                 if is_match and best_idx is not None:
                     matched_student = valid_students[best_idx]
                     matched_name = matched_student.name
                     matched_roll = matched_student.roll_no or ""
+                    match_found = True
+                    confidence_str = conf_str
+
+            # 2. Check full student pool fallback if not found in filtered class
+            if not match_found and encoding is not None and all_student_encodings:
+                best_idx, min_dist, is_match, conf_str = match_face_encoding(encoding, all_student_encodings, tolerance=0.60)
+                if is_match and best_idx is not None:
+                    matched_student = all_students[best_idx]
+                    matched_name = matched_student.name
+                    matched_roll = matched_student.roll_no or ""
+                    match_found = True
+                    confidence_str = conf_str
+
+            # 3. Check faculty pool (so teachers are identified during setup/testing)
+            if not match_found and encoding is not None and teacher_encodings:
+                best_idx, min_dist, is_match, conf_str = match_face_encoding(encoding, teacher_encodings, tolerance=0.60)
+                if is_match and best_idx is not None:
+                    matched_teacher = teachers[best_idx]
+                    matched_name = matched_teacher.name
+                    matched_roll = "Faculty"
                     match_found = True
                     confidence_str = conf_str
 

@@ -430,55 +430,76 @@ window.stopAttendanceCamera = function() {
     if (video) video.srcObject = null;
 };
 
-// Real-Time Live Face Detection Loop
+// Real-Time Live Face Detection Loop (Sequential Async to avoid server backlog)
 let liveDetectionInterval = null;
-let isDetectingLive = false;
+let isLiveDetectionActive = false;
 
 window.startLiveDetectionLoop = function() {
     window.stopLiveDetectionLoop();
-    liveDetectionInterval = setInterval(async () => {
-        if (isDetectingLive || !attendanceStream) return;
+    isLiveDetectionActive = true;
+
+    async function runDetectionCycle() {
+        if (!isLiveDetectionActive || !attendanceStream) return;
         const video = document.getElementById('webcam-attendance');
         const overlayCanvas = document.getElementById('overlay-canvas-attendance');
-        if (!video || !video.videoWidth || video.paused || video.ended) return;
 
-        isDetectingLive = true;
-        try {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = video.videoWidth;
-            tempCanvas.height = video.videoHeight;
-            const ctx = tempCanvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-            const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.6);
+        if (video && video.videoWidth > 0 && !video.paused && !video.ended) {
+            try {
+                // Downscale client-side frame to 540px for instant upload & fast server processing
+                const tempCanvas = document.createElement('canvas');
+                const maxDim = 540;
+                let w = video.videoWidth;
+                let h = video.videoHeight;
+                if (Math.max(w, h) > maxDim) {
+                    const ratio = maxDim / Math.max(w, h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                tempCanvas.width = w;
+                tempCanvas.height = h;
+                const ctx = tempCanvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, w, h);
+                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.65);
 
-            const classSelect = document.getElementById('class_id');
-            const subjectSelect = document.getElementById('subject_id');
-            const class_id = classSelect ? classSelect.value : null;
-            const subject_id = subjectSelect ? subjectSelect.value : null;
+                const classSelect = document.getElementById('class_id');
+                const subjectSelect = document.getElementById('subject_id');
+                const class_id = classSelect ? classSelect.value : null;
+                const subject_id = subjectSelect ? subjectSelect.value : null;
 
-            const res = await fetch('/api/live_detect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: frameBase64,
-                    class_id: class_id,
-                    subject_id: subject_id
-                })
-            });
-            const data = await res.json();
-            if (data.success) {
-                window.renderLiveDetectionOverlay(data, video, overlayCanvas);
+                const res = await fetch('/api/live_detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: frameBase64,
+                        class_id: class_id,
+                        subject_id: subject_id
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success) {
+                        window.renderLiveDetectionOverlay(data, video, overlayCanvas);
+                    }
+                }
+            } catch (err) {
+                console.warn("Live detection frame warning:", err);
             }
-        } catch (err) {
-            console.error("Live detection error:", err);
-        } finally {
-            isDetectingLive = false;
         }
-    }, 350);
+
+        // Schedule next cycle only after the previous cycle finishes
+        if (isLiveDetectionActive && attendanceStream) {
+            liveDetectionInterval = setTimeout(runDetectionCycle, 450);
+        }
+    }
+
+    liveDetectionInterval = setTimeout(runDetectionCycle, 300);
 };
 
 window.stopLiveDetectionLoop = function() {
+    isLiveDetectionActive = false;
     if (liveDetectionInterval) {
+        clearTimeout(liveDetectionInterval);
         clearInterval(liveDetectionInterval);
         liveDetectionInterval = null;
     }
@@ -488,7 +509,10 @@ window.stopLiveDetectionLoop = function() {
         ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     }
     const liveCountEl = document.getElementById('live-face-count');
-    if (liveCountEl) liveCountEl.textContent = '0';
+    if (liveCountEl) {
+        liveCountEl.textContent = '0';
+        liveCountEl.className = 'text-warning';
+    }
     const popupEl = document.getElementById('live-recognized-popup');
     if (popupEl) popupEl.classList.add('d-none');
 };

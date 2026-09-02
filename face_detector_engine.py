@@ -67,13 +67,14 @@ def enhance_image_for_detection(img_np):
         return img_np, False, 128.0
 
 
-def detect_face_locations_robust(img_np, enable_cnn=True):
+def detect_face_locations_robust(img_np, enable_cnn=False):
     """
-    Multi-stage face detection pipeline:
-      Stage 1: Fast HOG on raw RGB
-      Stage 2: HOG on CLAHE/Gamma enhanced RGB (for low light / dark faces)
-      Stage 3: HOG with 2x upsampling on enhanced RGB (for small/distant faces)
-      Stage 4: Dlib CNN MMOD detector (handles extreme angles, heavy shadows, dark)
+    Multi-stage face detection pipeline optimized for low-latency real-time inference:
+      Stage 1: Fast HOG on raw RGB (takes ~15-25ms; succeeds on standard lighting)
+      Stage 2: HOG on CLAHE/Gamma enhanced RGB (recovers faces in dim/dark rooms)
+      Stage 3: HOG with 2x upsampling on enhanced RGB (recovers small/distant faces)
+      Stage 4: Distance Scale-Up pass (1.4x scaling for small/far faces)
+      Stage 5: Dlib CNN MMOD detector (only when explicitly enabled)
     
     Returns:
         tuple: (face_locations: list of (top, right, bottom, left), enhanced_rgb: np.ndarray)
@@ -81,17 +82,17 @@ def detect_face_locations_robust(img_np, enable_cnn=True):
     if face_recognition is None or img_np is None or img_np.size == 0:
         return [], img_np
 
-    enhanced_rgb, is_low_light, mean_l = enhance_image_for_detection(img_np)
-
-    # Stage 1: Standard HOG on original RGB (fastest for good lighting)
+    # Stage 1: Standard HOG on original RGB (fastest for standard lighting, ~15-25ms)
     try:
         locs = face_recognition.face_locations(img_np, number_of_times_to_upsample=1, model="hog")
         if locs:
-            return locs, enhanced_rgb
+            return locs, img_np
     except Exception as e:
         print(f"[FaceEngine Stage 1 HOG]: {e}")
 
-    # Stage 2: HOG on CLAHE enhanced RGB (recovers faces in dim/dark rooms)
+    # Stage 2: Low-light / dark / contrast enhancement (only if Stage 1 found 0 faces)
+    enhanced_rgb, is_low_light, mean_l = enhance_image_for_detection(img_np)
+
     try:
         locs = face_recognition.face_locations(enhanced_rgb, number_of_times_to_upsample=1, model="hog")
         if locs:
@@ -110,7 +111,7 @@ def detect_face_locations_robust(img_np, enable_cnn=True):
     # Stage 4: Distance Scale-Up pass (upscales distant/small faces 1.4x for high distance recall)
     try:
         h, w = enhanced_rgb.shape[:2]
-        if max(h, w) <= 1280:
+        if max(h, w) <= 960:
             scale_factor = 1.4
             scaled_img = cv2.resize(enhanced_rgb, (0, 0), fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
             locs_scaled = face_recognition.face_locations(scaled_img, number_of_times_to_upsample=1, model="hog")
@@ -150,7 +151,7 @@ def detect_face_locations_robust(img_np, enable_cnn=True):
     return [], enhanced_rgb
 
 
-def get_face_biometrics_robust(img_np, known_face_locations=None, enable_cnn=True):
+def get_face_biometrics_robust(img_np, known_face_locations=None, enable_cnn=False):
     """
     Detects faces and generates 128-d ResNet-34 deep feature embeddings.
     If face encoding extraction fails on raw image (due to darkness or low contrast),

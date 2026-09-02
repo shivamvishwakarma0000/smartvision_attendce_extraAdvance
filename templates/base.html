@@ -969,6 +969,68 @@
                 alert('To install SmartVision on your phone:\n\n• Android Chrome: Tap the top-right 3 dots (⋮) and choose "Install App" or "Add to Home screen".\n• iPhone Safari: Tap the Share icon (↑) and choose "Add to Home Screen".');
             }
         }
+        // =========================================================================
+        // SMART NOTIFICATION ENGINE (ROLE-SCOPED PUSH & SYSTEM ALERTS)
+        // =========================================================================
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then((permission) => {
+                    console.log('SmartVision Notification Permission status:', permission);
+                });
+            }
+        }
+
+        // Ask for notification permission after page loads if user is authenticated
+        window.addEventListener('load', () => {
+            {% if current_user.is_authenticated %}
+                setTimeout(requestNotificationPermission, 2500);
+                pollRoleNotifications();
+                // Check for updates every 45 seconds while app/tab is active
+                setInterval(pollRoleNotifications, 45000);
+            {% endif %}
+        });
+
+        function pollRoleNotifications() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            fetch('/api/user/notifications')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.notifications && data.notifications.length > 0) {
+                        data.notifications.forEach(notif => {
+                            const seenKey = 'notif_seen_' + notif.id;
+                            if (!localStorage.getItem(seenKey)) {
+                                showSystemNotification(notif);
+                                localStorage.setItem(seenKey, 'true');
+                            }
+                        });
+                    }
+                })
+                .catch(err => console.debug('Notifications polling:', err));
+        }
+
+        function showSystemNotification(notif) {
+            const options = {
+                body: notif.body,
+                icon: "{{ url_for('static', filename='images/icon-192.png') }}",
+                badge: "{{ url_for('static', filename='images/icon-192.png') }}",
+                data: { url: notif.url || '/' },
+                tag: notif.tag || 'smartvision_alert',
+                vibrate: [200, 100, 200]
+            };
+
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then((reg) => {
+                    reg.showNotification(notif.title, options);
+                });
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+                const nativeNotif = new Notification(notif.title, options);
+                nativeNotif.onclick = function() {
+                    window.focus();
+                    if (notif.url) window.location.href = notif.url;
+                };
+            }
+        }
     </script>
 </body>
 </html>

@@ -858,6 +858,136 @@ def ai_copilot_query():
     return jsonify(result)
 
 
+# ==============================================================================
+# ROLE-BASED LIVE NOTIFICATIONS POLLING ENDPOINT (FOR APP & PWA)
+# ==============================================================================
+@main_bp.route('/api/user/notifications', methods=['GET'])
+@login_required
+def get_user_notifications():
+    """
+    Returns live, real-time unread notifications strictly scoped to the user's role:
+    - ADMIN: Pending teacher/student registrations, edit approvals, discrepancy requests.
+    - TEACHER: Assigned proxy duties, approved leaves, student change requests, admin notices.
+    - STUDENT: College holidays/off days, class notices, approved modifications, attendance alerts.
+    """
+    notifications = []
+    role = getattr(current_user, 'role', 'user')
+
+    try:
+        if role == 'admin':
+            # 1. New Pending Teacher Registrations
+            pending_teachers = Teacher.query.filter_by(status='Pending').count()
+            if pending_teachers > 0:
+                notifications.append({
+                    'id': f'admin_pending_teachers_{pending_teachers}',
+                    'title': 'Faculty Approval Required',
+                    'body': f'{pending_teachers} faculty member(s) registered and awaiting your approval.',
+                    'url': url_for('main.admin_approvals'),
+                    'tag': 'admin_teachers'
+                })
+
+            # 2. Pending Student Profile Edit Requests
+            pending_edits = StudentEditRequest.query.filter_by(status='PENDING').count()
+            if pending_edits > 0:
+                notifications.append({
+                    'id': f'admin_student_edits_{pending_edits}',
+                    'title': 'Student Modification Request',
+                    'body': f'{pending_edits} student modification request(s) waiting for review.',
+                    'url': url_for('main.admin_approvals'),
+                    'tag': 'admin_edits'
+                })
+
+            # 3. Pending Discrepancy Requests
+            pending_discrepancies = CorrectionRequest.query.filter_by(status='Pending').count()
+            if pending_discrepancies > 0:
+                notifications.append({
+                    'id': f'admin_discrepancies_{pending_discrepancies}',
+                    'title': 'Attendance Correction Request',
+                    'body': f'{pending_discrepancies} attendance discrepancy request(s) need attention.',
+                    'url': url_for('main.admin_approvals'),
+                    'tag': 'admin_discrepancies'
+                })
+
+        elif role == 'teacher':
+            teacher = getattr(current_user, 'teacher_profile', None)
+            if teacher:
+                # 1. Proxy duty assignments for today
+                from models import TeacherLeave
+                today = get_current_date()
+                today_proxies = TeacherLeave.query.filter_by(
+                    substitute_teacher_id=teacher.id,
+                    status='APPROVED'
+                ).filter(TeacherLeave.date_from <= today, TeacherLeave.date_to >= today).count()
+
+                if today_proxies > 0:
+                    notifications.append({
+                        'id': f'teacher_proxy_{today}_{today_proxies}',
+                        'title': 'Proxy Duty Assigned',
+                        'body': f'You have {today_proxies} proxy lecture duty scheduled for today.',
+                        'url': url_for('teacher.proxy_classes'),
+                        'tag': 'teacher_proxy'
+                    })
+
+                # 2. Institutional Notices for Teachers
+                from models import TeacherReadNotice
+                read_notice_ids = [r.announcement_id for r in TeacherReadNotice.query.filter_by(teacher_id=teacher.id).all()]
+                unread_notices = ClassAnnouncement.query.filter(
+                    ClassAnnouncement.target_role.in_(['TEACHERS', 'ALL']),
+                    ~ClassAnnouncement.id.in_(read_notice_ids) if read_notice_ids else True
+                ).order_by(ClassAnnouncement.created_at.desc()).limit(3).all()
+
+                for notice in unread_notices:
+                    notifications.append({
+                        'id': f'teacher_notice_{notice.id}',
+                        'title': f'Notice: {notice.title[:40]}',
+                        'body': notice.content[:100] + ('...' if len(notice.content) > 100 else ''),
+                        'url': url_for('teacher.announcements'),
+                        'tag': f'notice_{notice.id}'
+                    })
+
+        elif role == 'student':
+            student = getattr(current_user, 'student_profile', None)
+            if student:
+                # 1. Today Holiday / College Off Alert
+                today = get_current_date()
+                holiday_today = Holiday.query.filter_by(date=today).first()
+                if holiday_today:
+                    notifications.append({
+                        'id': f'student_holiday_{today}',
+                        'title': f'College Holiday: {holiday_today.name}',
+                        'body': f'Today ({today.strftime("%A, %d %b")}) is declared as a holiday. Classes are off.',
+                        'url': url_for('student.dashboard'),
+                        'tag': f'holiday_{today}'
+                    })
+
+                # 2. Class Announcements & Notices
+                from models import StudentReadNotice
+                read_notice_ids = [r.announcement_id for r in StudentReadNotice.query.filter_by(student_id=student.id).all()]
+                unread_notices = ClassAnnouncement.query.filter(
+                    (ClassAnnouncement.class_id == student.class_id) | (ClassAnnouncement.class_id == None),
+                    ClassAnnouncement.target_role.in_(['STUDENTS', 'ALL']),
+                    ~ClassAnnouncement.id.in_(read_notice_ids) if read_notice_ids else True
+                ).order_by(ClassAnnouncement.created_at.desc()).limit(3).all()
+
+                for notice in unread_notices:
+                    notifications.append({
+                        'id': f'student_notice_{notice.id}',
+                        'title': f'Notice: {notice.title[:40]}',
+                        'body': notice.content[:100] + ('...' if len(notice.content) > 100 else ''),
+                        'url': url_for('student.student_notices'),
+                        'tag': f'notice_{notice.id}'
+                    })
+
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+
+    return jsonify({
+        'role': role,
+        'notifications': notifications
+    })
+
+
+
 @main_bp.route('/manage_classes', methods=['GET', 'POST'])
 @login_required
 @admin_required

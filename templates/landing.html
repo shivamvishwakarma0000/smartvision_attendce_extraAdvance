@@ -344,9 +344,10 @@
         </a>
 
         <div class="d-flex align-items-center gap-2">
-            <!-- Discreet Download App Arrow Button -->
-            <button type="button" id="pwaDownloadArrowBtn" class="btn btn-outline-secondary btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; border-color: rgba(255,255,255,0.2); color: #cbd5e1; transition: all 0.2s ease;" onclick="triggerAppInstall()" title="Download & Install App">
-                <i class="fa-solid fa-arrow-down" style="font-size: 0.85rem;"></i>
+            <!-- Prominent yet clean Download App Arrow Button -->
+            <button type="button" id="pwaDownloadArrowBtn" class="btn btn-outline-info btn-sm rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-semibold shadow-sm" style="border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); color: #38bdf8; transition: all 0.2s ease;" onclick="triggerAppInstall()" title="Download & Install SmartVision App">
+                <i class="fa-solid fa-download" style="font-size: 0.85rem;"></i>
+                <span class="d-none d-sm-inline fs-9">App</span>
             </button>
 
             <!-- Theme Toggle Button -->
@@ -1788,19 +1789,21 @@
     let deferredPrompt;
 
     function isAppAlreadyInstalled() {
-        // Returns true if opened inside standalone PWA mode, or marked installed in localStorage
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                             window.navigator.standalone === true || 
-                             document.referrer.includes('android-app://') ||
-                             localStorage.getItem('smartvision_app_installed') === 'true';
-        return isStandalone;
+        return window.matchMedia('(display-mode: standalone)').matches || 
+               window.navigator.standalone === true || 
+               document.referrer.includes('android-app://') ||
+               localStorage.getItem('smartvision_app_installed') === 'true';
     }
 
     // Hide download arrow button if already installed
     function checkDownloadArrowVisibility() {
         const arrowBtn = document.getElementById('pwaDownloadArrowBtn');
-        if (arrowBtn && isAppAlreadyInstalled()) {
-            arrowBtn.style.setProperty('display', 'none', 'important');
+        if (arrowBtn) {
+            if (isAppAlreadyInstalled()) {
+                arrowBtn.style.setProperty('display', 'none', 'important');
+            } else {
+                arrowBtn.style.removeProperty('display');
+            }
         }
     }
 
@@ -1810,13 +1813,12 @@
         deferredPrompt = e;
         console.log('SmartVision PWA ready for installation');
 
-        // Only show popup for first-time visitors (persists in localStorage)
-        const hasSeenPrompt = localStorage.getItem('smartvision_install_prompt_seen');
-        if (!hasSeenPrompt) {
-            setTimeout(() => {
+        // Show install popup prompt
+        setTimeout(() => {
+            if (!isAppAlreadyInstalled()) {
                 showAppInstallModal();
-            }, 1800);
-        }
+            }
+        }, 1200);
     });
 
     // Listen for app installed event directly from browser
@@ -1832,19 +1834,16 @@
         const modal = document.getElementById('appInstallModal');
         if (modal) {
             modal.style.display = 'flex';
-            modal.classList.add('show-modal');
         }
-        // Mark that user has been presented with the prompt
-        localStorage.setItem('smartvision_install_prompt_seen', 'true');
     }
 
     function closeAppInstallModal() {
         const modal = document.getElementById('appInstallModal');
         if (modal) {
             modal.style.display = 'none';
-            modal.classList.remove('show-modal');
         }
-        localStorage.setItem('smartvision_install_prompt_seen', 'true');
+        // Remember dismissal for this browser session so it doesn't interrupt repeatedly while browsing
+        sessionStorage.setItem('smartvision_session_dismissed', 'true');
     }
 
     function triggerAppInstall() {
@@ -1864,17 +1863,13 @@
         }
     }
 
-    // Check on load
+    // Check on page load and trigger modal if not yet installed
     window.addEventListener('load', () => {
         checkDownloadArrowVisibility();
-        // For devices where beforeinstallprompt doesn't fire (like Safari on iOS):
-        if (!isAppAlreadyInstalled()) {
-            const hasSeenPrompt = localStorage.getItem('smartvision_install_prompt_seen');
-            if (!hasSeenPrompt) {
-                setTimeout(() => {
-                    showAppInstallModal();
-                }, 2200);
-            }
+        if (!isAppAlreadyInstalled() && !sessionStorage.getItem('smartvision_session_dismissed')) {
+            setTimeout(() => {
+                showAppInstallModal();
+            }, 1500);
         }
     });
 </script>

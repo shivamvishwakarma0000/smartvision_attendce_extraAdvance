@@ -238,6 +238,11 @@
                 </div>
                 
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <!-- Discreet Download App Arrow Button -->
+                    <button type="button" id="baseDownloadArrowBtn" class="btn btn-link text-decoration-none p-1.5 border-0" style="color: var(--text-secondary); font-size: 0.95rem; cursor: pointer; transition: transform 0.2s;" onclick="triggerAppInstall()" title="Download & Install App">
+                        <i class="fa-solid fa-arrow-down"></i>
+                    </button>
+
                     <!-- Theme Toggle Button -->
                     <button id="themeToggle" class="btn btn-link text-decoration-none p-1.5 border-0" style="color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;" title="Toggle Dark/Light Mode">
                         <i class="fa-solid fa-moon"></i>
@@ -920,6 +925,27 @@
                         console.log('SmartVision ServiceWorker registration failed:', err);
                     });
             });
+        }
+
+        // PWA Install prompt trigger for discreet download arrow
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        function triggerAppInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted app install');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('To install SmartVision on your phone:\n\n• Android Chrome: Tap the top-right 3 dots (⋮) and choose "Install App" or "Add to Home screen".\n• iPhone Safari: Tap the Share icon (↑) and choose "Add to Home Screen".');
+            }
         }
     </script>
 </body>

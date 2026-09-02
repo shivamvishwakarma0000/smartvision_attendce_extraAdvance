@@ -1420,53 +1420,19 @@ def take_attendance():
         # Now run face recognition on all collected photo paths
         for filepath in temp_photo_paths:
             try:
-                cv_faces_count = 0
-                try:
-                    import cv2
-                    img_cv = cv2.imread(filepath)
-                    if img_cv is not None:
-                        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-                        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-                        detected_cv = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=2, minSize=(20, 20))
-                        cv_faces_count = len(detected_cv)
-                except Exception:
-                    pass
-
-                unknown_face_encodings = []
-                if face_recognition is not None:
-                    try:
-                        unknown_image = face_recognition.load_image_file(filepath)
-                        h, w = unknown_image.shape[:2]
-                        if max(h, w) > 800:
-                            scaling = 800.0 / float(max(h, w))
-                            new_w, new_h = int(w * scaling), int(h * scaling)
-                            try:
-                                import cv2
-                                unknown_image = cv2.resize(unknown_image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-                            except ImportError:
-                                from PIL import Image
-                                pil_img = Image.fromarray(unknown_image)
-                                unknown_image = np.array(pil_img.resize((new_w, new_h), Image.Resampling.LANCZOS))
-                        unknown_face_encodings = face_recognition.face_encodings(unknown_image)
-                    except Exception as e:
-                        print(f"face_recognition scan error: {e}")
-
-                faces_in_photo = max(len(unknown_face_encodings), cv_faces_count)
+                from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+                unknown_image = face_recognition.load_image_file(filepath)
+                face_locs, unknown_face_encodings = get_face_biometrics_robust(unknown_image)
+                faces_in_photo = len(face_locs)
                 total_faces_found += faces_in_photo
 
-                if unknown_face_encodings and known_face_encodings and face_recognition is not None:
+                if unknown_face_encodings and known_face_encodings:
                     for face_encoding in unknown_face_encodings:
-                        distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-                        if len(distances) > 0:
-                            best_idx = int(np.argmin(distances))
-                            if distances[best_idx] < 0.55:
+                        if face_encoding is not None:
+                            best_idx, min_dist, is_match, _ = match_face_encoding(face_encoding, known_face_encodings, tolerance=0.58)
+                            if is_match and best_idx is not None:
                                 student_id = known_students_with_encodings[best_idx].id
                                 present_student_ids.add(student_id)
-
-                # Fallback: if faces were detected in photo and valid students exist in class, mark students present
-                if (faces_in_photo > 0 or temp_photo_paths) and not present_student_ids and valid_students:
-                    for s in valid_students:
-                        present_student_ids.add(s.id)
 
             except Exception as e:
                 flash(f"Error processing image {os.path.basename(filepath)}: {e}", "danger")
@@ -1477,12 +1443,7 @@ def take_attendance():
                     except Exception as e:
                         print(f"Error removing temp file {filepath}: {e}")
 
-        # Final fallback guarantee if photos/snaps were submitted
-        if not present_student_ids and valid_students and (has_uploaded_files or has_captured_photos or temp_photo_paths):
-            for s in valid_students:
-                present_student_ids.add(s.id)
-            if total_faces_found == 0:
-                total_faces_found = len(valid_students)
+
 
         # Record Present records in AttendanceRecord + AttendanceSession + Attendance
         time_now = get_current_time_str()
@@ -1627,32 +1588,9 @@ def api_live_detect():
 
         img_np = np.array(pil_img)
 
-        # Detect face bounding boxes
-        face_locations = []
-        face_encodings = []
-
-        # Try face_recognition HOG first (highest accuracy), fallback to OpenCV Haar Cascade
-        if face_recognition is not None:
-            try:
-                face_locations = face_recognition.face_locations(img_np, model="hog")
-            except Exception as fe_err:
-                pass
-
-        if not face_locations:
-            try:
-                import cv2
-                face_casc, alt_casc = get_face_cascades()
-                if face_casc is not None:
-                    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-                    gray = cv2.equalizeHist(gray)
-                    cv_faces = face_casc.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
-                    if len(cv_faces) == 0 and alt_casc is not None:
-                        cv_faces = alt_casc.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
-
-                    if len(cv_faces) > 0:
-                        face_locations = [(int(y), int(x + w), int(y + h), int(x)) for (x, y, w, h) in cv_faces]
-            except Exception:
-                pass
+        # Detect face bounding boxes & 128-d embeddings using robust multi-pass engine (low-light enabled)
+        from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+        face_locations, face_encodings = get_face_biometrics_robust(img_np)
 
         if not face_locations:
             return jsonify({
@@ -1662,15 +1600,6 @@ def api_live_detect():
                 'img_width': width,
                 'img_height': height
             })
-
-        if face_recognition is not None and face_locations:
-            try:
-                face_encodings = face_recognition.face_encodings(img_np, face_locations)
-            except Exception as enc_err:
-                print(f"[LiveDetect Warning] Encoding error: {enc_err}")
-
-        if not face_encodings:
-            face_encodings = [None] * len(face_locations)
 
         # Filter target students based on provided class/subject or fallback to all registered students
         target_students = []
@@ -1691,12 +1620,11 @@ def api_live_detect():
                     photo_path = os.path.join(FACES_FOLDER, s.image_filename)
                     if os.path.exists(photo_path):
                         img = face_recognition.load_image_file(photo_path)
-                        encs = face_recognition.face_encodings(img)
-                        if encs:
+                        _, encs = get_face_biometrics_robust(img)
+                        if encs and encs[0] is not None:
                             s.face_encoding = encs[0].tobytes()
                             db.session.commit()
                 except Exception as repair_err:
-                    print(f"Could not auto-generate encoding for student {s.id}: {repair_err}")
                     print(f"Could not auto-generate encoding for student {s.id}: {repair_err}")
 
         valid_students = [s for s in target_students if s.face_encoding is not None and len(s.face_encoding) == 1024]
@@ -1716,39 +1644,15 @@ def api_live_detect():
             match_found = False
             confidence_str = "0%"
 
-            # Calculate encoding on the fly for OpenCV bounding box if missing
-            if encoding is None and face_recognition is not None:
-                try:
-                    encs = face_recognition.face_encodings(img_np, [loc])
-                    if encs:
-                        encoding = encs[0]
-                except Exception as e:
-                    pass
-
-            if encoding is not None and known_encodings and face_recognition is not None:
-                try:
-                    distances = face_recognition.face_distance(known_encodings, encoding)
-                    if len(distances) > 0:
-                        best_match_idx = np.argmin(distances)
-                        best_dist = distances[best_match_idx]
-                        if best_dist < 0.65:
-                            matched_student = valid_students[best_match_idx]
-                            matched_name = matched_student.name
-                            matched_roll = matched_student.roll_no or ""
-                            match_found = True
-                            confidence = max(0, min(100, int((1.0 - best_dist) * 100)))
-                            confidence_str = f"{confidence}%"
-                except Exception as dist_err:
-                    print(f"[LiveDetect Warning] Distance calculation error: {dist_err}")
-
-            if not match_found and valid_students:
-                # Fallback matching for single student in class or face detection
-                if len(valid_students) == 1:
-                    matched_student = valid_students[0]
+            # Calibrated distance matching against registered students
+            if encoding is not None and known_encodings:
+                best_idx, min_dist, is_match, conf_str = match_face_encoding(encoding, known_encodings, tolerance=0.58)
+                if is_match and best_idx is not None:
+                    matched_student = valid_students[best_idx]
                     matched_name = matched_student.name
                     matched_roll = matched_student.roll_no or ""
                     match_found = True
-                    confidence_str = "95%"
+                    confidence_str = conf_str
 
             detected_faces.append({
                 'box': {'top': top, 'right': right, 'bottom': bottom, 'left': left},

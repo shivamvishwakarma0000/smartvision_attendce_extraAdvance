@@ -525,21 +525,18 @@ def take_proxy_attendance():
                             from PIL import Image
                             img = np.array(Image.fromarray(img).resize((new_w, new_h)))
 
-                    # upsample=1 improves detection of smaller/distant faces in webcam frames
-                    face_locations = face_recognition.face_locations(img, number_of_times_to_upsample=1)
-                    unknown_encodings = face_recognition.face_encodings(img, face_locations)
+                    from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+                    face_locations, unknown_encodings = get_face_biometrics_robust(img)
                     print(f"[Proxy] Photo {os.path.basename(filepath)}: {len(face_locations)} face(s) detected.")
                     for unk_enc in unknown_encodings:
-                        distances = face_recognition.face_distance(known_encodings, unk_enc)
-                        if len(distances) > 0:
-                            best_idx = int(np.argmin(distances))
-                            best_dist = distances[best_idx]
-                            print(f"[Proxy] Best match distance: {best_dist:.3f} -> student id={valid_students[best_idx].id}")
-                            if best_dist < 0.55:
+                        if unk_enc is not None and known_encodings:
+                            best_idx, min_dist, is_match, conf_str = match_face_encoding(unk_enc, known_encodings, tolerance=0.58)
+                            if is_match and best_idx is not None:
                                 student_id = valid_students[best_idx].id
-                                confidence = round(float(1.0 - best_dist), 2)
+                                confidence = round(float(1.0 - min_dist), 2)
                                 matched_student_ids.add(student_id)
                                 confidence_scores[student_id] = confidence
+                                print(f"[Proxy] Matched student id={student_id} with confidence={confidence}")
             except Exception as scan_err:
                 print(f"Proxy scan error on {filepath}: {scan_err}")
             finally:
@@ -1075,16 +1072,15 @@ def take_attendance():
                                 from PIL import Image
                                 img = np.array(Image.fromarray(img).resize((new_w, new_h)))
 
-                        unknown_encodings = face_recognition.face_encodings(img)
+                        from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+                        _, unknown_encodings = get_face_biometrics_robust(img)
                         for unk_enc in unknown_encodings:
-                            distances = face_recognition.face_distance(known_encodings, unk_enc)
-                            if len(distances) > 0:
-                                best_idx = np.argmin(distances)
-                                best_dist = distances[best_idx]
-                                if best_dist < 0.70:
+                            if unk_enc is not None and known_encodings:
+                                best_idx, min_dist, is_match, _ = match_face_encoding(unk_enc, known_encodings, tolerance=0.58)
+                                if is_match and best_idx is not None:
                                     st_obj = valid_students[best_idx]
                                     matched_student_ids.add(st_obj.id)
-                                    confidence_scores[st_obj.id] = round(float(1.0 - best_dist), 2)
+                                    confidence_scores[st_obj.id] = round(float(1.0 - min_dist), 2)
                 except Exception as e:
                     print(f"Sandbox face scan error: {e}")
                 finally:
@@ -1161,15 +1157,14 @@ def take_attendance():
                                 from PIL import Image
                                 img = np.array(Image.fromarray(img).resize((new_w, new_h)))
 
-                        unknown_encodings = face_recognition.face_encodings(img)
+                        from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+                        _, unknown_encodings = get_face_biometrics_robust(img)
                         for unk_enc in unknown_encodings:
-                            distances = face_recognition.face_distance(known_encodings, unk_enc)
-                            if len(distances) > 0:
-                                best_idx = np.argmin(distances)
-                                best_dist = distances[best_idx]
-                                if best_dist < 0.70:
+                            if unk_enc is not None and known_encodings:
+                                best_idx, min_dist, is_match, _ = match_face_encoding(unk_enc, known_encodings, tolerance=0.58)
+                                if is_match and best_idx is not None:
                                     student_id = valid_students[best_idx].id
-                                    confidence = round(float(1.0 - best_dist), 2)
+                                    confidence = round(float(1.0 - min_dist), 2)
                                     matched_student_ids.add(student_id)
                                     confidence_scores[student_id] = confidence
                 except Exception as scan_err:

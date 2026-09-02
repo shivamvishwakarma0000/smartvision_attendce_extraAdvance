@@ -244,56 +244,56 @@ def verify_teacher_face(teacher, captured_base64, session_name='checkin'):
         filepath = os.path.join(upload_folder, filename)
         img_pil.save(filepath, quality=90)
 
-        # 1. Try face_recognition detection and 128-d encoding
-        unknown_encodings = []
-        try:
-            import face_recognition
-            unknown_encodings = face_recognition.face_encodings(img_np)
-        except Exception as e:
-            print(f"[Face Recognition library error]: {e}")
-
-        # 2. Try OpenCV Haar Cascade if face_recognition returned 0
-        detected_faces_count = len(unknown_encodings)
-        if detected_faces_count == 0:
+        # 1. Recover teacher face encoding if not present in DB
+        if not teacher.face_encoding and (teacher.image_filename or teacher.image_data):
             try:
-                import cv2
-                img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-                gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-                face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-                detected_cv = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
-                detected_faces_count = len(detected_cv)
-            except Exception as e:
-                print(f"[OpenCV Face detection error]: {e}")
+                from face_detector_engine import get_face_biometrics_robust
+                if teacher.image_filename:
+                    prof_path = os.path.join(upload_folder, teacher.image_filename)
+                    if not os.path.exists(prof_path):
+                        prof_path = os.path.join(os.getcwd(), 'static', 'faces', teacher.image_filename)
+                    if os.path.exists(prof_path):
+                        ref_pil = Image.open(prof_path).convert('RGB')
+                        _, ref_encs = get_face_biometrics_robust(np.array(ref_pil))
+                        if ref_encs and ref_encs[0] is not None:
+                            teacher.face_encoding = ref_encs[0].tobytes()
+                            db.session.commit()
+            except Exception as rec_err:
+                print(f"[Teacher Encoding Recovery Error]: {rec_err}")
 
-        # Check face presence
-        if detected_faces_count == 0:
+        # 2. Detect face and extract 128-d embeddings using robust multi-pass engine
+        from face_detector_engine import get_face_biometrics_robust, match_face_encoding
+        face_locations, unknown_encodings = get_face_biometrics_robust(img_np)
+        valid_encodings = [e for e in unknown_encodings if e is not None]
+
+        # 3. Check face presence & single-face constraint
+        if len(face_locations) == 0 or len(valid_encodings) == 0:
             if os.path.exists(filepath):
                 try: os.remove(filepath)
                 except Exception: pass
-            return False, "No face detected in camera photo. Please align your face clearly in the camera frame.", None, False
+            return False, "No face detected in camera photo. Please align your face clearly inside the scanner oval.", None, False
 
-        if detected_faces_count > 1 and len(unknown_encodings) > 1:
+        if len(face_locations) > 1:
             if os.path.exists(filepath):
                 try: os.remove(filepath)
                 except Exception: pass
-            return False, f"Multiple faces ({detected_faces_count}) detected in camera view. Please make sure only you are in the camera frame.", None, False
+            return False, f"Multiple faces ({len(face_locations)}) detected in camera view. Please ensure only you are in front of the camera.", None, False
 
-        # 3. Match against registered face encoding if present
-        if teacher.face_encoding and len(unknown_encodings) > 0:
+        # 4. Strictly match against registered face encoding
+        if teacher.face_encoding and len(valid_encodings) > 0:
             try:
-                import face_recognition
                 known_encoding = np.frombuffer(teacher.face_encoding, dtype=np.float64)
-                distances = face_recognition.face_distance([known_encoding], unknown_encodings[0])
-                if distances[0] > 0.60:
+                best_idx, min_dist, is_match, conf_str = match_face_encoding(valid_encodings[0], [known_encoding], tolerance=0.60)
+                if not is_match:
                     if os.path.exists(filepath):
                         try: os.remove(filepath)
                         except Exception: pass
-                    return False, f"Face verification failed: Face does not match your registered teacher profile (Distance: {round(float(distances[0]), 2)}).", None, False
+                    return False, f"Face verification failed: Face does not match registered profile (Match Distance: {round(min_dist, 2)}).", None, False
             except Exception as e:
                 print(f"[Face Match Check Warning]: {e}")
-        elif not teacher.face_encoding and len(unknown_encodings) > 0:
-            # First-time automatic enrollment: register teacher face encoding from first verified office check-in
-            teacher.face_encoding = unknown_encodings[0].tobytes()
+        elif not teacher.face_encoding and len(valid_encodings) > 0:
+            # First-time automatic enrollment from verified check-in
+            teacher.face_encoding = valid_encodings[0].tobytes()
             db.session.commit()
 
         return True, "✓ Face & Geolocation Verified!", filename, True

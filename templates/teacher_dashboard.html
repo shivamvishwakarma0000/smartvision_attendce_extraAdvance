@@ -1362,9 +1362,9 @@
                     } else {
                         isAutoScanBusy = false;
                         if (statusEl) {
-                            statusEl.innerHTML = `<span class="text-white-75 fs-9"><i class="fa-solid fa-face-viewfinder text-warning me-1"></i>Align face inside oval guide...</span>`;
+                            statusEl.innerHTML = `<span class="text-warning fs-9"><i class="fa-solid fa-triangle-exclamation me-1"></i>${data.message || 'Align face inside oval guide...'}</span>`;
                         }
-                        if (!isAuto && alertEl) {
+                        if (alertEl) {
                             alertEl.textContent = `❌ ${data.message}` + (data.distance ? ` (Your Distance: ${data.distance}m, Allowed: ${data.allowed_radius}m)` : '');
                             alertEl.classList.remove('d-none');
                         }

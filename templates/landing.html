@@ -1784,7 +1784,7 @@
     }
 
     // ==========================================
-    // PWA & APP INSTALLATION POPUP LOGIC
+    // PWA & APP INSTALLATION POPUP & NOTIFICATION LOGIC
     // ==========================================
     let deferredPrompt;
 
@@ -1795,38 +1795,53 @@
                localStorage.getItem('smartvision_app_installed') === 'true';
     }
 
-    // Hide download arrow button if already installed
+    // Only hide download button when app is ACTUALLY installed
     function checkDownloadArrowVisibility() {
         const arrowBtn = document.getElementById('pwaDownloadArrowBtn');
         if (arrowBtn) {
             if (isAppAlreadyInstalled()) {
                 arrowBtn.style.setProperty('display', 'none', 'important');
             } else {
-                arrowBtn.style.removeProperty('display');
+                arrowBtn.style.setProperty('display', 'inline-flex', 'important');
             }
         }
     }
 
+    // Capture standard browser install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
         if (isAppAlreadyInstalled()) return;
         e.preventDefault();
         deferredPrompt = e;
         console.log('SmartVision PWA ready for installation');
 
-        // Show install popup prompt
-        setTimeout(() => {
-            if (!isAppAlreadyInstalled()) {
-                showAppInstallModal();
-            }
-        }, 1200);
+        // Only show popup on first time landing on phone
+        const seenFirstTime = localStorage.getItem('smartvision_first_visit_prompt_seen');
+        if (!seenFirstTime) {
+            setTimeout(() => {
+                if (!isAppAlreadyInstalled()) {
+                    showAppInstallModal();
+                }
+            }, 1200);
+        }
     });
 
-    // Listen for app installed event directly from browser
+    // Request notification permission right when app installs or opens
+    function requestAppNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then((permission) => {
+                console.log('Notification permission granted on install:', permission);
+            });
+        }
+    }
+
+    // Listen for app installed event directly from device
     window.addEventListener('appinstalled', () => {
         console.log('SmartVision successfully installed on device!');
         localStorage.setItem('smartvision_app_installed', 'true');
         closeAppInstallModal();
         checkDownloadArrowVisibility();
+        // Immediately ask for notifications on installation
+        setTimeout(requestAppNotificationPermission, 1000);
     });
 
     function showAppInstallModal() {
@@ -1842,11 +1857,14 @@
         if (modal) {
             modal.style.display = 'none';
         }
-        // Remember dismissal for this browser session so it doesn't interrupt repeatedly while browsing
-        sessionStorage.setItem('smartvision_session_dismissed', 'true');
+        // Remember that first-time popup was shown
+        localStorage.setItem('smartvision_first_visit_prompt_seen', 'true');
     }
 
     function triggerAppInstall() {
+        // Request notifications permission alongside download
+        requestAppNotificationPermission();
+
         if (deferredPrompt) {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult) => {
@@ -1863,15 +1881,27 @@
         }
     }
 
-    // Check on page load and trigger modal if not yet installed
+    // Check on page load
     window.addEventListener('load', () => {
         checkDownloadArrowVisibility();
-        if (!isAppAlreadyInstalled() && !sessionStorage.getItem('smartvision_session_dismissed')) {
+
+        // If user is running inside the downloaded app, ask for notification permission automatically
+        if (isAppAlreadyInstalled()) {
+            setTimeout(requestAppNotificationPermission, 1500);
+            return;
+        }
+
+        // First-time landing check (works on Chrome, Safari iOS, etc.)
+        const seenFirstTime = localStorage.getItem('smartvision_first_visit_prompt_seen');
+        if (!seenFirstTime) {
             setTimeout(() => {
-                showAppInstallModal();
+                if (!isAppAlreadyInstalled()) {
+                    showAppInstallModal();
+                }
             }, 1500);
         }
     });
+</script>
 </script>
 
 <!-- Clean & Minimal Modern App Download / Install Popup Modal -->

@@ -53,6 +53,7 @@ def run_migrations(db_path="smartvision.db"):
             ("teachers", "tertiary_subject", "VARCHAR(100)"),
             ("subjects", "admin_id", "INTEGER"),
             ("subjects", "code", "VARCHAR(50)"),
+            ("subjects", "subject_type", "VARCHAR(20) DEFAULT 'Theory'"),
             ("students", "user_id", "INTEGER"),
             ("students", "mobile", "VARCHAR(20)"),
             ("students", "roll_number", "VARCHAR(50)"),

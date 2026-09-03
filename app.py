@@ -393,6 +393,8 @@ def ensure_postgresql_columns():
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS primary_subject VARCHAR(100)",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS secondary_subject VARCHAR(100)",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS tertiary_subject VARCHAR(100)",
+            "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS code VARCHAR(50)",
+            "ALTER TABLE subjects ADD COLUMN IF NOT EXISTS subject_type VARCHAR(20) DEFAULT 'Theory'",
             "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_name VARCHAR(100)",
             "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_email VARCHAR(100)",
             "ALTER TABLE student_edit_requests ADD COLUMN IF NOT EXISTS new_parent_mobile VARCHAR(20)",

@@ -78,16 +78,43 @@
         <div class="card shadow-sm border-0 mb-4 p-4 rounded-4 bg-white">
             <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-book-bookmark text-primary me-2"></i> Add New Subject & Assign Faculty</h5>
             <form method="POST" action="{{ url_for('main.manage_subjects') }}">
-                <!-- Subject Name -->
+                <!-- Subject Name & Optional Code -->
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <label for="subject_name" class="form-label fw-semibold">Subject Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control rounded-3" id="subject_name" name="subject_name" placeholder="e.g. Cybersecurity, High Performance Computing" required>
+                    </div>
+                    <div class="col-4">
+                        <label for="subject_code" class="form-label fw-semibold text-muted">Code <span class="fs-9">(Optional)</span></label>
+                        <input type="text" class="form-control rounded-3 font-monospace" id="subject_code" name="subject_code" placeholder="e.g. 303105341">
+                    </div>
+                </div>
+
+                <!-- Subject Type (Theory vs Practical Lab) -->
                 <div class="mb-3">
-                    <label for="subject_name" class="form-label fw-semibold">Subject Name</label>
-                    <input type="text" class="form-control rounded-3" id="subject_name" name="subject_name" placeholder="e.g. Computer Networks" required>
+                    <label class="form-label fw-semibold fs-8 text-dark">Subject / Course Type <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2">
+                        <div class="flex-fill">
+                            <input type="radio" class="btn-check" name="subject_type" id="subtype_theory" value="Theory" checked>
+                            <label class="btn btn-outline-primary btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-center d-flex align-items-center justify-content-center gap-1.5" for="subtype_theory">
+                                <i class="fa-solid fa-book-open"></i>
+                                <span>Theory (1 Period / 55 min)</span>
+                            </label>
+                        </div>
+                        <div class="flex-fill">
+                            <input type="radio" class="btn-check" name="subject_type" id="subtype_practical" value="Practical">
+                            <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 rounded-3 fw-bold fs-9 text-center d-flex align-items-center justify-content-center gap-1.5" for="subtype_practical">
+                                <i class="fa-solid fa-flask"></i>
+                                <span>Practical / Lab (2 Periods / ~2 Hrs)</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="row">
                     <!-- Class Selection -->
                     <div class="col-md-6 mb-3">
-                        <label for="class_id" class="form-label fw-semibold">1. Assign to Class</label>
+                        <label for="class_id" class="form-label fw-semibold">1. Assign to Class <span class="text-danger">*</span></label>
                         <select class="form-select rounded-3" id="class_id" name="class_id" required>
                             <option selected disabled value="">Choose Class...</option>
                             {% for class_item in classes %}
@@ -98,7 +125,7 @@
 
                     <!-- Teacher Selection -->
                     <div class="col-md-6 mb-3">
-                        <label for="teacher_id" class="form-label fw-semibold">2. Assign Teacher</label>
+                        <label for="teacher_id" class="form-label fw-semibold">2. Assign Teacher <span class="text-danger">*</span></label>
                         <select class="form-select rounded-3" id="teacher_id" name="teacher_id" required>
                             <option selected disabled value="">Choose Enrolled Teacher...</option>
                             {% for teacher in teachers %}
@@ -124,6 +151,7 @@
                 <table class="table table-striped table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th>Type</th>
                             <th>Subject</th>
                             <th>Class</th>
                             <th>Teacher</th>
@@ -133,7 +161,23 @@
                     <tbody id="activeSubjectsTableBody">
                         {% for subject in subjects %}
                         <tr class="active-subject-row">
-                            <td class="fw-bold text-dark">{{ subject.name }}</td>
+                            <td>
+                                {% if subject.subject_type == 'Practical' %}
+                                <span class="badge bg-warning text-dark border px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-flask me-1"></i>Practical
+                                </span>
+                                {% else %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1 rounded-pill fw-bold" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-book me-1"></i>Theory
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ subject.name }}</div>
+                                {% if subject.code %}
+                                <div class="font-monospace text-muted fs-9">{{ subject.code }}</div>
+                                {% endif %}
+                            </td>
                             <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2.5 py-1.5 rounded-pill">{{ subject.class_assigned.name if subject.class_assigned else 'No Class' }}</span></td>
                             <td><span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1.5 rounded-pill">{{ subject.teacher.name if subject.teacher else 'No Teacher' }}</span></td>
                             <td class="text-end">
@@ -146,7 +190,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">No subjects created yet.</td>
+                            <td colspan="5" class="text-center text-muted py-4">No subjects created yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

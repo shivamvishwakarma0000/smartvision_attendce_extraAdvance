@@ -1288,22 +1288,31 @@ def add_teacher():
 @admin_required
 def manage_subjects():
     if request.method == 'POST':
-        subject_name = request.form.get('subject_name')
+        subject_name = request.form.get('subject_name', '').strip()
+        subject_code = request.form.get('subject_code', '').strip() or None
+        subject_type = request.form.get('subject_type', 'Theory').strip()
         teacher_id = request.form.get('teacher_id')
         class_id = request.form.get('class_id')
 
         if not all([subject_name, teacher_id, class_id]):
-            flash('All fields are required.', 'warning')
+            flash('Subject Name, Class, and Teacher are required.', 'warning')
             return redirect(url_for('main.manage_subjects'))
 
         existing = Subject.query.filter_by(name=subject_name, class_id=class_id, admin_id=current_user.id).first()
         if existing:
             flash('This subject already exists for this class.', 'warning')
         else:
-            new_subject = Subject(name=subject_name, teacher_id=teacher_id, class_id=class_id, admin_id=current_user.id)
+            new_subject = Subject(
+                name=subject_name,
+                code=subject_code,
+                subject_type=subject_type,
+                teacher_id=teacher_id,
+                class_id=class_id,
+                admin_id=current_user.id
+            )
             db.session.add(new_subject)
             db.session.commit()
-            flash('New subject added successfully!', 'success')
+            flash(f'New {subject_type} subject "{subject_name}" added successfully!', 'success')
         return redirect(url_for('main.manage_subjects'))
 
     teachers = get_admin_teachers()
@@ -3266,11 +3275,24 @@ def manage_timetable():
             return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
 
         period_int = int(period_val) if period_val and period_val.isdigit() else 1
-        
         eff_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date() if eff_from_str else date.today()
         eff_to = datetime.strptime(eff_to_str, "%Y-%m-%d").date() if eff_to_str else None
 
+        # Check if selected subject is a Practical / Lab course
+        subj_obj = Subject.query.get(sub_id_int) if sub_id_int else None
+        is_practical = (subj_obj and subj_obj.subject_type == 'Practical') or (slot_type == 'CLASS' and subj_obj and 'lab' in subj_obj.name.lower())
+
+        # Validation Rule: Practical lab cannot be scheduled on Period 6 alone without preceding Period 5
+        if is_practical:
+            if period_int == 6:
+                flash("⚠️ Practical / Lab classes require 2 continuous periods (~2 hours). Period 6 cannot be a standalone practical slot. Please select Period 5 (which will automatically cover Period 5 & 6).", "danger")
+                return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
+            elif period_int not in [1, 3, 5]:
+                # Advise pairing for standard period blocks (1-2, 3-4, 5-6)
+                pass
+
         try:
+            # Create primary slot
             slot = Timetable(
                 class_id=cls_id_int,
                 subject_id=sub_id_int,
@@ -3287,7 +3309,47 @@ def manage_timetable():
                 admin_id=current_user.id
             )
             db.session.add(slot)
+
+            # If Practical Lab: Automatically create or pair the consecutive second period (e.g. 1->2, 3->4, 5->6)
+            paired_p_no = None
+            if is_practical and period_int in [1, 2, 3, 4, 5]:
+                paired_p_no = period_int + 1
+                paired_ps = next((s for s in period_settings if s.period_no == paired_p_no and not s.is_lunch), None)
+                if paired_ps:
+                    # Remove any conflicting single slot on the paired period in target class
+                    Timetable.query.filter_by(
+                        class_id=cls_id_int,
+                        day_of_week=day_of_week,
+                        period_no=paired_p_no
+                    ).delete(synchronize_session=False)
+
+                    slot2 = Timetable(
+                        class_id=cls_id_int,
+                        subject_id=sub_id_int,
+                        teacher_id=tch_id_int,
+                        day_of_week=day_of_week,
+                        period_no=paired_p_no,
+                        start_time=paired_ps.start_time,
+                        end_time=paired_ps.end_time,
+                        slot_type=slot_type,
+                        custom_title=custom_title or None,
+                        room=room_number or None,
+                        effective_from=eff_from,
+                        effective_to=eff_to,
+                        admin_id=current_user.id
+                    )
+                    db.session.add(slot2)
+
             db.session.commit()
+            generate_daily_schedule(date.today())
+
+            if is_practical and paired_p_no:
+                flash(f"✓ Practical / Lab ({subj_obj.name}) successfully allocated for 2 continuous class periods (Period {period_int} & Period {paired_p_no} — ~2 Hours total)!", "success")
+            else:
+                flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating timetable slot: {e}", "danger")
 
             # Regenerate daily schedule for today
             generate_daily_schedule(date.today())

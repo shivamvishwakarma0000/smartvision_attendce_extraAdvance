@@ -895,6 +895,29 @@ def month_view():
         next_month = 1
         next_year += 1
 
+    # 3. Subject-Wise Attendance Summary (Theory / Practical / Conducted / Present / Absent / %)
+    subject_wise_summary = []
+    if student.class_id:
+        class_subjects = Subject.query.filter_by(class_id=student.class_id).all()
+        for sub in class_subjects:
+            sub_stats = calculate_student_attendance(student.id, subject_id=sub.id, class_id=student.class_id)
+            subject_wise_summary.append({
+                'code': sub.code or '',
+                'name': sub.name,
+                'type': sub.subject_type or 'Theory',
+                'teacher_name': sub.teacher.name if sub.teacher else 'Faculty',
+                'conducted': sub_stats['completed_sessions'],
+                'present': sub_stats['attended'],
+                'absent': sub_stats['missed'],
+                'percentage': sub_stats['percentage']
+            })
+
+    # Overall totals
+    total_conducted_sum = sum(s['conducted'] for s in subject_wise_summary)
+    total_present_sum = sum(s['present'] for s in subject_wise_summary)
+    total_absent_sum = sum(s['absent'] for s in subject_wise_summary)
+    overall_total_pct = round((total_present_sum / total_conducted_sum * 100), 2) if total_conducted_sum > 0 else 0.0
+
     return render_template(
         'student_month_view.html',
         student=student,
@@ -911,6 +934,11 @@ def month_view():
         present_days_count=present_days_count,
         absent_days_count=absent_days_count,
         no_class_days_count=no_class_days_count,
+        subject_wise_summary=subject_wise_summary,
+        total_conducted_sum=total_conducted_sum,
+        total_present_sum=total_present_sum,
+        total_absent_sum=total_absent_sum,
+        overall_total_pct=overall_total_pct,
         today=today
     )
 

@@ -434,7 +434,9 @@
                             <select class="form-select form-select-sm" id="modal_subject_id" name="subject_id">
                                 <option selected value="">Choose Subject...</option>
                                 {% for sub in subjects %}
-                                <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
+                                <option value="{{ sub.id }}" data-type="{{ sub.subject_type or 'Theory' }}">
+                                    {% if sub.subject_type == 'Practical' %}🔬 [Practical] {% endif %}{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -563,7 +565,9 @@
                             <select class="form-select form-select-sm" id="edit_subject_id" name="subject_id">
                                 <option selected value="">Choose Subject...</option>
                                 {% for sub in subjects %}
-                                <option value="{{ sub.id }}">{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})</option>
+                                <option value="{{ sub.id }}" data-type="{{ sub.subject_type or 'Theory' }}">
+                                    {% if sub.subject_type == 'Practical' %}🔬 [Practical] {% endif %}{{ sub.name }} ({{ sub.class_assigned.name if sub.class_assigned else 'N/A' }})
+                                </option>
                                 {% endfor %}
                             </select>
                         </div>

@@ -109,6 +109,7 @@ class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(50), nullable=True)
     name = db.Column(db.String(100), nullable=False)
+    subject_type = db.Column(db.String(20), default='Theory') # 'Theory' or 'Practical'
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=True)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)

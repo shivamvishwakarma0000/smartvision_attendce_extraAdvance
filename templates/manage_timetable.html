@@ -224,12 +224,19 @@
                         <td class="align-middle p-0.5" style="min-width: 105px;">
                             {% if ns.found %}
                             <div class="p-1 rounded-2 border position-relative group-hover shadow-xs 
-                                {% if ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30
+                                {% if ns.slot.slot_type == 'LAB' %}bg-warning bg-opacity-15 border-warning border-opacity-40
+                                {% elif ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30
                                 {% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30
                                 {% else %}bg-primary bg-opacity-10 border-primary border-opacity-20{% endif %}">
                                 <div>
                                     <div class="d-flex justify-content-between align-items-center mb-0.5">
-                                        {% if ns.slot.slot_type == 'LIBRARY' %}
+                                        {% if ns.slot.slot_type == 'LAB' %}
+                                        <span class="badge bg-warning text-dark border border-warning text-truncate fw-bold"
+                                            style="max-width: 80px; font-size: 0.65rem;"
+                                            title="{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}">
+                                            <i class="fa-solid fa-flask me-0.5"></i>{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}
+                                        </span>
+                                        {% elif ns.slot.slot_type == 'LIBRARY' %}
                                         <span class="badge bg-info text-dark text-truncate fw-bold"
                                             style="max-width: 80px; font-size: 0.65rem;"
                                             title="{{ ns.slot.custom_title or 'Library Reading' }}">
@@ -406,26 +413,33 @@
                                 </label>
                             </div>
                             <div class="flex-fill" style="min-width: 90px;">
+                                <input type="radio" class="btn-check" name="slot_type" id="slot_type_lab" value="LAB" onchange="toggleSlotTypeFields('add', 'LAB')">
+                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_lab">
+                                    <i class="fa-solid fa-flask mb-1 fs-6 text-warning"></i>
+                                    <span>Lab (2 Hours)</span>
+                                </label>
+                            </div>
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('add', 'LIBRARY')">
                                 <label class="btn btn-outline-info btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_library">
                                     <i class="fa-solid fa-book-bookmark mb-1 fs-6"></i>
                                     <span>Library</span>
                                 </label>
                             </div>
-                            <div class="flex-fill" style="min-width: 100px;">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('add', 'OTHER')">
                                 <label class="btn btn-outline-secondary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_other">
                                     <i class="fa-solid fa-shapes mb-1 fs-6"></i>
-                                    <span>Others / Custom</span>
+                                    <span>Activity / Other</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Custom Title (for Library / Others) -->
+                    <!-- Custom Title (for Lab / Library / Others) -->
                     <div class="mb-3 d-none" id="add_custom_title_container">
-                        <label for="modal_custom_title" class="form-label fw-semibold fs-8 text-dark">Slot Title / Activity Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="modal_custom_title" name="custom_title" placeholder="e.g. Physics Lab, Seminar, Sports Hour, Mentorship">
+                        <label for="modal_custom_title" class="form-label fw-semibold fs-8 text-dark" id="add_custom_title_label">Slot Title / Activity Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="modal_custom_title" name="custom_title" placeholder="e.g. Computer Networks Lab, Physics Lab">
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -537,26 +551,33 @@
                                 </label>
                             </div>
                             <div class="flex-fill" style="min-width: 90px;">
+                                <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_lab" value="LAB" onchange="toggleSlotTypeFields('edit', 'LAB')">
+                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_lab">
+                                    <i class="fa-solid fa-flask mb-1 fs-6 text-warning"></i>
+                                    <span>Lab (2 Hours)</span>
+                                </label>
+                            </div>
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_library" value="LIBRARY" onchange="toggleSlotTypeFields('edit', 'LIBRARY')">
                                 <label class="btn btn-outline-info btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_library">
                                     <i class="fa-solid fa-book-bookmark mb-1 fs-6"></i>
                                     <span>Library</span>
                                 </label>
                             </div>
-                            <div class="flex-fill" style="min-width: 100px;">
+                            <div class="flex-fill" style="min-width: 90px;">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_other" value="OTHER" onchange="toggleSlotTypeFields('edit', 'OTHER')">
                                 <label class="btn btn-outline-secondary btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_other">
                                     <i class="fa-solid fa-shapes mb-1 fs-6"></i>
-                                    <span>Others / Custom</span>
+                                    <span>Activity / Other</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Custom Title (for Library / Others) -->
+                    <!-- Custom Title (for Lab / Library / Others) -->
                     <div class="mb-3 d-none" id="edit_custom_title_container">
-                        <label for="edit_custom_title" class="form-label fw-semibold fs-8 text-dark">Slot Title / Activity Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="edit_custom_title" name="custom_title" placeholder="e.g. Physics Lab, Seminar, Sports Hour, Mentorship">
+                        <label for="edit_custom_title" class="form-label fw-semibold fs-8 text-dark" id="edit_custom_title_label">Slot Title / Activity Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_custom_title" name="custom_title" placeholder="e.g. Computer Networks Lab, Physics Lab">
                     </div>
 
                     <div class="row g-2 mb-3">
@@ -738,20 +759,48 @@
     function toggleSlotTypeFields(formPrefix, type) {
         const customTitleContainer = document.getElementById(formPrefix + '_custom_title_container');
         const customTitleInput = document.getElementById(formPrefix === 'add' ? 'modal_custom_title' : 'edit_custom_title');
+        const customTitleLabel = document.getElementById(formPrefix === 'add' ? 'add_custom_title_label' : 'edit_custom_title_label');
         const subjectContainer = document.getElementById(formPrefix + '_subject_container');
         const subjectSelect = document.getElementById(formPrefix === 'add' ? 'modal_subject_id' : 'edit_subject_id');
+        const startTimeInput = document.getElementById(formPrefix === 'add' ? 'modal_start_time' : 'edit_start_time');
+        const endTimeInput = document.getElementById(formPrefix === 'add' ? 'modal_end_time' : 'edit_end_time');
+        const periodInput = document.getElementById(formPrefix === 'add' ? 'modal_period' : 'edit_period');
 
         if (type === 'CLASS') {
             if (customTitleContainer) customTitleContainer.classList.add('d-none');
             if (subjectContainer) subjectContainer.classList.remove('d-none');
             if (subjectSelect) subjectSelect.required = true;
             if (customTitleInput) customTitleInput.required = false;
+        } else if (type === 'LAB') {
+            if (customTitleContainer) customTitleContainer.classList.remove('d-none');
+            if (subjectContainer) subjectContainer.classList.remove('d-none');
+            if (subjectSelect) subjectSelect.required = false;
+            if (customTitleLabel) customTitleLabel.innerText = "Lab Title / Course Name";
+            if (customTitleInput) {
+                if (!customTitleInput.value || customTitleInput.value === 'Library Reading' || customTitleInput.value === 'Custom Activity') {
+                    customTitleInput.value = '';
+                }
+                customTitleInput.placeholder = 'e.g. Computer Networks Lab, Physics Lab, AI Lab';
+                customTitleInput.required = false;
+            }
+            // Automatically adapt end time for 2-hour lab duration (~110 mins) based on start time / period
+            if (startTimeInput && endTimeInput) {
+                const sVal = startTimeInput.value.trim();
+                if (sVal === '09:30') {
+                    endTimeInput.value = '11:20'; // Period 1 + Period 2
+                } else if (sVal === '12:20') {
+                    endTimeInput.value = '02:10'; // Period 3 + Period 4
+                } else if (sVal === '02:30') {
+                    endTimeInput.value = '04:20'; // Period 5 + Period 6
+                }
+            }
         } else if (type === 'LIBRARY') {
             if (customTitleContainer) customTitleContainer.classList.remove('d-none');
             if (subjectContainer) subjectContainer.classList.add('d-none');
             if (subjectSelect) subjectSelect.required = false;
+            if (customTitleLabel) customTitleLabel.innerText = "Library Title / Activity";
             if (customTitleInput) {
-                if (!customTitleInput.value || customTitleInput.value === 'Custom Activity') {
+                if (!customTitleInput.value || customTitleInput.value === 'Custom Activity' || customTitleInput.value.includes('Lab')) {
                     customTitleInput.value = 'Library Reading';
                 }
                 customTitleInput.required = true;
@@ -760,11 +809,12 @@
             if (customTitleContainer) customTitleContainer.classList.remove('d-none');
             if (subjectContainer) subjectContainer.classList.add('d-none');
             if (subjectSelect) subjectSelect.required = false;
+            if (customTitleLabel) customTitleLabel.innerText = "Slot Title / Activity Name";
             if (customTitleInput) {
                 if (!customTitleInput.value || customTitleInput.value === 'Library Reading') {
                     customTitleInput.value = '';
                 }
-                customTitleInput.placeholder = 'e.g. Physics Lab, Seminar, Sports Hour, Mentorship';
+                customTitleInput.placeholder = 'e.g. Seminar, Sports Hour, Mentorship';
                 customTitleInput.required = true;
             }
         }
@@ -800,7 +850,10 @@
         }
 
         const type = slotType || 'CLASS';
-        if (type === 'LIBRARY') {
+        if (type === 'LAB') {
+            const labRadio = document.getElementById('edit_slot_type_lab');
+            if (labRadio) labRadio.checked = true;
+        } else if (type === 'LIBRARY') {
             document.getElementById('edit_slot_type_library').checked = true;
         } else if (type === 'OTHER') {
             document.getElementById('edit_slot_type_other').checked = true;

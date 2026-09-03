@@ -3261,7 +3261,9 @@ def manage_timetable():
             flash("Standard Subject lecture slots require both a Subject and a Teacher.", "warning")
             return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
 
-        if slot_type == 'LIBRARY' and not custom_title:
+        if slot_type == 'LAB' and not custom_title and not sub_id_int:
+            custom_title = 'Practical Laboratory'
+        elif slot_type == 'LIBRARY' and not custom_title:
             custom_title = 'Library Reading'
         elif slot_type == 'OTHER' and not custom_title:
             custom_title = 'Custom Activity'
@@ -3278,9 +3280,9 @@ def manage_timetable():
         eff_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date() if eff_from_str else date.today()
         eff_to = datetime.strptime(eff_to_str, "%Y-%m-%d").date() if eff_to_str else None
 
-        # Check if selected subject is a Practical / Lab course
+        # Check if selected subject is a Practical / Lab course or slot_type == 'LAB'
         subj_obj = Subject.query.get(sub_id_int) if sub_id_int else None
-        is_practical = (subj_obj and subj_obj.subject_type == 'Practical') or (slot_type == 'CLASS' and subj_obj and 'lab' in subj_obj.name.lower())
+        is_practical = (slot_type == 'LAB') or (subj_obj and subj_obj.subject_type == 'Practical') or (slot_type == 'CLASS' and subj_obj and 'lab' in subj_obj.name.lower())
 
         # Validation Rule: Practical lab cannot be scheduled on Period 6 alone without preceding Period 5
         if is_practical:
@@ -3452,13 +3454,15 @@ def edit_timetable_slot(slot_id):
     eff_to_str = request.form.get('effective_to')
 
     c_id = int(class_id) if class_id else slot.class_id
-    s_id = int(subject_id) if subject_id and subject_id.isdigit() else (None if slot_type != 'CLASS' else slot.subject_id)
-    t_id = int(teacher_id) if teacher_id and teacher_id.isdigit() else (None if slot_type not in ['CLASS', 'LIBRARY', 'OTHER'] else (int(teacher_id) if teacher_id and teacher_id.isdigit() else None))
+    s_id = int(subject_id) if subject_id and subject_id.isdigit() else (None if slot_type not in ['CLASS', 'LAB'] else slot.subject_id)
+    t_id = int(teacher_id) if teacher_id and teacher_id.isdigit() else (None if slot_type not in ['CLASS', 'LAB', 'LIBRARY', 'OTHER'] else (int(teacher_id) if teacher_id and teacher_id.isdigit() else None))
     dow = day_of_week or slot.day_of_week
     st = start_time or slot.start_time
     et = end_time or slot.end_time
 
-    if slot_type == 'LIBRARY' and not custom_title:
+    if slot_type == 'LAB' and not custom_title and not s_id:
+        custom_title = slot.custom_title or 'Practical Laboratory'
+    elif slot_type == 'LIBRARY' and not custom_title:
         custom_title = 'Library Reading'
     elif slot_type == 'OTHER' and not custom_title:
         custom_title = slot.custom_title or 'Custom Activity'

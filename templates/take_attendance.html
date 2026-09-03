@@ -445,9 +445,9 @@ window.startLiveDetectionLoop = function() {
 
         if (video && video.videoWidth > 0 && !video.paused && !video.ended) {
             try {
-                // Downscale client-side frame to 540px for instant upload & fast server processing
+                // Downscale client-side frame to 420px for instant upload & sub-50ms inference
                 const tempCanvas = document.createElement('canvas');
-                const maxDim = 540;
+                const maxDim = 420;
                 let w = video.videoWidth;
                 let h = video.videoHeight;
                 if (Math.max(w, h) > maxDim) {
@@ -459,7 +459,7 @@ window.startLiveDetectionLoop = function() {
                 tempCanvas.height = h;
                 const ctx = tempCanvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, w, h);
-                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.65);
+                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.55);
 
                 const classSelect = document.getElementById('class_id');
                 const subjectSelect = document.getElementById('subject_id');
@@ -487,13 +487,13 @@ window.startLiveDetectionLoop = function() {
             }
         }
 
-        // Schedule next cycle only after the previous cycle finishes
+        // Schedule next cycle immediately after previous finishes (180ms for fluid responsiveness)
         if (isLiveDetectionActive && attendanceStream) {
-            liveDetectionInterval = setTimeout(runDetectionCycle, 450);
+            liveDetectionInterval = setTimeout(runDetectionCycle, 180);
         }
     }
 
-    liveDetectionInterval = setTimeout(runDetectionCycle, 300);
+    liveDetectionInterval = setTimeout(runDetectionCycle, 100);
 };
 
 window.stopLiveDetectionLoop = function() {

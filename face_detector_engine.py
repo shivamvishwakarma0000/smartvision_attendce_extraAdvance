@@ -67,13 +67,13 @@ def enhance_image_for_detection(img_np):
         return img_np, False, 128.0
 
 
-def detect_face_locations_robust(img_np, enable_cnn=False):
+def detect_face_locations_robust(img_np, enable_cnn=False, fast_live_mode=False):
     """
     Multi-stage face detection pipeline optimized for low-latency real-time inference:
       Stage 1: Fast HOG on raw RGB (takes ~15-25ms; succeeds on standard lighting)
       Stage 2: HOG on CLAHE/Gamma enhanced RGB (recovers faces in dim/dark rooms)
-      Stage 3: HOG with 2x upsampling on enhanced RGB (recovers small/distant faces)
-      Stage 4: Distance Scale-Up pass (1.4x scaling for small/far faces)
+      Stage 3: HOG with 2x upsampling on enhanced RGB (recovers small/distant faces) - skipped in fast_live_mode
+      Stage 4: Distance Scale-Up pass (1.4x scaling for small/far faces) - skipped in fast_live_mode
       Stage 5: Dlib CNN MMOD detector (only when explicitly enabled)
     
     Returns:
@@ -99,6 +99,10 @@ def detect_face_locations_robust(img_np, enable_cnn=False):
             return locs, enhanced_rgb
     except Exception as e:
         print(f"[FaceEngine Stage 2 Enhanced HOG]: {e}")
+
+    # In fast live video stream mode, return immediately to maintain ultra-fast FPS and instant face disappear feedback
+    if fast_live_mode:
+        return [], enhanced_rgb
 
     # Stage 3: HOG with 2x upsampling on enhanced image (recovers small/distant faces)
     try:
@@ -151,7 +155,7 @@ def detect_face_locations_robust(img_np, enable_cnn=False):
     return [], enhanced_rgb
 
 
-def get_face_biometrics_robust(img_np, known_face_locations=None, enable_cnn=False):
+def get_face_biometrics_robust(img_np, known_face_locations=None, enable_cnn=False, fast_live_mode=False):
     """
     Detects faces and generates 128-d ResNet-34 deep feature embeddings.
     If face encoding extraction fails on raw image (due to darkness or low contrast),
@@ -165,7 +169,7 @@ def get_face_biometrics_robust(img_np, known_face_locations=None, enable_cnn=Fal
 
     enhanced_rgb = None
     if known_face_locations is None or len(known_face_locations) == 0:
-        face_locations, enhanced_rgb = detect_face_locations_robust(img_np, enable_cnn=enable_cnn)
+        face_locations, enhanced_rgb = detect_face_locations_robust(img_np, enable_cnn=enable_cnn, fast_live_mode=fast_live_mode)
     else:
         face_locations = known_face_locations
         enhanced_rgb, _, _ = enhance_image_for_detection(img_np)

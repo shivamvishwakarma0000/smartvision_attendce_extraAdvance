@@ -501,11 +501,19 @@
             isDetectingLive = true;
             try {
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = webcam.videoWidth;
-                tempCanvas.height = webcam.videoHeight;
+                const maxDim = 420;
+                let w = webcam.videoWidth;
+                let h = webcam.videoHeight;
+                if (Math.max(w, h) > maxDim) {
+                    const ratio = maxDim / Math.max(w, h);
+                    w = Math.round(w * ratio);
+                    h = Math.round(h * ratio);
+                }
+                tempCanvas.width = w;
+                tempCanvas.height = h;
                 const ctx = tempCanvas.getContext('2d');
-                ctx.drawImage(webcam, 0, 0, tempCanvas.width, tempCanvas.height);
-                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.6);
+                ctx.drawImage(webcam, 0, 0, w, h);
+                const frameBase64 = tempCanvas.toDataURL('image/jpeg', 0.55);
 
                 const res = await fetch('/api/live_detect', {
                     method: 'POST',
@@ -526,7 +534,7 @@
             } finally {
                 isDetectingLive = false;
             }
-        }, 400);
+        }, 180);
     }
 
     function renderLiveOverlay(data) {

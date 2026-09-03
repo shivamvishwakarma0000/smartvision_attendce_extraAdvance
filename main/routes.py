@@ -1800,9 +1800,8 @@ def api_live_detect():
                 'message': f'Image decode warning: {img_load_err}'
             })
 
-        # Fast resize for real-time latency optimization
-        # Fast resize for real-time latency optimization (640px gives crisp detail at sub-100ms speed)
-        max_dim = 640
+        # Fast resize for real-time latency optimization (480px gives instant ~30-50ms inference while preserving clear facial landmarks)
+        max_dim = 480
         width, height = pil_img.size
         scale = 1.0
         if max(width, height) > max_dim:
@@ -1813,9 +1812,9 @@ def api_live_detect():
 
         img_np = np.array(pil_img)
 
-        # Detect face bounding boxes & 128-d embeddings using robust multi-pass engine (fast HOG first)
+        # Detect face bounding boxes & 128-d embeddings using low-latency live mode
         from face_detector_engine import get_face_biometrics_robust, match_face_encoding
-        face_locations, face_encodings = get_face_biometrics_robust(img_np, enable_cnn=False)
+        face_locations, face_encodings = get_face_biometrics_robust(img_np, enable_cnn=False, fast_live_mode=True)
 
         if not face_locations:
             return jsonify({

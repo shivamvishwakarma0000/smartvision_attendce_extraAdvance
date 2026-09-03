@@ -344,10 +344,9 @@
         </a>
 
         <div class="d-flex align-items-center gap-2">
-            <!-- Prominent Mobile-Only Download App Button (Auto-hides once downloaded) -->
-            <button type="button" id="pwaDownloadArrowBtn" class="btn btn-sm rounded-pill px-3 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold shadow-sm" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.25); transition: all 0.2s ease; display: none;" onclick="triggerAppInstall()" title="Download & Install SmartVision App">
-                <i class="fa-solid fa-cloud-arrow-down fs-8"></i>
-                <span class="fs-8">Download App</span>
+            <!-- Mobile-only Icon-only Download Arrow Button (No Text) directly to the left of theme toggle -->
+            <button type="button" id="pwaDownloadArrowBtn" class="btn btn-outline-info btn-sm rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm p-0" style="width: 36px; height: 36px; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.12); color: #38bdf8; transition: all 0.2s ease;" onclick="triggerAppInstall()" title="Download App" aria-label="Download App">
+                <i class="fa-solid fa-arrow-down" style="font-size: 0.95rem;"></i>
             </button>
 
             <!-- Theme Toggle Button -->

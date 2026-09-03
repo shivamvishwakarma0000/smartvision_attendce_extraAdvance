@@ -181,7 +181,7 @@
 
             <h5 class="fw-bold text-dark mb-1">{{ teacher.name }}</h5>
             
-            <div class="mb-3">
+            <div class="mb-2">
                 {% if teacher.status == 'Approved' %}
                     <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill fw-semibold fs-8">
                         <i class="fa-solid fa-check-circle me-1"></i>Approved Faculty
@@ -190,6 +190,36 @@
                     <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-1 rounded-pill fw-semibold fs-8">
                         <i class="fa-solid fa-clock me-1"></i>Pending Approval
                     </span>
+                {% endif %}
+            </div>
+
+            <!-- Star Rating Display (1 to 5 Stars with Half-Star support) -->
+            <div class="d-flex align-items-center justify-content-center gap-1.5 mb-3">
+                {% set rating = teacher.average_rating %}
+                {% set rev_cnt = teacher.total_ratings %}
+                {% if rev_cnt > 0 %}
+                    <div class="d-inline-flex align-items-center gap-1 bg-warning bg-opacity-10 px-2.5 py-1 rounded-pill border border-warning border-opacity-25 shadow-xs">
+                        <div class="d-flex align-items-center" style="color: #f59e0b; font-size: 0.82rem; letter-spacing: -1px;">
+                            {% for i in range(1, 6) %}
+                                {% if rating >= i %}
+                                    <i class="fa-solid fa-star"></i>
+                                {% elif rating >= (i - 0.7) and rating < i %}
+                                    <i class="fa-solid fa-star-half-stroke"></i>
+                                {% else %}
+                                    <i class="fa-regular fa-star" style="color: #cbd5e1;"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="fw-bold text-dark ms-1" style="font-size: 0.78rem;">{{ rating }}</span>
+                        <span class="text-muted" style="font-size: 0.7rem;">({{ rev_cnt }})</span>
+                    </div>
+                {% else %}
+                    <div class="d-inline-flex align-items-center gap-1 bg-light px-2.5 py-0.5 rounded-pill border">
+                        <div class="d-flex align-items-center" style="color: #cbd5e1; font-size: 0.75rem;">
+                            {% for i in range(5) %}<i class="fa-regular fa-star"></i>{% endfor %}
+                        </div>
+                        <span class="text-muted fst-italic" style="font-size: 0.7rem;">No Ratings</span>
+                    </div>
                 {% endif %}
             </div>
 

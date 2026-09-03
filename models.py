@@ -206,6 +206,19 @@ class Teacher(db.Model):
 
         return self.department or 'General'
 
+    @property
+    def average_rating(self):
+        """Computes the average student feedback rating for this teacher."""
+        fbs = self.received_feedbacks
+        if not fbs:
+            return 0.0
+        return round(sum(f.overall_rating for f in fbs) / len(fbs), 1)
+
+    @property
+    def total_ratings(self):
+        """Returns the total number of student reviews submitted for this teacher."""
+        return len(self.received_feedbacks) if self.received_feedbacks else 0
+
 
 class Student(db.Model):
     """

@@ -268,25 +268,61 @@
 
                                     <!-- Direct Faculty Replacement Section (When replacement is requested) -->
                                     {% if c.is_replacement_requested and c.status != 'Resolved' and c.status != 'Closed' %}
-                                        <div class="p-2.5 rounded-3 bg-danger-soft border border-danger-subtle mb-2.5">
-                                            <span class="fw-bold text-danger fs-8 d-block mb-1.5">
-                                                <i class="fa-solid fa-people-arrows me-1"></i> Direct Faculty Replacement Action:
-                                            </span>
-                                            <form action="{{ url_for('main.replace_faculty_from_complaint', complaint_id=c.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to replace {{ c.teacher.name if c.teacher else 'this faculty' }} with the selected teacher? This will automatically update the timetable, subjects, and schedules for {{ c.class_assigned.name if c.class_assigned else 'this class' }}.');">
-                                                <div class="row g-1.5 align-items-center">
-                                                    <div class="col-8">
-                                                        <select name="new_teacher_id" class="form-select form-select-sm rounded-pill fs-9" required>
-                                                            <option value="">-- Select New Replacement Faculty --</option>
-                                                            {% for act_t in all_active_teachers %}
-                                                                {% if not c.teacher or act_t.id != c.teacher.id %}
-                                                                    <option value="{{ act_t.id }}">{{ act_t.name }} ({{ act_t.primary_subject or act_t.department or 'Faculty' }})</option>
-                                                                {% endif %}
-                                                            {% endfor %}
+                                        {% set free_info = complaint_free_teachers.get(c.id, {}) %}
+                                        <div class="p-3 rounded-4 bg-white border border-danger-subtle mb-3 shadow-xs" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.03) 0%, rgba(255, 255, 255, 1) 100%);">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center gap-1.5">
+                                                    <span class="badge bg-danger text-white p-1 rounded-circle">
+                                                        <i class="fa-solid fa-people-arrows fs-9"></i>
+                                                    </span>
+                                                    <span class="fw-bold text-danger fs-8">Replace Class Faculty</span>
+                                                </div>
+                                                {% if free_info and free_info.free %}
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                                        {{ free_info.free|length }} Available / Conflict-Free
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                                        No Conflict-Free Faculty Found
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+
+                                            <form action="{{ url_for('main.replace_faculty_from_complaint', complaint_id=c.id) }}" method="POST" onsubmit="return confirm('Confirm reallocating timetable slots and subject assignment to the selected replacement faculty?');">
+                                                <div class="d-flex flex-column flex-sm-row gap-2">
+                                                    <div class="flex-grow-1">
+                                                        <select name="new_teacher_id" class="form-select form-select-sm rounded-pill fs-8 py-1.5" required>
+                                                            <option value="">-- Choose Eligible Faculty --</option>
+                                                            {% if free_info and free_info.free %}
+                                                                <optgroup label="✓ Free & Available (No Timetable Conflicts)">
+                                                                    {% for item in free_info.free %}
+                                                                        <option value="{{ item.teacher.id }}">
+                                                                            {{ item.teacher.name }} ({{ item.teacher.primary_subject or item.teacher.department or 'Faculty' }}) {% if item.dept_match %}[Same Dept]{% endif %}
+                                                                        </option>
+                                                                    {% endfor %}
+                                                                </optgroup>
+                                                            {% endif %}
+                                                            {% if free_info and free_info.busy %}
+                                                                <optgroup label="⚠️ Busy / Schedule Clash">
+                                                                    {% for item in free_info.busy %}
+                                                                        <option value="{{ item.teacher.id }}" disabled>
+                                                                            {{ item.teacher.name }} - Busy ({{ item.conflict_summary }})
+                                                                        </option>
+                                                                    {% endfor %}
+                                                                </optgroup>
+                                                            {% endif %}
+                                                            {% if not free_info %}
+                                                                {% for act_t in all_active_teachers %}
+                                                                    {% if not c.teacher or act_t.id != c.teacher.id %}
+                                                                        <option value="{{ act_t.id }}">{{ act_t.name }} ({{ act_t.primary_subject or act_t.department or 'Faculty' }})</option>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% endif %}
                                                         </select>
                                                     </div>
-                                                    <div class="col-4">
-                                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill w-100 fw-bold fs-9 shadow-xs">
-                                                            <i class="fa-solid fa-check me-1"></i> Replace
+                                                    <div>
+                                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fw-bold fs-8 w-100 shadow-xs text-nowrap">
+                                                            <i class="fa-solid fa-check me-1"></i> Reallocate Faculty
                                                         </button>
                                                     </div>
                                                 </div>

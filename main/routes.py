@@ -4541,6 +4541,57 @@ def feedback_management():
     # All active teachers for replacement dropdown
     all_active_teachers = Teacher.query.filter_by(status='Approved').order_by(Teacher.name.asc()).all()
 
+    # Pre-calculate eligible / free replacement teachers for each complaint
+    complaint_free_teachers = {}
+    for c in all_complaints:
+        if c.is_replacement_requested and c.class_id:
+            # Find the timetable slots associated with the current teacher in that class
+            slots_query = Timetable.query.filter_by(class_id=c.class_id, teacher_id=c.teacher_id)
+            if c.subject_id:
+                slots_query = slots_query.filter_by(subject_id=c.subject_id)
+            current_slots = slots_query.all()
+
+            free_list = []
+            busy_list = []
+            for candidate in all_active_teachers:
+                if c.teacher_id and candidate.id == c.teacher_id:
+                    continue
+
+                # Check if candidate has schedule conflict in any of current_slots
+                has_conflict = False
+                conflict_details = []
+                for s in current_slots:
+                    clash = Timetable.query.filter(
+                        Timetable.teacher_id == candidate.id,
+                        Timetable.day_of_week == s.day_of_week,
+                        Timetable.period_no == s.period_no,
+                        Timetable.id != s.id
+                    ).first()
+                    if clash:
+                        has_conflict = True
+                        conflict_details.append(f"{clash.day_of_week} P{clash.period_no} ({clash.class_assigned.name if clash.class_assigned else 'Class'})")
+
+                if not has_conflict:
+                    free_list.append({
+                        'teacher': candidate,
+                        'is_free': True,
+                        'dept_match': (candidate.department == c.class_assigned.department) if c.class_assigned and candidate.department else False
+                    })
+                else:
+                    busy_list.append({
+                        'teacher': candidate,
+                        'is_free': False,
+                        'conflict_summary': ', '.join(conflict_details[:2])
+                    })
+
+            # Sort free candidates by department match first, then name
+            free_list.sort(key=lambda x: (not x['dept_match'], x['teacher'].name))
+            complaint_free_teachers[c.id] = {
+                'free': free_list,
+                'busy': busy_list,
+                'has_free': len(free_list) > 0
+            }
+
     return render_template(
         'admin_feedback_management.html',
         faculty_analytics=faculty_analytics,
@@ -4549,6 +4600,7 @@ def feedback_management():
         all_departments=all_departments,
         all_classes=all_classes,
         all_active_teachers=all_active_teachers,
+        complaint_free_teachers=complaint_free_teachers,
         selected_dept=selected_dept,
         selected_class_id=selected_class_id,
         threshold_alerts_count=threshold_alerts_count,
@@ -4591,18 +4643,18 @@ def update_complaint_status(complaint_id):
 def replace_faculty_from_complaint(complaint_id):
     """
     Direct Faculty Replacement Action:
-    Replaces the current faculty with the selected new faculty across:
-    1. Subject allocation (`subjects.teacher_id`) for that class.
-    2. Weekly Timetable entries (`timetables.teacher_id`) for that class & subject.
-    3. Teacher-Class assignments (`teacher_assignments`).
-    4. Daily Schedules for future dates.
-    5. Updates complaint status to 'Resolved' with replacement audit note.
+    Replaces current faculty with selected replacement faculty after checking timetable conflicts:
+    1. Validates no schedule / period clashes exist for the new faculty across class timetable slots.
+    2. Updates Subject teacher allocation (`subjects.teacher_id`) for that class.
+    3. Reallocates weekly Timetable entries (`timetables.teacher_id`).
+    4. Updates teacher-class assignments (`teacher_assignments`).
+    5. Updates complaint status to 'Resolved' with replacement audit notes.
     """
     complaint = FacultyComplaint.query.get_or_404(complaint_id)
     new_teacher_id = request.form.get('new_teacher_id', type=int)
 
     if not new_teacher_id:
-        flash("Please select a new faculty to replace.", "warning")
+        flash("Please select a valid replacement faculty.", "warning")
         return redirect(url_for('main.feedback_management', tab='complaints'))
 
     old_teacher = complaint.teacher
@@ -4615,13 +4667,38 @@ def replace_faculty_from_complaint(complaint_id):
         return redirect(url_for('main.feedback_management', tab='complaints'))
 
     try:
+        # Find all timetable slots for this class & teacher (or subject)
+        timetable_query = Timetable.query.filter_by(class_id=target_class.id, teacher_id=old_teacher.id)
+        if target_subject:
+            timetable_query = timetable_query.filter_by(subject_id=target_subject.id)
+        current_slots = timetable_query.all()
+
+        # Check for schedule conflicts on the new faculty's timetable
+        clashes = []
+        for slot in current_slots:
+            clash_slot = Timetable.query.filter(
+                Timetable.teacher_id == new_teacher.id,
+                Timetable.day_of_week == slot.day_of_week,
+                Timetable.period_no == slot.period_no,
+                Timetable.id != slot.id
+            ).first()
+            if clash_slot:
+                clashes.append(f"{slot.day_of_week} Period {slot.period_no} (Busy with {clash_slot.class_assigned.name if clash_slot.class_assigned else 'Class'})")
+
+        if clashes:
+            clash_str = "; ".join(clashes[:3])
+            flash(f"⚠️ Cannot replace: {new_teacher.name} has a timetable conflict on {clash_str}. Complaint remains in progress / pending.", "danger")
+            complaint.status = 'Action Required'
+            complaint.admin_notes = f"Attempted replacement with {new_teacher.name} failed due to timetable clashes: {clash_str}."
+            db.session.commit()
+            return redirect(url_for('main.feedback_management', tab='complaints'))
+
         # 1. Update Subject teacher allocation
         updated_subjects = 0
         if target_subject:
             target_subject.teacher_id = new_teacher.id
             updated_subjects += 1
         else:
-            # Find subject taught by old teacher in that class
             subs = Subject.query.filter_by(class_id=target_class.id, teacher_id=old_teacher.id).all()
             for s in subs:
                 s.teacher_id = new_teacher.id
@@ -4644,36 +4721,19 @@ def replace_faculty_from_complaint(complaint_id):
                 ))
 
         # 3. Update Timetable entries
-        timetable_query = Timetable.query.filter_by(class_id=target_class.id, teacher_id=old_teacher.id)
-        if target_subject:
-            timetable_query = timetable_query.filter_by(subject_id=target_subject.id)
-        
         updated_slots = 0
-        for slot in timetable_query.all():
+        for slot in current_slots:
             slot.teacher_id = new_teacher.id
             updated_slots += 1
 
-        # 4. Update future Daily Schedules
-        today = get_current_date()
-        daily_query = DailySchedule.query.filter(
-            DailySchedule.class_id == target_class.id,
-            DailySchedule.teacher_id == old_teacher.id,
-            DailySchedule.date >= today
-        )
-        if target_subject:
-            daily_query = daily_query.filter_by(subject_id=target_subject.id)
-        
-        for ds in daily_query.all():
-            ds.teacher_id = new_teacher.id
-
-        # 5. Mark Complaint as Resolved with replacement audit record
+        # 4. Mark Complaint as Resolved with replacement audit record
         complaint.status = 'Resolved'
-        complaint.admin_notes = f"Faculty Replaced: {old_teacher.name} replaced by {new_teacher.name} for {target_class.name} ({target_subject.name if target_subject else 'All Assigned Subjects'}). Timetables ({updated_slots} slots) updated."
+        complaint.admin_notes = f"✓ Faculty Replaced: {old_teacher.name} replaced by {new_teacher.name} for {target_class.name} ({target_subject.name if target_subject else 'Subject'}). Timetables ({updated_slots} slots) updated without conflict."
         complaint.reviewed_by_user_id = current_user.id
         complaint.updated_at = datetime.utcnow()
 
         db.session.commit()
-        flash(f"✓ Success! Faculty {old_teacher.name} replaced by {new_teacher.name} in {target_class.name}. Timetable and schedules updated successfully!", "success")
+        flash(f"✓ Success! Faculty {old_teacher.name} successfully replaced by {new_teacher.name} in {target_class.name}. Timetables ({updated_slots} slots) and subjects updated seamlessly!", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error replacing faculty: {e}", "danger")

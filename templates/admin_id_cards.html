@@ -13,60 +13,84 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 no-print">
         <div>
             <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-id-badge text-primary me-2"></i>Institutional ID Cards Directory</h4>
-            <p class="text-muted fs-8 mb-0">Generate, view, verify, and print official identity cards for all faculty and enrolled students.</p>
+            <p class="text-muted fs-8 mb-0">Generate, view, verify, print official identity cards, and control suspension / campus access permissions.</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{{ url_for('main.admin_suspension_requests') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2 fw-bold shadow-2xs">
+                <i class="fa-solid fa-user-lock me-1.5"></i>Suspension Desk
+            </a>
             <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 py-2 fw-bold shadow-sm" onclick="window.print()">
                 <i class="fa-solid fa-print me-1.5"></i>Print Visible ID Cards
             </button>
         </div>
     </div>
 
-    <!-- Filter & Search Toolbar Card -->
+    <!-- Filter & Search Toolbar Card (Hierarchical: Department -> Class -> Status -> Search) -->
     <div class="card border-0 shadow-sm rounded-4 p-3.5 p-md-4 bg-white mb-4 no-print" style="padding: 1.25rem !important;">
-        <form method="GET" action="{{ url_for('main.admin_id_cards') }}" class="row g-3 align-items-center">
+        <form method="GET" action="{{ url_for('main.admin_id_cards') }}" class="row g-3 align-items-center" id="adminIdFilterForm">
             <!-- Card Type Toggle -->
-            <div class="col-md-3">
+            <div class="col-lg-3 col-md-6">
                 <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Select Identity Type:</label>
                 <div class="btn-group w-100" role="group">
-                    <a href="{{ url_for('main.admin_id_cards', type='students', class_id=selected_class_id or '') }}" class="btn btn-sm {% if card_type == 'students' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %} rounded-start-pill py-2">
+                    <a href="{{ url_for('main.admin_id_cards', type='students', department=selected_dept, class_id=selected_class_id or '', status=selected_status) }}" class="btn btn-sm {% if card_type == 'students' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %} rounded-start-pill py-2">
                         <i class="fa-solid fa-user-graduate me-1"></i>Students
                     </a>
-                    <a href="{{ url_for('main.admin_id_cards', type='teachers') }}" class="btn btn-sm {% if card_type == 'teachers' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %} rounded-end-pill py-2">
+                    <a href="{{ url_for('main.admin_id_cards', type='teachers', department=selected_dept, status=selected_status) }}" class="btn btn-sm {% if card_type == 'teachers' %}btn-primary fw-bold{% else %}btn-outline-secondary{% endif %} rounded-end-pill py-2">
                         <i class="fa-solid fa-user-tie me-1"></i>Faculty
                     </a>
                 </div>
             </div>
 
+            <!-- Department Filter -->
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Department:</label>
+                <select name="department" class="form-select form-select-sm rounded-pill px-3 fw-bold" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                    <option value="{{ d.name }}" {% if selected_dept == d.name %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <!-- Class Filter (For Students) -->
             {% if card_type == 'students' %}
-            <div class="col-md-3">
-                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Filter Class:</label>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Class:</label>
                 <select name="class_id" class="form-select form-select-sm rounded-pill px-3 fw-bold" onchange="this.form.submit()">
-                    <option value="">All Classes ({{ classes|length }} classes)</option>
+                    <option value="">All Classes ({{ classes|length }})</option>
                     {% for c in classes %}
-                    <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>Class {{ c.name }} ({{ c.department or 'General' }})</option>
+                    <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>Class {{ c.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             {% endif %}
 
+            <!-- Status Filter -->
+            <div class="{% if card_type == 'students' %}col-lg-2 col-md-6{% else %}col-lg-3 col-md-6{% endif %}">
+                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">ID Card Status:</label>
+                <select name="status" class="form-select form-select-sm rounded-pill px-3 fw-bold" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>✓ Active Only</option>
+                    <option value="Suspended" {% if selected_status == 'Suspended' %}selected{% endif %}>🔒 Suspended Only</option>
+                </select>
+            </div>
+
             <!-- Search Query -->
-            <div class="{% if card_type == 'students' %}col-md-4{% else %}col-md-6{% endif %}">
-                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Search by Name / ID / Roll No:</label>
+            <div class="{% if card_type == 'students' %}col-lg-2 col-md-8{% else %}col-lg-3 col-md-8{% endif %}">
+                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Search:</label>
                 <div class="input-group input-group-sm">
-                    <input type="text" name="q" class="form-control rounded-start-pill px-3" placeholder="Search by name, roll no, enrollment..." value="{{ search_query or '' }}">
-                    <button type="submit" class="btn btn-primary rounded-end-pill px-3.5 fw-bold">
-                        <i class="fa-solid fa-magnifying-glass me-1"></i>Filter
+                    <input type="text" name="q" class="form-control rounded-start-pill px-3" placeholder="Name / Roll / ID..." value="{{ search_query or '' }}">
+                    <button type="submit" class="btn btn-primary rounded-end-pill px-3 fw-bold">
+                        <i class="fa-solid fa-magnifying-glass"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Reset -->
-            <div class="col-md-2 text-md-end">
-                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase d-none d-md-block">&nbsp;</label>
-                <a href="{{ url_for('main.admin_id_cards', type=card_type) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-bold">
-                    <i class="fa-solid fa-rotate-left me-1"></i>Reset
+            <div class="col-lg-1 col-md-4 text-md-end">
+                <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase d-none d-lg-block">&nbsp;</label>
+                <a href="{{ url_for('main.admin_id_cards', type=card_type) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-bold w-100" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
         </form>
@@ -78,9 +102,17 @@
             <!-- ================= STUDENTS ID CARDS ================= -->
             {% for s in students %}
             <div class="col-12 col-md-6 col-xl-4 print-card-col">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative h-100" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative h-100 id-card-container {% if s.is_suspended %}suspended-card-border{% endif %}" style="background: #ffffff; border: 1.5px solid {% if s.is_suspended %}#ef4444{% else %}#e2e8f0{% endif %} !important;">
+                    
+                    <!-- Suspended Diagonal Watermark Overlay -->
+                    {% if s.is_suspended %}
+                    <div class="watermark-suspended-diagonal">
+                        <span>SUSPENDED</span>
+                    </div>
+                    {% endif %}
+
                     <!-- Top Gradient Strip -->
-                    <div class="p-3 text-white position-relative" style="background: linear-gradient(135deg, #065f46 0%, #047857 100%);">
+                    <div class="p-3 text-white position-relative" style="background: {% if s.is_suspended %}linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%){% else %}linear-gradient(135deg, #065f46 0%, #047857 100%){% endif %};">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center gap-2">
                                 {% if university and university.logo_filename %}
@@ -93,14 +125,22 @@
                                     <span class="fs-9 text-white-50">STUDENT ID CARD</span>
                                 </div>
                             </div>
-                            <span class="badge bg-white text-success px-2 py-0.5 rounded-pill fs-9 fw-bold">STUDENT</span>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="badge {% if s.is_suspended %}bg-danger{% else %}bg-white text-success{% endif %} px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                    {{ 'SUSPENDED' if s.is_suspended else 'STUDENT' }}
+                                </span>
+                                <!-- Small Suspension Lock Icon -->
+                                <button type="button" class="btn btn-xs rounded-circle p-1 d-inline-flex align-items-center justify-content-center no-print {% if s.is_suspended %}btn-danger text-white{% else %}btn-light text-dark{% endif %}" style="width: 24px; height: 24px; font-size: 0.7rem;" onclick="openSuspendModal('STUDENT', '{{ s.id }}', '{{ s.name }}', '{{ s.roll_no }}', '{{ s.class_assigned.name if s.class_assigned else 'N/A' }}', '{{ s.department or (s.class_assigned.department if s.class_assigned else 'N/A') }}', '{{ s.id_card_status or 'Active' }}', {{ 'true' if s.is_suspended else 'false' }}, '{{ s.suspension_reason or '' }}', '{{ s.custom_suspension_reason or '' }}')" title="Manage ID Card Suspension">
+                                    <i class="fa-solid {% if s.is_suspended %}fa-lock{% else %}fa-lock-open{% endif %}"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Card Body -->
-                    <div class="card-body p-3.5 text-center">
+                    <div class="card-body p-3.5 text-center position-relative">
                         <div class="position-relative d-inline-block mb-2">
-                            <div class="rounded-3 p-1 shadow-2xs bg-white border border-2 border-success" style="width: 85px; height: 90px; margin: 0 auto;">
+                            <div class="rounded-3 p-1 shadow-2xs bg-white border border-2 {% if s.is_suspended %}border-danger{% else %}border-success{% endif %}" style="width: 85px; height: 90px; margin: 0 auto;">
                                 {% if s.image_filename %}
                                 <img src="{{ url_for('main.uploaded_face', filename=s.image_filename) }}" alt="{{ s.name }}" class="w-100 h-100 rounded-2" style="object-fit: cover;">
                                 {% else %}
@@ -109,12 +149,30 @@
                                 </div>
                                 {% endif %}
                             </div>
+                            {% if s.is_suspended %}
+                            <span class="position-absolute top-0 end-0 badge bg-danger rounded-circle p-1" style="transform: translate(30%, -30%);" title="ID Card Suspended">
+                                <i class="fa-solid fa-ban text-white fs-9"></i>
+                            </span>
+                            {% endif %}
                         </div>
 
                         <h6 class="fw-bold text-dark mb-0.5">{{ s.name }}</h6>
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-0.5 rounded-pill fs-9 fw-bold mb-2.5">
+                        <span class="badge {% if s.is_suspended %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25{% else %}bg-success bg-opacity-10 text-success border border-success border-opacity-25{% endif %} px-2.5 py-0.5 rounded-pill fs-9 fw-bold mb-2.5">
                             Class: {{ s.class_assigned.name if s.class_assigned else 'N/A' }}
                         </span>
+
+                        <!-- Suspension Details Banner if Suspended -->
+                        {% if s.is_suspended %}
+                        <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 text-start fs-9">
+                            <div class="d-flex justify-content-between text-danger fw-bold">
+                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: Suspended</span>
+                                <span>{{ s.suspended_by_role|upper if s.suspended_by_role else 'ADMIN' }}</span>
+                            </div>
+                            <div class="text-muted mt-0.5 text-truncate" title="{{ s.custom_suspension_reason or s.suspension_reason }}">
+                                Reason: <strong class="text-dark">{{ s.suspension_reason or 'Disciplinary Issue' }}</strong>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <div class="p-2.5 bg-light rounded-3 border text-start fs-8.5 mb-2.5 shadow-2xs">
                             <div class="d-flex justify-content-between mb-1">
@@ -132,10 +190,16 @@
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between pt-1">
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold">
-                                <i class="fa-solid fa-check-circle me-1"></i>Enrolled
+                            {% if s.is_suspended %}
+                            <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                <i class="fa-solid fa-lock me-1"></i>Access Blocked
                             </span>
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=SMARTVISION:STUDENT:{{ s.roll_no }}" alt="QR" class="border rounded p-0.5 bg-white" style="width: 44px; height: 44px;">
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                <i class="fa-solid fa-check-circle me-1"></i>Active & Enrolled
+                            </span>
+                            {% endif %}
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=SMARTVISION:STUDENT:{{ s.roll_no }}{% if s.is_suspended %}:SUSPENDED{% endif %}" alt="QR" class="border rounded p-0.5 bg-white" style="width: 44px; height: 44px;">
                         </div>
                     </div>
                 </div>
@@ -146,7 +210,7 @@
                     <i class="fa-solid fa-user-slash fs-1 text-muted"></i>
                 </div>
                 <h6 class="fw-bold text-dark">No Students Found</h6>
-                <p class="text-muted fs-8">Try adjusting your search query or class filter.</p>
+                <p class="text-muted fs-8">Try adjusting your search query, department, or class filter.</p>
             </div>
             {% endfor %}
 
@@ -154,9 +218,17 @@
             <!-- ================= FACULTY ID CARDS ================= -->
             {% for t in teachers %}
             <div class="col-12 col-md-6 col-xl-4 print-card-col">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative h-100" style="background: #ffffff; border: 1.5px solid #e2e8f0 !important;">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden position-relative h-100 id-card-container {% if t.is_suspended %}suspended-card-border{% endif %}" style="background: #ffffff; border: 1.5px solid {% if t.is_suspended %}#ef4444{% else %}#e2e8f0{% endif %} !important;">
+                    
+                    <!-- Suspended Diagonal Watermark Overlay -->
+                    {% if t.is_suspended %}
+                    <div class="watermark-suspended-diagonal">
+                        <span>SUSPENDED</span>
+                    </div>
+                    {% endif %}
+
                     <!-- Top Gradient Strip -->
-                    <div class="p-3 text-white position-relative" style="background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);">
+                    <div class="p-3 text-white position-relative" style="background: {% if t.is_suspended %}linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%){% else %}linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%){% endif %};">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center gap-2">
                                 {% if university and university.logo_filename %}
@@ -169,14 +241,22 @@
                                     <span class="fs-9 text-white-50">FACULTY ID CARD</span>
                                 </div>
                             </div>
-                            <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold">FACULTY</span>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <span class="badge {% if t.is_suspended %}bg-danger{% else %}bg-warning text-dark{% endif %} px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                    {{ 'SUSPENDED' if t.is_suspended else 'FACULTY' }}
+                                </span>
+                                <!-- Small Suspension Lock Icon -->
+                                <button type="button" class="btn btn-xs rounded-circle p-1 d-inline-flex align-items-center justify-content-center no-print {% if t.is_suspended %}btn-danger text-white{% else %}btn-light text-dark{% endif %}" style="width: 24px; height: 24px; font-size: 0.7rem;" onclick="openSuspendModal('TEACHER', '{{ t.id }}', '{{ t.name }}', '{{ t.emp_id or 'N/A' }}', 'Faculty', '{{ t.effective_department or 'N/A' }}', '{{ t.id_card_status or 'Active' }}', {{ 'true' if t.is_suspended else 'false' }}, '{{ t.suspension_reason or '' }}', '{{ t.custom_suspension_reason or '' }}')" title="Manage Faculty ID Card Suspension">
+                                    <i class="fa-solid {% if t.is_suspended %}fa-lock{% else %}fa-lock-open{% endif %}"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Card Body -->
-                    <div class="card-body p-3.5 text-center">
+                    <div class="card-body p-3.5 text-center position-relative">
                         <div class="position-relative d-inline-block mb-2">
-                            <div class="rounded-3 p-1 shadow-2xs bg-white border border-2 border-primary" style="width: 85px; height: 90px; margin: 0 auto;">
+                            <div class="rounded-3 p-1 shadow-2xs bg-white border border-2 {% if t.is_suspended %}border-danger{% else %}border-primary{% endif %}" style="width: 85px; height: 90px; margin: 0 auto;">
                                 {% if t.image_filename %}
                                 <img src="{{ url_for('main.uploaded_face', filename=t.image_filename) }}" alt="{{ t.name }}" class="w-100 h-100 rounded-2" style="object-fit: cover;">
                                 {% else %}
@@ -185,12 +265,30 @@
                                 </div>
                                 {% endif %}
                             </div>
+                            {% if t.is_suspended %}
+                            <span class="position-absolute top-0 end-0 badge bg-danger rounded-circle p-1" style="transform: translate(30%, -30%);" title="Faculty ID Suspended">
+                                <i class="fa-solid fa-ban text-white fs-9"></i>
+                            </span>
+                            {% endif %}
                         </div>
 
                         <h6 class="fw-bold text-dark mb-0.5">{{ t.name }}</h6>
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-0.5 rounded-pill fs-9 fw-bold mb-2.5">
+                        <span class="badge {% if t.is_suspended %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25{% else %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25{% endif %} px-2.5 py-0.5 rounded-pill fs-9 fw-bold mb-2.5">
                             {{ t.primary_subject or 'Assistant Professor' }}
                         </span>
+
+                        <!-- Suspension Details Banner if Suspended -->
+                        {% if t.is_suspended %}
+                        <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 text-start fs-9">
+                            <div class="d-flex justify-content-between text-danger fw-bold">
+                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: Suspended</span>
+                                <span>ADMIN</span>
+                            </div>
+                            <div class="text-muted mt-0.5 text-truncate" title="{{ t.custom_suspension_reason or t.suspension_reason }}">
+                                Reason: <strong class="text-dark">{{ t.suspension_reason or 'Administrative Issue' }}</strong>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <div class="p-2.5 bg-light rounded-3 border text-start fs-8.5 mb-2.5 shadow-2xs">
                             <div class="d-flex justify-content-between mb-1">
@@ -199,7 +297,7 @@
                             </div>
                             <div class="d-flex justify-content-between mb-1">
                                 <span class="text-muted fs-9">Department:</span>
-                                <span class="fw-semibold text-dark">{{ t.department or 'Computer Science' }}</span>
+                                <span class="fw-semibold text-dark">{{ t.effective_department or 'Computer Science' }}</span>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <span class="text-muted fs-9">Email:</span>
@@ -208,10 +306,16 @@
                         </div>
 
                         <div class="d-flex align-items-center justify-content-between pt-1">
-                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold">
-                                <i class="fa-solid fa-shield-halved me-1"></i>Verified
+                            {% if t.is_suspended %}
+                            <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                <i class="fa-solid fa-lock me-1"></i>Check-in Blocked
                             </span>
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=SMARTVISION:FACULTY:{{ t.emp_id or t.id }}" alt="QR" class="border rounded p-0.5 bg-white" style="width: 44px; height: 44px;">
+                            {% else %}
+                            <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                <i class="fa-solid fa-shield-halved me-1"></i>Verified & Active
+                            </span>
+                            {% endif %}
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=SMARTVISION:FACULTY:{{ t.emp_id or t.id }}{% if t.is_suspended %}:SUSPENDED{% endif %}" alt="QR" class="border rounded p-0.5 bg-white" style="width: 44px; height: 44px;">
                         </div>
                     </div>
                 </div>
@@ -222,14 +326,120 @@
                     <i class="fa-solid fa-user-slash fs-1 text-muted"></i>
                 </div>
                 <h6 class="fw-bold text-dark">No Faculty Members Found</h6>
-                <p class="text-muted fs-8">Try adjusting your search query.</p>
+                <p class="text-muted fs-8">Try adjusting your search query or department filter.</p>
             </div>
             {% endfor %}
         {% endif %}
     </div>
 </div>
 
+<!-- ================= SUSPEND ID CARD MODAL ================= -->
+<div class="modal fade" id="suspendIdCardModal" tabindex="-1" aria-labelledby="suspendModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0 py-3 px-4 rounded-top-4">
+                <h5 class="modal-title fs-6 fw-bold" id="suspendModalTitle">
+                    <i class="fa-solid fa-user-lock me-2"></i>Suspend Institutional ID Card
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form id="suspendIdForm" method="POST" action="{{ url_for('main.admin_suspend_id_card') }}">
+                <input type="hidden" name="target_type" id="modalTargetType" value="STUDENT">
+                <input type="hidden" name="target_id" id="modalTargetId" value="">
+
+                <div class="modal-body p-4">
+                    <!-- Target Summary Card -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted fs-9 text-uppercase fw-bold">Target Identity:</span>
+                            <span class="badge bg-secondary rounded-pill px-2 py-0.5 fs-9" id="modalPersonRole">Student</span>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1" id="modalPersonName">Student Name</h6>
+                        <div class="row g-1 text-muted fs-9">
+                            <div class="col-6">ID/Roll: <strong class="text-dark" id="modalPersonId">67</strong></div>
+                            <div class="col-6">Class/Dept: <strong class="text-dark" id="modalPersonClassDept">7CSE4 (CSE)</strong></div>
+                            <div class="col-12 mt-1">Current Status: <span class="badge bg-success rounded-pill px-2 py-0.5 fs-9 fw-bold" id="modalCurrentStatus">Active</span></div>
+                        </div>
+                    </div>
+
+                    <!-- If already suspended, provide Lift Suspension Action -->
+                    <div id="alreadySuspendedOptions" class="d-none mb-3">
+                        <div class="alert alert-warning py-2 px-3 fs-9 mb-3">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i> This ID card is currently <strong>SUSPENDED</strong>. You can revoke the suspension to restore campus access and attendance eligibility.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Resolution / Restoration Note:</label>
+                            <input type="text" name="restore_note" id="modalRestoreNote" class="form-control form-control-sm rounded-3" placeholder="e.g. Issue resolved in Admin office">
+                        </div>
+                    </div>
+
+                    <!-- Suspension Reason Fields (When applying suspension) -->
+                    <div id="newSuspensionFields">
+                        <div class="mb-3">
+                            <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Suspension Reason <span class="text-danger">*</span>:</label>
+                            <select name="reason" id="modalReasonSelect" class="form-select form-select-sm rounded-3 fw-bold" required>
+                                <option value="Disciplinary Issue">Disciplinary Issue</option>
+                                <option value="Attendance Issue">Attendance Issue</option>
+                                <option value="Administrative Issue">Administrative Issue</option>
+                                <option value="Misconduct">Misconduct</option>
+                                <option value="Documentation Issue">Documentation Issue</option>
+                                <option value="Rule Violation">Rule Violation</option>
+                                <option value="Pending Verification">Pending Verification</option>
+                                <option value="Other">Other (Specify Below)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Detailed Custom Reason / Notes:</label>
+                            <textarea name="custom_reason" id="modalCustomReason" class="form-control form-control-sm rounded-3" rows="3" placeholder="e.g. ID card suspended due to repeated violation of college rules."></textarea>
+                        </div>
+
+                        <!-- Confirmation Warning Alert -->
+                        <div class="alert alert-danger py-2 px-3 fs-9 mb-0">
+                            <strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Warning:</strong> Are you sure you want to suspend this ID card? The person will <strong>NOT</strong> be permitted to enter campus, biometric check-in will be rejected, and attendance cannot be marked while the suspension is active.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    
+                    <button type="button" class="btn btn-success rounded-pill px-4 fs-8 fw-bold d-none" id="btnRestoreSubmit" onclick="submitRestoreAction()">
+                        <i class="fa-solid fa-unlock me-1"></i>Restore & Activate ID Card
+                    </button>
+
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fs-8 fw-bold" id="btnSuspendSubmit">
+                        <i class="fa-solid fa-lock me-1"></i>Confirm Suspension
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <style>
+.watermark-suspended-diagonal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0.18;
+    font-size: 3rem;
+    font-weight: 900;
+    color: #ef4444;
+    letter-spacing: 4px;
+    border: 4px dashed #ef4444;
+    padding: 6px 24px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+.suspended-card-border {
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.15) !important;
+}
+
 @media print {
     body * {
         visibility: hidden;
@@ -253,4 +463,48 @@
     }
 }
 </style>
+
+<script>
+function openSuspendModal(targetType, targetId, name, personId, classStr, deptStr, currentStatus, isSuspended, reason, customReason) {
+    document.getElementById('modalTargetType').value = targetType;
+    document.getElementById('modalTargetId').value = targetId;
+    document.getElementById('modalPersonRole').innerText = targetType === 'STUDENT' ? 'Student' : 'Faculty';
+    document.getElementById('modalPersonName').innerText = name;
+    document.getElementById('modalPersonId').innerText = personId;
+    document.getElementById('modalPersonClassDept').innerText = classStr + ' (' + deptStr + ')';
+    
+    const statusBadge = document.getElementById('modalCurrentStatus');
+    const newFields = document.getElementById('newSuspensionFields');
+    const alreadySusp = document.getElementById('alreadySuspendedOptions');
+    const btnSuspend = document.getElementById('btnSuspendSubmit');
+    const btnRestore = document.getElementById('btnRestoreSubmit');
+    const form = document.getElementById('suspendIdForm');
+
+    if (isSuspended) {
+        statusBadge.className = 'badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold';
+        statusBadge.innerText = 'Suspended';
+        newFields.classList.add('d-none');
+        alreadySusp.classList.remove('d-none');
+        btnSuspend.classList.add('d-none');
+        btnRestore.classList.remove('d-none');
+    } else {
+        statusBadge.className = 'badge bg-success rounded-pill px-2 py-0.5 fs-9 fw-bold';
+        statusBadge.innerText = 'Active';
+        newFields.classList.remove('d-none');
+        alreadySusp.classList.add('d-none');
+        btnSuspend.classList.remove('d-none');
+        btnRestore.classList.add('d-none');
+        form.action = "{{ url_for('main.admin_suspend_id_card') }}";
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('suspendIdCardModal'));
+    modal.show();
+}
+
+function submitRestoreAction() {
+    const form = document.getElementById('suspendIdForm');
+    form.action = "{{ url_for('main.admin_restore_id_card') }}";
+    form.submit();
+}
+</script>
 {% endblock %}

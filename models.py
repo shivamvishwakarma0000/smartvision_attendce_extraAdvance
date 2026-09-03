@@ -149,6 +149,16 @@ class Teacher(db.Model):
     face_encoding = deferred(db.Column(db.LargeBinary, nullable=True)) # Deferred: Loaded only when running biometric scanner
     status = db.Column(db.String(20), default='Approved')
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    # ID Card Suspension & Campus Access Control
+    id_card_status = db.Column(db.String(30), default='Active') # 'Active', 'Suspended', 'Removal Requested'
+    is_suspended = db.Column(db.Boolean, default=False)
+    suspension_reason = db.Column(db.String(255), nullable=True)
+    custom_suspension_reason = db.Column(db.Text, nullable=True)
+    suspended_at = db.Column(db.DateTime, nullable=True)
+    suspended_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    suspended_by_role = db.Column(db.String(50), nullable=True) # 'admin'
+    suspended_by_name = db.Column(db.String(100), nullable=True)
     
     # Teaching Preferences & Subject Expertise
     primary_subject = db.Column(db.String(100), nullable=True)
@@ -242,6 +252,16 @@ class Student(db.Model):
     face_embedding = deferred(db.Column(db.LargeBinary, nullable=True)) # Deferred
     image_filename = db.Column(db.String(255), nullable=True)
     image_data = deferred(db.Column(db.Text, nullable=True)) # Deferred: Loaded only on explicit image rendering
+
+    # ID Card Suspension & Campus Access Control
+    id_card_status = db.Column(db.String(30), default='Active') # 'Active', 'Suspended', 'Removal Requested'
+    is_suspended = db.Column(db.Boolean, default=False)
+    suspension_reason = db.Column(db.String(255), nullable=True)
+    custom_suspension_reason = db.Column(db.Text, nullable=True)
+    suspended_at = db.Column(db.DateTime, nullable=True)
+    suspended_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    suspended_by_role = db.Column(db.String(50), nullable=True) # 'admin' or 'teacher'
+    suspended_by_name = db.Column(db.String(100), nullable=True)
 
     def __init__(self, **kwargs):
         if 'roll_no' in kwargs and 'roll_number' not in kwargs:
@@ -878,6 +898,63 @@ class ComplaintVote(db.Model):
     __table_args__ = (
         db.UniqueConstraint('complaint_id', 'student_id', name='uq_complaint_student_vote'),
     )
+
+
+class SuspensionAudit(db.Model):
+    """
+    Complete audit trail of every suspension and revocation action
+    initiated by Admins or Teachers for students and teachers.
+    """
+    __tablename__ = 'suspension_audits'
+    id = db.Column(db.Integer, primary_key=True)
+    target_type = db.Column(db.String(20), nullable=False) # 'STUDENT' or 'TEACHER'
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=True)
+    action = db.Column(db.String(30), nullable=False) # 'SUSPENDED', 'REMOVAL_REQUESTED', 'RESTORED', 'REJECTED'
+    
+    reason = db.Column(db.String(255), nullable=True)
+    custom_reason = db.Column(db.Text, nullable=True)
+    
+    performed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    performed_by_role = db.Column(db.String(50), nullable=True) # 'admin' or 'teacher'
+    performed_by_name = db.Column(db.String(100), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    student = db.relationship('Student', backref=db.backref('suspension_history', lazy=True, cascade='all, delete-orphan'))
+    teacher = db.relationship('Teacher', backref=db.backref('suspension_history', lazy=True, cascade='all, delete-orphan'))
+    performed_by = db.relationship('User', foreign_keys=[performed_by_user_id])
+
+
+class SuspensionRemovalRequest(db.Model):
+    """
+    Formal request submitted by a suspended student or teacher
+    for administrative review to revoke suspension and restore campus access.
+    """
+    __tablename__ = 'suspension_removal_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    target_type = db.Column(db.String(20), nullable=False) # 'STUDENT' or 'TEACHER'
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=True)
+    
+    explanation = db.Column(db.Text, nullable=False)
+    supporting_document = db.Column(db.String(255), nullable=True) # Filename in uploads
+    additional_comments = db.Column(db.Text, nullable=True)
+    
+    # Status: 'Pending', 'Under Review', 'Approved', 'Rejected'
+    status = db.Column(db.String(30), default='Pending')
+    admin_notes = db.Column(db.Text, nullable=True)
+    reviewed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('Student', backref=db.backref('removal_requests', lazy=True, cascade='all, delete-orphan'))
+    teacher = db.relationship('Teacher', backref=db.backref('removal_requests', lazy=True, cascade='all, delete-orphan'))
+    user = db.relationship('User', foreign_keys=[user_id])
+    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_user_id])
 
 
 # ==============================================================================

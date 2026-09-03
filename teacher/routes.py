@@ -1418,7 +1418,11 @@ def take_attendance():
 
             # Automatically record attendance and lock session on face scan submit
             for student in class_students:
-                status_val = 'PRESENT' if student.id in matched_student_ids else 'ABSENT'
+                # Suspended students CANNOT be marked PRESENT under any circumstances
+                if student.is_suspended:
+                    status_val = 'ABSENT'
+                else:
+                    status_val = 'PRESENT' if student.id in matched_student_ids else 'ABSENT'
                 conf_float = confidence_scores.get(student.id, 1.0 if status_val == 'PRESENT' else 0.0)
 
                 existing_rec = AttendanceRecord.query.filter_by(session_id=session_rec.id, student_id=student.id).first()
@@ -1522,6 +1526,10 @@ def confirm_attendance(session_id):
     present_count = 0
     for student in class_students:
         status_val = request.form.get(f'student_status_{student.id}', 'ABSENT').upper()
+        # Strict Suspension check: Never allow marking a suspended student as PRESENT
+        if student.is_suspended:
+            status_val = 'ABSENT'
+
         conf_val = request.form.get(f'confidence_{student.id}', '1.0')
         try:
             conf_float = float(conf_val)
@@ -2216,17 +2224,61 @@ def teacher_id_card():
     subjects = Subject.query.filter_by(teacher_id=teacher.id).all()
     assigned_classes = [s.class_assigned for s in subjects if s.class_assigned]
     
+    from models import SuspensionRemovalRequest
+    pending_request = SuspensionRemovalRequest.query.filter_by(teacher_id=teacher.id, status='Pending').first()
+
     # QR verification data payload
     qr_data = f"SMARTVISION:FACULTY|ID:{teacher.emp_id or teacher.id}|NAME:{teacher.name}|DEPT:{teacher.department or 'General'}|ROLE:TEACHER"
     
     return render_template(
         'teacher_id_card.html',
         teacher=teacher,
+        pending_request=pending_request,
         subjects=subjects,
         assigned_classes=assigned_classes,
         qr_data=qr_data,
         today=date.today()
     )
+
+
+@teacher_bp.route('/teacher/request_suspension_removal', methods=['POST'])
+@login_required
+@teacher_required
+def teacher_request_suspension_removal():
+    teacher = get_current_teacher()
+    explanation = request.form.get('explanation', '').strip()
+    additional_comments = request.form.get('additional_comments', '').strip()
+
+    if not explanation:
+        flash("Please provide a written explanation for your suspension removal request.", "warning")
+        return redirect(url_for('teacher.teacher_id_card'))
+
+    uploaded_doc = request.files.get('supporting_document')
+    doc_filename = None
+    if uploaded_doc and uploaded_doc.filename:
+        upload_folder = os.path.join(os.getcwd(), 'uploads', 'suspensions')
+        os.makedirs(upload_folder, exist_ok=True)
+        doc_filename = secure_filename(f"tch_susp_{teacher.id}_{int(datetime.utcnow().timestamp())}_{uploaded_doc.filename}")
+        uploaded_doc.save(os.path.join(upload_folder, doc_filename))
+
+    from models import SuspensionRemovalRequest
+    new_req = SuspensionRemovalRequest(
+        user_id=current_user.id,
+        target_type='TEACHER',
+        teacher_id=teacher.id,
+        explanation=explanation,
+        supporting_document=doc_filename,
+        additional_comments=additional_comments or None,
+        status='Pending',
+        created_at=datetime.utcnow()
+    )
+    teacher.id_card_status = 'Removal Requested'
+    db.session.add(new_req)
+    db.session.commit()
+
+    flash("✓ Suspension removal request submitted successfully! Administration will review your request.", "success")
+    return redirect(url_for('teacher.teacher_id_card'))
+
 
 
 @teacher_bp.route('/teacher/edit-profile', methods=['GET', 'POST'])
@@ -2447,6 +2499,129 @@ def feedback_ratings():
         performance_status=performance_status,
         status_color=status_color
     )
+
+
+# ==============================================================================
+# SECTION 17: TEACHER - STUDENT ID CARDS & SUSPENSION PORTAL
+# ==============================================================================
+
+@teacher_bp.route('/teacher/student_id_cards')
+@login_required
+@teacher_required
+def teacher_student_id_cards():
+    """Allows teachers to browse and inspect ID cards of students in their assigned classes with suspension controls."""
+    teacher = get_current_teacher()
+    subjects = Subject.query.filter_by(teacher_id=teacher.id).all()
+    assigned_sub_ids = [asn.subject_id for asn in TeacherAssignment.query.filter_by(teacher_id=teacher.id).all()]
+    all_teacher_subs = Subject.query.filter((Subject.teacher_id == teacher.id) | (Subject.id.in_(assigned_sub_ids) if assigned_sub_ids else False)).all()
+    
+    directed_classes = Class.query.filter_by(class_teacher_id=teacher.id).all()
+    assigned_class_ids = set([s.class_id for s in all_teacher_subs if s.class_id] + [c.id for c in directed_classes])
+    authorized_classes = Class.query.filter(Class.id.in_(assigned_class_ids)).order_by(Class.name.asc()).all() if assigned_class_ids else []
+
+    selected_class_id = request.args.get('class_id')
+    selected_status = request.args.get('status', '').strip()
+    search_query = request.args.get('q', '').strip()
+
+    students = []
+    if authorized_classes:
+        q = Student.query.filter(Student.class_id.in_(assigned_class_ids))
+        if selected_class_id and selected_class_id.isdigit() and int(selected_class_id) in assigned_class_ids:
+            q = q.filter_by(class_id=int(selected_class_id))
+        
+        if selected_status == 'Active':
+            q = q.filter((Student.is_suspended == False) | (Student.is_suspended == None))
+        elif selected_status == 'Suspended':
+            q = q.filter(Student.is_suspended == True)
+
+        if search_query:
+            q = q.filter((Student.name.ilike(f"%{search_query}%")) | (Student.roll_no.ilike(f"%{search_query}%")) | (Student.enrollment_no.ilike(f"%{search_query}%")))
+
+        students = q.order_by(Student.roll_no.asc()).all()
+
+    return render_template(
+        'teacher_student_id_cards.html',
+        teacher=teacher,
+        authorized_classes=authorized_classes,
+        selected_class_id=int(selected_class_id) if selected_class_id and selected_class_id.isdigit() else None,
+        selected_status=selected_status,
+        search_query=search_query,
+        students=students,
+        today=date.today()
+    )
+
+
+@teacher_bp.route('/teacher/suspend_student_id', methods=['POST'])
+@login_required
+@teacher_required
+def teacher_suspend_student_id():
+    """Allows authorized teacher to suspend student ID card for disciplinary issues with administrative tracking."""
+    teacher = get_current_teacher()
+    student_id = request.form.get('student_id')
+    reason = request.form.get('reason', '').strip()
+    custom_reason = request.form.get('custom_reason', '').strip()
+
+    if not student_id or not str(student_id).isdigit():
+        flash("Invalid student specified for suspension.", "danger")
+        return redirect(url_for('teacher.teacher_student_id_cards'))
+
+    student = Student.query.get_or_404(int(student_id))
+
+    # Verify authorization: Teacher can only suspend students in their assigned classes
+    subjects = Subject.query.filter_by(teacher_id=teacher.id).all()
+    assigned_sub_ids = [asn.subject_id for asn in TeacherAssignment.query.filter_by(teacher_id=teacher.id).all()]
+    all_teacher_subs = Subject.query.filter((Subject.teacher_id == teacher.id) | (Subject.id.in_(assigned_sub_ids) if assigned_sub_ids else False)).all()
+    directed_classes = Class.query.filter_by(class_teacher_id=teacher.id).all()
+    authorized_class_ids = set([s.class_id for s in all_teacher_subs if s.class_id] + [c.id for c in directed_classes])
+
+    if student.class_id not in authorized_class_ids:
+        flash("Unauthorized: You can only manage student suspensions for classes you are assigned to teach.", "danger")
+        return redirect(url_for('teacher.teacher_student_id_cards'))
+
+    full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+    if not full_reason:
+        full_reason = f"Disciplinary suspension initiated by Faculty {teacher.name}."
+
+    from models import SuspensionAudit, ClassAnnouncement
+    now = datetime.utcnow()
+
+    student.is_suspended = True
+    student.id_card_status = 'Suspended'
+    student.suspension_reason = reason or 'Disciplinary Issue'
+    student.custom_suspension_reason = full_reason
+    student.suspended_at = now
+    student.suspended_by_user_id = current_user.id
+    student.suspended_by_role = 'teacher'
+    student.suspended_by_name = teacher.name
+
+    audit = SuspensionAudit(
+        target_type='STUDENT',
+        student_id=student.id,
+        action='SUSPENDED',
+        reason=reason or 'Disciplinary Issue',
+        custom_reason=full_reason,
+        performed_by_user_id=current_user.id,
+        performed_by_role='teacher',
+        performed_by_name=teacher.name,
+        created_at=now
+    )
+    db.session.add(audit)
+
+    ann = ClassAnnouncement(
+        title="🔒 ID Card Suspended by Faculty",
+        message=f"Dear {student.name}, your student ID card has been suspended by Faculty {teacher.name}.\n\nReason: {full_reason}\n\nCampus access & attendance are restricted. Please meet your faculty/Admin or submit a suspension removal request via your portal.",
+        target_role='STUDENTS',
+        class_id=student.class_id,
+        admin_id=None,
+        posted_by_role='teacher',
+        created_at=now
+    )
+    db.session.add(ann)
+    db.session.commit()
+
+    flash(f"✓ Student ID Card for {student.name} ({student.roll_no}) has been SUSPENDED. Action recorded in audit logs with administrative tracking.", "warning")
+    return redirect(url_for('teacher.teacher_student_id_cards', class_id=student.class_id or ''))
+
 
 
 

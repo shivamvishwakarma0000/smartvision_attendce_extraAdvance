@@ -725,15 +725,60 @@ def student_id_card():
         flash("Student profile not found.", "danger")
         return redirect(url_for('auth.logout'))
 
+    from models import SuspensionRemovalRequest
+    pending_request = SuspensionRemovalRequest.query.filter_by(student_id=student.id, status='Pending').first()
+
     # QR verification data payload
     qr_data = f"SMARTVISION:STUDENT|ROLL:{student.roll_no}|NAME:{student.name}|ENROLL:{student.enrollment_no}|CLASS:{student.class_assigned.name if student.class_assigned else 'N/A'}|ROLE:STUDENT"
 
     return render_template(
         'student_id_card.html',
         student=student,
+        pending_request=pending_request,
         qr_data=qr_data,
         today=date.today()
     )
+
+
+@student_bp.route('/student/request_suspension_removal', methods=['POST'])
+@login_required
+@student_required
+def request_suspension_removal():
+    student = current_user.student_profile
+    explanation = request.form.get('explanation', '').strip()
+    additional_comments = request.form.get('additional_comments', '').strip()
+
+    if not explanation:
+        flash("Please provide a written explanation for your suspension removal request.", "warning")
+        return redirect(url_for('student.student_id_card'))
+
+    # Handle optional supporting document / image upload
+    uploaded_doc = request.files.get('supporting_document')
+    doc_filename = None
+    if uploaded_doc and uploaded_doc.filename:
+        upload_folder = os.path.join(os.getcwd(), 'uploads', 'suspensions')
+        os.makedirs(upload_folder, exist_ok=True)
+        doc_filename = secure_filename(f"stu_susp_{student.id}_{int(datetime.utcnow().timestamp())}_{uploaded_doc.filename}")
+        uploaded_doc.save(os.path.join(upload_folder, doc_filename))
+
+    from models import SuspensionRemovalRequest
+    new_req = SuspensionRemovalRequest(
+        user_id=current_user.id,
+        target_type='STUDENT',
+        student_id=student.id,
+        explanation=explanation,
+        supporting_document=doc_filename,
+        additional_comments=additional_comments or None,
+        status='Pending',
+        created_at=datetime.utcnow()
+    )
+    student.id_card_status = 'Removal Requested'
+    db.session.add(new_req)
+    db.session.commit()
+
+    flash("✓ Suspension removal request submitted successfully! Administration will review your explanation and documents.", "success")
+    return redirect(url_for('student.student_id_card'))
+
 
 
 @student_bp.route('/student/timetable')

@@ -4310,27 +4310,56 @@ def delete_announcement(ann_id):
 @admin_required
 def admin_id_cards():
     classes = get_admin_classes()
+    departments = Department.query.order_by(Department.name.asc()).all()
     teachers = Teacher.query.filter_by(status='Approved').order_by(Teacher.name.asc()).all()
     
     card_type = request.args.get('type', 'students') # 'students' or 'teachers'
+    selected_dept = request.args.get('department', '').strip()
     selected_class_id = request.args.get('class_id')
+    selected_status = request.args.get('status', '').strip() # 'Active' or 'Suspended'
     search_query = request.args.get('q', '').strip()
+
+    # Filter classes by selected department if provided
+    filtered_classes = classes
+    if selected_dept:
+        filtered_classes = [c for c in classes if (c.department and c.department.strip() == selected_dept) or (selected_dept in (c.name or ''))]
 
     students = []
     if card_type == 'students':
         q = Student.query
         if selected_class_id and selected_class_id.isdigit():
             q = q.filter_by(class_id=int(selected_class_id))
+        elif selected_dept:
+            class_ids_in_dept = [c.id for c in filtered_classes]
+            q = q.filter((Student.class_id.in_(class_ids_in_dept)) | (Student.department == selected_dept))
+        
+        if selected_status == 'Active':
+            q = q.filter((Student.is_suspended == False) | (Student.is_suspended == None))
+        elif selected_status == 'Suspended':
+            q = q.filter(Student.is_suspended == True)
+
         if search_query:
             q = q.filter((Student.name.ilike(f"%{search_query}%")) | (Student.roll_no.ilike(f"%{search_query}%")) | (Student.enrollment_no.ilike(f"%{search_query}%")))
         students = q.order_by(Student.roll_no.asc()).all()
     else:
+        if selected_dept:
+            teachers = [t for t in teachers if t.effective_department == selected_dept or (t.department and t.department.strip() == selected_dept)]
+        
+        if selected_status == 'Active':
+            teachers = [t for t in teachers if not t.is_suspended]
+        elif selected_status == 'Suspended':
+            teachers = [t for t in teachers if t.is_suspended]
+
         if search_query:
             teachers = [t for t in teachers if search_query.lower() in t.name.lower() or (t.emp_id and search_query.lower() in t.emp_id.lower()) or (t.department and search_query.lower() in t.department.lower())]
 
     return render_template(
         'admin_id_cards.html',
-        classes=classes,
+        classes=filtered_classes,
+        all_classes=classes,
+        departments=departments,
+        selected_dept=selected_dept,
+        selected_status=selected_status,
         teachers=teachers,
         students=students,
         card_type=card_type,
@@ -4338,6 +4367,313 @@ def admin_id_cards():
         search_query=search_query,
         today=date.today()
     )
+
+
+@main_bp.route('/admin/suspend_id_card', methods=['POST'])
+@login_required
+@admin_required
+def admin_suspend_id_card():
+    target_type = request.form.get('target_type', 'STUDENT').upper()
+    target_id = request.form.get('target_id')
+    reason = request.form.get('reason', '').strip()
+    custom_reason = request.form.get('custom_reason', '').strip()
+
+    if not target_id or not str(target_id).isdigit():
+        flash("Invalid target ID specified for suspension.", "danger")
+        return redirect(url_for('main.admin_id_cards'))
+
+    full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+    if not full_reason:
+        full_reason = "Administrative suspension of ID Card and Campus Access."
+
+    from models import SuspensionAudit, ClassAnnouncement
+    now = datetime.utcnow()
+
+    if target_type == 'STUDENT':
+        student = Student.query.get_or_404(int(target_id))
+        student.is_suspended = True
+        student.id_card_status = 'Suspended'
+        student.suspension_reason = reason or 'Administrative Issue'
+        student.custom_suspension_reason = full_reason
+        student.suspended_at = now
+        student.suspended_by_user_id = current_user.id
+        student.suspended_by_role = 'admin'
+        student.suspended_by_name = current_user.name or 'Administrator'
+
+        # Record in audit log
+        audit = SuspensionAudit(
+            target_type='STUDENT',
+            student_id=student.id,
+            action='SUSPENDED',
+            reason=reason or 'Administrative Issue',
+            custom_reason=full_reason,
+            performed_by_user_id=current_user.id,
+            performed_by_role='admin',
+            performed_by_name=current_user.name or 'Administrator',
+            created_at=now
+        )
+        db.session.add(audit)
+
+        # Send official notification
+        ann = ClassAnnouncement(
+            title="🔒 Your ID Card Has Been Suspended",
+            message=f"Dear {student.name}, your institutional ID card and campus access have been SUSPENDED by Administration.\n\nReason: {full_reason}\n\nYour attendance permissions and campus entry are blocked while active. Please visit the Admin Office or submit a suspension removal request via your portal.",
+            target_role='STUDENTS',
+            class_id=student.class_id,
+            admin_id=current_user.id,
+            posted_by_role='admin',
+            created_at=now
+        )
+        db.session.add(ann)
+        db.session.commit()
+        flash(f"✓ ID Card for student {student.name} ({student.roll_no}) has been SUSPENDED. Campus access & attendance permissions are blocked.", "warning")
+        return redirect(url_for('main.admin_id_cards', type='students', class_id=student.class_id or ''))
+
+    elif target_type == 'TEACHER':
+        teacher = Teacher.query.get_or_404(int(target_id))
+        teacher.is_suspended = True
+        teacher.id_card_status = 'Suspended'
+        teacher.suspension_reason = reason or 'Administrative Issue'
+        teacher.custom_suspension_reason = full_reason
+        teacher.suspended_at = now
+        teacher.suspended_by_user_id = current_user.id
+        teacher.suspended_by_role = 'admin'
+        teacher.suspended_by_name = current_user.name or 'Administrator'
+
+        # Record in audit log
+        audit = SuspensionAudit(
+            target_type='TEACHER',
+            teacher_id=teacher.id,
+            action='SUSPENDED',
+            reason=reason or 'Administrative Issue',
+            custom_reason=full_reason,
+            performed_by_user_id=current_user.id,
+            performed_by_role='admin',
+            performed_by_name=current_user.name or 'Administrator',
+            created_at=now
+        )
+        db.session.add(audit)
+
+        # Send official notification
+        ann = ClassAnnouncement(
+            title="🔒 Faculty ID Card Suspended",
+            message=f"Faculty ID card for {teacher.name} has been SUSPENDED.\n\nReason: {full_reason}\n\nCampus biometric check-in & attendance recording permissions are blocked.",
+            target_role='TEACHERS',
+            admin_id=current_user.id,
+            posted_by_role='admin',
+            created_at=now
+        )
+        db.session.add(ann)
+        db.session.commit()
+        flash(f"✓ Faculty ID Card for {teacher.name} has been SUSPENDED.", "warning")
+        return redirect(url_for('main.admin_id_cards', type='teachers'))
+
+    flash("Invalid target type.", "danger")
+    return redirect(url_for('main.admin_id_cards'))
+
+
+@main_bp.route('/admin/restore_id_card', methods=['POST'])
+@login_required
+@admin_required
+def admin_restore_id_card():
+    target_type = request.form.get('target_type', 'STUDENT').upper()
+    target_id = request.form.get('target_id')
+    restore_note = request.form.get('restore_note', '').strip() or "Suspension lifted by Administrator."
+
+    if not target_id or not str(target_id).isdigit():
+        flash("Invalid target ID.", "danger")
+        return redirect(url_for('main.admin_id_cards'))
+
+    from models import SuspensionAudit, ClassAnnouncement
+    now = datetime.utcnow()
+
+    if target_type == 'STUDENT':
+        student = Student.query.get_or_404(int(target_id))
+        student.is_suspended = False
+        student.id_card_status = 'Active'
+        student.suspension_reason = None
+        student.custom_suspension_reason = None
+        student.suspended_at = None
+
+        audit = SuspensionAudit(
+            target_type='STUDENT',
+            student_id=student.id,
+            action='RESTORED',
+            reason='Suspension Lifted',
+            custom_reason=restore_note,
+            performed_by_user_id=current_user.id,
+            performed_by_role='admin',
+            performed_by_name=current_user.name or 'Administrator',
+            created_at=now
+        )
+        db.session.add(audit)
+
+        ann = ClassAnnouncement(
+            title="✓ ID Card Suspension Lifted & Active",
+            message=f"Dear {student.name}, your ID card suspension has been revoked by Administration.\n\nYour campus access and attendance eligibility are fully restored.",
+            target_role='STUDENTS',
+            class_id=student.class_id,
+            admin_id=current_user.id,
+            posted_by_role='admin',
+            created_at=now
+        )
+        db.session.add(ann)
+        db.session.commit()
+        flash(f"✓ ID Card for student {student.name} has been RESTORED to Active status! Campus access & attendance permissions are re-enabled.", "success")
+        return redirect(url_for('main.admin_id_cards', type='students', class_id=student.class_id or ''))
+
+    elif target_type == 'TEACHER':
+        teacher = Teacher.query.get_or_404(int(target_id))
+        teacher.is_suspended = False
+        teacher.id_card_status = 'Active'
+        teacher.suspension_reason = None
+        teacher.custom_suspension_reason = None
+        teacher.suspended_at = None
+
+        audit = SuspensionAudit(
+            target_type='TEACHER',
+            teacher_id=teacher.id,
+            action='RESTORED',
+            reason='Suspension Lifted',
+            custom_reason=restore_note,
+            performed_by_user_id=current_user.id,
+            performed_by_role='admin',
+            performed_by_name=current_user.name or 'Administrator',
+            created_at=now
+        )
+        db.session.add(audit)
+
+        ann = ClassAnnouncement(
+            title="✓ Faculty ID Card Suspension Revoked",
+            message=f"Faculty ID card for {teacher.name} has been restored to Active status by Administration. Biometric check-in is now enabled.",
+            target_role='TEACHERS',
+            admin_id=current_user.id,
+            posted_by_role='admin',
+            created_at=now
+        )
+        db.session.add(ann)
+        db.session.commit()
+        flash(f"✓ Faculty ID Card for {teacher.name} has been RESTORED to Active status.", "success")
+        return redirect(url_for('main.admin_id_cards', type='teachers'))
+
+    flash("Invalid target type.", "danger")
+    return redirect(url_for('main.admin_id_cards'))
+
+
+@main_bp.route('/admin/suspension_requests')
+@login_required
+@admin_required
+def admin_suspension_requests():
+    from models import SuspensionRemovalRequest, SuspensionAudit
+    requests_list = SuspensionRemovalRequest.query.order_by(SuspensionRemovalRequest.created_at.desc()).all()
+    audit_logs = SuspensionAudit.query.order_by(SuspensionAudit.created_at.desc()).limit(100).all()
+    active_suspended_students = Student.query.filter_by(is_suspended=True).all()
+    active_suspended_teachers = Teacher.query.filter_by(is_suspended=True).all()
+
+    return render_template(
+        'admin_suspension_requests.html',
+        requests_list=requests_list,
+        audit_logs=audit_logs,
+        active_suspended_students=active_suspended_students,
+        active_suspended_teachers=active_suspended_teachers,
+        today=date.today()
+    )
+
+
+@main_bp.route('/admin/review_suspension_request/<int:req_id>', methods=['POST'])
+@login_required
+@admin_required
+def review_suspension_request(req_id):
+    from models import SuspensionRemovalRequest, SuspensionAudit, ClassAnnouncement
+    req_obj = SuspensionRemovalRequest.query.get_or_404(req_id)
+    action = request.form.get('action', 'APPROVE').upper() # 'APPROVE', 'REJECT', 'CONTINUE'
+    admin_notes = request.form.get('admin_notes', '').strip()
+    now = datetime.utcnow()
+
+    if action == 'APPROVE':
+        req_obj.status = 'Approved'
+        req_obj.admin_notes = admin_notes or "Suspension removal request approved by Admin."
+        req_obj.reviewed_by_user_id = current_user.id
+        req_obj.reviewed_at = now
+
+        if req_obj.target_type == 'STUDENT' and req_obj.student:
+            req_obj.student.is_suspended = False
+            req_obj.student.id_card_status = 'Active'
+            req_obj.student.suspension_reason = None
+            req_obj.student.custom_suspension_reason = None
+            req_obj.student.suspended_at = None
+
+            audit = SuspensionAudit(
+                target_type='STUDENT',
+                student_id=req_obj.student.id,
+                action='RESTORED',
+                reason='Removal Request Approved',
+                custom_reason=admin_notes,
+                performed_by_user_id=current_user.id,
+                performed_by_role='admin',
+                performed_by_name=current_user.name or 'Administrator',
+                created_at=now
+            )
+            db.session.add(audit)
+
+            ann = ClassAnnouncement(
+                title="✓ Suspension Removal Request Approved",
+                message=f"Dear {req_obj.student.name}, your request to lift ID card suspension has been APPROVED.\n\nAdmin Remarks: {admin_notes or 'All campus permissions and attendance recording eligibility restored.'}",
+                target_role='STUDENTS',
+                class_id=req_obj.student.class_id,
+                admin_id=current_user.id,
+                posted_by_role='admin',
+                created_at=now
+            )
+            db.session.add(ann)
+
+        elif req_obj.target_type == 'TEACHER' and req_obj.teacher:
+            req_obj.teacher.is_suspended = False
+            req_obj.teacher.id_card_status = 'Active'
+            req_obj.teacher.suspension_reason = None
+            req_obj.teacher.custom_suspension_reason = None
+            req_obj.teacher.suspended_at = None
+
+            audit = SuspensionAudit(
+                target_type='TEACHER',
+                teacher_id=req_obj.teacher.id,
+                action='RESTORED',
+                reason='Removal Request Approved',
+                custom_reason=admin_notes,
+                performed_by_user_id=current_user.id,
+                performed_by_role='admin',
+                performed_by_name=current_user.name or 'Administrator',
+                created_at=now
+            )
+            db.session.add(audit)
+
+        db.session.commit()
+        flash("✓ Suspension removal request APPROVED! ID card status restored to Active and permissions re-enabled.", "success")
+
+    elif action == 'REJECT':
+        req_obj.status = 'Rejected'
+        req_obj.admin_notes = admin_notes or "Removal request rejected after administrative review."
+        req_obj.reviewed_by_user_id = current_user.id
+        req_obj.reviewed_at = now
+
+        name = req_obj.student.name if req_obj.student else (req_obj.teacher.name if req_obj.teacher else "User")
+        cls_id = req_obj.student.class_id if req_obj.student else None
+        target_r = 'STUDENTS' if req_obj.target_type == 'STUDENT' else 'TEACHERS'
+
+        ann = ClassAnnouncement(
+            title="⚠️ Suspension Removal Request Rejected",
+            message=f"Dear {name}, your suspension removal request has been REJECTED.\n\nReason/Remarks: {admin_notes or 'Suspension remains active. Please contact the Admin Office in person.'}",
+            target_role=target_r,
+            class_id=cls_id,
+            admin_id=current_user.id,
+            posted_by_role='admin',
+            created_at=now
+        )
+        db.session.add(ann)
+        db.session.commit()
+        flash("Suspension removal request has been REJECTED. ID card remains suspended.", "warning")
+
+    return redirect(url_for('main.admin_suspension_requests'))
 
 @main_bp.route('/admin/university_details', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,300 @@
+{# ============================================================================== #}
+{# SMARTVISION ATTENDANCE MANAGEMENT PORTAL - ADMIN SUSPENSION REQUESTS & AUDIT #}
+{# ============================================================================== #}
+
+{% extends 'base.html' %}
+
+{% block title %}Suspension Management Desk - SmartVision{% endblock %}
+{% block page_title %}Institutional Suspension Management & Audit Desk{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 py-md-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-lock text-danger me-2"></i>Institutional Suspension Desk</h4>
+            <p class="text-muted fs-8 mb-0">Review suspension removal appeals, teacher-initiated suspensions, and complete audit history.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.admin_id_cards') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 fw-bold">
+                <i class="fa-solid fa-id-badge me-1.5"></i>All ID Cards Directory
+            </a>
+        </div>
+    </div>
+
+    <!-- Metric Summary Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white border border-danger-subtle">
+                <span class="text-muted fs-9 fw-bold text-uppercase d-block mb-1">Suspended Students</span>
+                <h4 class="fw-bold text-danger mb-0">{{ active_suspended_students|length }}</h4>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white border border-warning-subtle">
+                <span class="text-muted fs-9 fw-bold text-uppercase d-block mb-1">Suspended Faculty</span>
+                <h4 class="fw-bold text-warning mb-0">{{ active_suspended_teachers|length }}</h4>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white border border-info-subtle">
+                {% set pending_reqs = requests_list|selectattr('status', 'equalto', 'Pending')|list %}
+                <span class="text-muted fs-9 fw-bold text-uppercase d-block mb-1">Pending Removal Appeals</span>
+                <h4 class="fw-bold text-info mb-0">{{ pending_reqs|length }}</h4>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white border border-secondary-subtle">
+                <span class="text-muted fs-9 fw-bold text-uppercase d-block mb-1">Total Audit Logs</span>
+                <h4 class="fw-bold text-dark mb-0">{{ audit_logs|length }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs: 1. Removal Requests | 2. Active Suspensions | 3. Complete Audit Logs -->
+    <ul class="nav nav-pills mb-3 gap-2" id="suspensionTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-4 py-2 fs-8 fw-bold" id="tab-requests" data-bs-toggle="pill" data-bs-target="#pane-requests" type="button" role="tab">
+                <i class="fa-solid fa-file-circle-question me-1.5 text-warning"></i>Removal Requests ({{ pending_reqs|length }} Pending)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4 py-2 fs-8 fw-bold" id="tab-active" data-bs-toggle="pill" data-bs-target="#pane-active" type="button" role="tab">
+                <i class="fa-solid fa-ban me-1.5 text-danger"></i>Active Suspensions ({{ active_suspended_students|length + active_suspended_teachers|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4 py-2 fs-8 fw-bold" id="tab-audit" data-bs-toggle="pill" data-bs-target="#pane-audit" type="button" role="tab">
+                <i class="fa-solid fa-clock-rotate-left me-1.5 text-primary"></i>Audit Trail History
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="suspensionTabContent">
+        <!-- ================= PANE 1: REMOVAL REQUESTS ================= -->
+        <div class="tab-pane fade show active" id="pane-requests" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border">
+                <h5 class="fw-bold text-dark mb-1 fs-6">Formal Suspension Removal Requests</h5>
+                <p class="text-muted fs-9 mb-3">Review written explanations, uploaded evidence, and take administrative action to approve or reject.</p>
+
+                {% if requests_list %}
+                    <div class="row g-3">
+                        {% for req in requests_list %}
+                        {% set is_stu = (req.target_type == 'STUDENT') %}
+                        {% set person = req.student if is_stu else req.teacher %}
+                        
+                        <div class="col-lg-6">
+                            <div class="card h-100 rounded-4 p-3.5 border shadow-xs {% if req.status == 'Pending' %}border-warning bg-warning bg-opacity-10{% elif req.status == 'Approved' %}border-success-subtle bg-light-subtle{% else %}border-secondary-subtle bg-light-subtle{% endif %}">
+                                <!-- Top Bar -->
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge {% if is_stu %}bg-primary{% else %}bg-info text-dark{% endif %} rounded-pill px-2.5 py-1 fs-9 fw-bold">
+                                        {{ req.target_type }} APPEAL
+                                    </span>
+                                    <span class="badge {% if req.status == 'Pending' %}bg-warning text-dark animate-pulse{% elif req.status == 'Approved' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3 py-1 fs-9 fw-bold">
+                                        {{ req.status }}
+                                    </span>
+                                </div>
+
+                                <!-- Person Info -->
+                                <div class="d-flex align-items-center gap-2 mb-2.5">
+                                    <div class="rounded-circle bg-white border p-1 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                        {% if person and person.image_filename %}
+                                        <img src="{{ url_for('main.uploaded_face', filename=person.image_filename) }}" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                        {% else %}
+                                        <i class="fa-solid fa-user text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0 fs-7">{{ person.name if person else 'User' }}</h6>
+                                        <span class="text-muted fs-9">
+                                            {% if is_stu %}Roll: <strong>{{ person.roll_no }}</strong> | Class: <strong>{{ person.class_assigned.name if person.class_assigned else 'N/A' }}</strong>{% else %}Emp ID: <strong>{{ person.emp_id }}</strong> | Dept: <strong>{{ person.department }}</strong>{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Explanation Box -->
+                                <div class="bg-white p-3 rounded-3 border mb-2.5 shadow-2xs">
+                                    <span class="text-muted fs-9 fw-bold d-block mb-1">User's Written Explanation:</span>
+                                    <p class="text-dark fs-8 mb-0 font-monospace">"{{ req.explanation }}"</p>
+                                    {% if req.additional_comments %}
+                                    <span class="text-muted fs-9 d-block mt-1"><strong>Additional Comments:</strong> {{ req.additional_comments }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Uploaded Evidence if any -->
+                                {% if req.supporting_document %}
+                                <div class="mb-2.5">
+                                    <a href="{{ url_for('main.uploaded_face', filename=req.supporting_document) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill fs-9 py-1 px-3">
+                                        <i class="fa-solid fa-paperclip me-1"></i>View Uploaded Document / Proof
+                                    </a>
+                                </div>
+                                {% endif %}
+
+                                <!-- Action Buttons if Pending -->
+                                {% if req.status == 'Pending' %}
+                                <div class="pt-2 border-top mt-auto">
+                                    <form method="POST" action="{{ url_for('main.review_suspension_request', req_id=req.id) }}" class="d-flex gap-2">
+                                        <input type="text" name="admin_notes" class="form-control form-control-sm rounded-pill px-3 fs-9" placeholder="Admin remarks / reason...">
+                                        <button type="submit" name="action" value="APPROVE" class="btn btn-sm btn-success rounded-pill px-3 fw-bold fs-9 text-nowrap">
+                                            <i class="fa-solid fa-check me-1"></i>Approve & Lift
+                                        </button>
+                                        <button type="submit" name="action" value="REJECT" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9 text-nowrap">
+                                            <i class="fa-solid fa-xmark me-1"></i>Reject
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <div class="pt-2 border-top mt-auto fs-9 text-muted">
+                                    Reviewed by Admin on <strong>{{ req.reviewed_at|to_ist if req.reviewed_at else 'N/A' }}</strong>
+                                    {% if req.admin_notes %}
+                                    <div class="text-dark mt-0.5">Remarks: <em>{{ req.admin_notes }}</em></div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-clipboard-check fs-1 text-success opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Removal Requests Pending</h6>
+                        <p class="fs-8 text-muted mb-0">No students or faculty members have submitted suspension removal appeals.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ================= PANE 2: ACTIVE SUSPENSIONS ================= -->
+        <div class="tab-pane fade" id="pane-active" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border">
+                <h5 class="fw-bold text-dark mb-1 fs-6">Currently Suspended Students & Faculty</h5>
+                <p class="text-muted fs-9 mb-3">All persons whose ID card is currently suspended with campus access & attendance blocked.</p>
+
+                <div class="row g-3">
+                    {% for s in active_suspended_students %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card rounded-4 p-3 border border-danger shadow-xs bg-danger bg-opacity-10 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-danger rounded-pill px-2.5 py-0.5 fs-9 fw-bold">STUDENT</span>
+                                <span class="badge bg-white text-danger border border-danger rounded-pill px-2 py-0.5 fs-9">
+                                    Suspended by {{ s.suspended_by_role|upper if s.suspended_by_role else 'ADMIN' }}
+                                </span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-0 fs-7">{{ s.name }} (Roll: {{ s.roll_no }})</h6>
+                            <span class="text-muted fs-9 mb-2 d-block">Class: {{ s.class_assigned.name if s.class_assigned else 'N/A' }}</span>
+                            
+                            <div class="bg-white p-2.5 rounded-3 border text-start fs-9 mb-3 shadow-2xs">
+                                <span class="text-muted d-block"><strong>Reason:</strong> {{ s.suspension_reason or 'Disciplinary Issue' }}</span>
+                                {% if s.custom_suspension_reason and s.custom_suspension_reason != s.suspension_reason %}
+                                <span class="text-dark d-block mt-0.5 font-monospace">"{{ s.custom_suspension_reason }}"</span>
+                                {% endif %}
+                                <span class="text-muted d-block mt-1 fs-9">Suspended: {{ s.suspended_at|to_ist if s.suspended_at else 'Active' }}</span>
+                            </div>
+
+                            <form method="POST" action="{{ url_for('main.admin_restore_id_card') }}" class="mt-auto">
+                                <input type="hidden" name="target_type" value="STUDENT">
+                                <input type="hidden" name="target_id" value="{{ s.id }}">
+                                <button type="submit" class="btn btn-sm btn-success w-100 rounded-pill fw-bold fs-9">
+                                    <i class="fa-solid fa-unlock me-1"></i>Lift Suspension & Restore
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% for t in active_suspended_teachers %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card rounded-4 p-3 border border-danger shadow-xs bg-danger bg-opacity-10 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-warning text-dark rounded-pill px-2.5 py-0.5 fs-9 fw-bold">FACULTY</span>
+                                <span class="badge bg-white text-danger border border-danger rounded-pill px-2 py-0.5 fs-9">ADMIN</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-0 fs-7">{{ t.name }} ({{ t.emp_id }})</h6>
+                            <span class="text-muted fs-9 mb-2 d-block">Dept: {{ t.effective_department }}</span>
+                            
+                            <div class="bg-white p-2.5 rounded-3 border text-start fs-9 mb-3 shadow-2xs">
+                                <span class="text-muted d-block"><strong>Reason:</strong> {{ t.suspension_reason or 'Administrative Issue' }}</span>
+                                {% if t.custom_suspension_reason and t.custom_suspension_reason != t.suspension_reason %}
+                                <span class="text-dark d-block mt-0.5 font-monospace">"{{ t.custom_suspension_reason }}"</span>
+                                {% endif %}
+                            </div>
+
+                            <form method="POST" action="{{ url_for('main.admin_restore_id_card') }}" class="mt-auto">
+                                <input type="hidden" name="target_type" value="TEACHER">
+                                <input type="hidden" name="target_id" value="{{ t.id }}">
+                                <button type="submit" class="btn btn-sm btn-success w-100 rounded-pill fw-bold fs-9">
+                                    <i class="fa-solid fa-unlock me-1"></i>Lift Suspension & Restore
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if not active_suspended_students and not active_suspended_teachers %}
+                    <div class="col-12 text-center py-5">
+                        <i class="fa-solid fa-circle-check fs-1 text-success mb-2 opacity-50"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Active Suspensions</h6>
+                        <p class="text-muted fs-8 mb-0">All faculty and students currently have active campus access.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PANE 3: AUDIT LOGS ================= -->
+        <div class="tab-pane fade" id="pane-audit" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border">
+                <h5 class="fw-bold text-dark mb-1 fs-6">Suspension & Restoration Audit Trail</h5>
+                <p class="text-muted fs-9 mb-3">Chronological record of every suspension initiated or revoked by Administrators and Teachers.</p>
+
+                {% if audit_logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle custom-table fs-9">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Target</th>
+                                <th>Action</th>
+                                <th>Reason / Remarks</th>
+                                <th>Initiated By</th>
+                                <th>Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in audit_logs %}
+                            {% set person = log.student if log.target_type == 'STUDENT' else log.teacher %}
+                            <tr>
+                                <td>
+                                    <strong>{{ person.name if person else 'User' }}</strong>
+                                    <span class="badge {% if log.target_type == 'STUDENT' %}bg-primary{% else %}bg-warning text-dark{% endif %} ms-1 fs-9">{{ log.target_type }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if log.action == 'SUSPENDED' %}bg-danger{% elif log.action == 'RESTORED' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-2.5 py-0.5 fw-bold">
+                                        {{ log.action }}
+                                    </span>
+                                </td>
+                                <td style="max-width: 260px;">
+                                    <strong>{{ log.reason }}</strong>
+                                    {% if log.custom_reason %}
+                                    <div class="text-muted text-truncate" title="{{ log.custom_reason }}">{{ log.custom_reason }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ log.performed_by_name or 'System' }} ({{ log.performed_by_role|upper if log.performed_by_role else 'ADMIN' }})</span>
+                                </td>
+                                <td class="text-muted">{{ log.created_at|to_ist if log.created_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted fs-8">
+                    No suspension audit entries recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -132,6 +132,12 @@
                     <a href="{{ url_for('main.admin_id_cards') }}" class="nav-link {% if request.endpoint == 'main.admin_id_cards' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-info"></i> ID Cards Portal
                     </a>
+                    <a href="{{ url_for('main.admin_suspension_requests') }}" class="nav-link {% if request.endpoint == 'main.admin_suspension_requests' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-user-lock me-2 text-danger"></i> Suspension Desk</span>
+                        {% if pending_suspension_requests_count and pending_suspension_requests_count > 0 %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_suspension_requests_count }}</span>
+                        {% endif %}
+                    </a>
                     <a href="{{ url_for('main.university_details') }}" class="nav-link {% if request.endpoint == 'main.university_details' %}active{% endif %}">
                         <i class="fa-solid fa-building-columns me-2 text-warning"></i> University Profile
                     </a>
@@ -159,6 +165,9 @@
                     {% endif %}
                     <a href="{{ url_for('teacher.enrolled_students') }}" class="nav-link {% if request.endpoint == 'teacher.enrolled_students' %}active{% endif %}">
                         <i class="fa-solid fa-graduation-cap me-2"></i> Enrolled Students
+                    </a>
+                    <a href="{{ url_for('teacher.teacher_student_id_cards') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_student_id_cards' %}active{% endif %}">
+                        <i class="fa-solid fa-id-card-clip me-2 text-primary"></i> Student ID Cards
                     </a>
                     <a href="{{ url_for('teacher.view_reports') }}" class="nav-link {% if request.endpoint == 'teacher.view_reports' %}active{% endif %}">
                         <i class="fa-solid fa-file-csv me-2"></i> Subject Reports

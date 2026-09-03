@@ -403,6 +403,29 @@
                         </div>
                         <div class="card-body p-4">
                             {% if session and class_students %}
+                            
+                            <!-- Conditional Suspended Students Warning Box (Shown ONLY if class has suspended students) -->
+                            {% set suspended_students = class_students|selectattr('is_suspended')|list %}
+                            {% if suspended_students %}
+                            <div class="p-3 mb-4 rounded-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 shadow-xs">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-lock text-danger fs-5"></i>
+                                        <h6 class="fw-bold text-danger mb-0 fs-7">🔒 Suspended Students (Attendance Restricted)</h6>
+                                    </div>
+                                    <span class="badge bg-danger text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">{{ suspended_students|length }} Suspended</span>
+                                </div>
+                                <p class="text-dark fs-9 mb-2">The following student(s) have their ID card suspended and cannot be marked present:</p>
+                                <div class="d-flex flex-wrap gap-1.5">
+                                    {% for s in suspended_students %}
+                                    <span class="badge bg-white text-danger border border-danger border-opacity-30 rounded-pill px-2.5 py-1 fs-9 fw-bold shadow-2xs">
+                                        <i class="fa-solid fa-user-lock me-1"></i>Roll {{ s.roll_no }} — {{ s.name }} ({{ s.suspension_reason or 'Suspended' }})
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
                             <!-- Quick Add Present Roll Number Input Form -->
                             <form method="POST" action="{{ url_for('teacher.quick_add_roll', session_id=session.id) }}" class="mb-4">
                                 <div class="input-group input-group-sm">
@@ -422,10 +445,10 @@
                                     <table class="table table-hover align-middle mb-0 fs-8 w-100">
                                         <thead class="table-light sticky-top">
                                             <tr>
-                                                <th style="width: 35%;">Student Name</th>
-                                                <th style="width: 20%;">Roll No</th>
-                                                <th style="width: 25%;">Match Status / Confidence</th>
-                                                <th class="text-end" style="width: 20%;">Attendance Selection</th>
+                                                <th style="width: 32%;">Student Name</th>
+                                                <th style="width: 18%;">Roll No</th>
+                                                <th style="width: 25%;">Status / Confidence</th>
+                                                <th class="text-end" style="width: 25%;">Attendance Selection</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -433,16 +456,26 @@
                                             {% set is_match = (st.id in matched_student_ids) %}
                                             {% set conf = confidence_scores.get(st.id, 1.0 if is_match else 0.0) %}
                                             {% set saved_st = saved_records_map.get(st.id) %}
-                                            {% set is_pres = (saved_st == 'PRESENT' if saved_st is not none else is_match) %}
-                                            <tr>
+                                            {% set is_pres = (saved_st == 'PRESENT' if saved_st is not none else is_match) and not st.is_suspended %}
+                                            <tr class="{% if st.is_suspended %}bg-danger bg-opacity-10{% endif %}">
                                                 <td class="fw-bold text-dark">
+                                                    {% if st.is_suspended %}
+                                                    <i class="fa-solid fa-user-lock me-1.5 text-danger"></i>
+                                                    <span class="text-danger">{{ st.name }}</span>
+                                                    <span class="badge bg-danger text-white rounded-pill px-2 py-0.2 fs-9 ms-1">🔒 Suspended</span>
+                                                    {% else %}
                                                     <i class="fa-solid fa-user me-1.5 text-secondary"></i>{{ st.name }}
+                                                    {% endif %}
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-light text-dark border font-monospace px-2 py-1 fs-9">{{ st.roll_no }}</span>
+                                                    <span class="badge {% if st.is_suspended %}bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25{% else %}bg-light text-dark border{% endif %} font-monospace px-2 py-1 fs-9">{{ st.roll_no }}</span>
                                                 </td>
                                                 <td>
-                                                    {% if conf > 0.6 %}
+                                                    {% if st.is_suspended %}
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold">
+                                                        <i class="fa-solid fa-ban me-1"></i>Attendance Restricted
+                                                    </span>
+                                                    {% elif conf > 0.6 %}
                                                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold">
                                                         <i class="fa-solid fa-face-smile me-1"></i>{{ (conf * 100)|int }}% Confidence
                                                     </span>
@@ -453,7 +486,13 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="text-end text-nowrap">
-                                                    {% if session.status == 'COMPLETED' and not is_same_day_editable %}
+                                                    {% if st.is_suspended %}
+                                                        <!-- Locked attendance for suspended student -->
+                                                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30 px-3 py-1.5 rounded-pill fs-9 fw-bold" title="Attendance Restricted: Student ID Card is Suspended">
+                                                            <i class="fa-solid fa-lock me-1"></i>Locked (Absent)
+                                                        </span>
+                                                        <input type="hidden" name="student_status_{{ st.id }}" value="ABSENT">
+                                                    {% elif session.status == 'COMPLETED' and not is_same_day_editable %}
                                                         <span class="badge {% if is_pres %}bg-success{% else %}bg-danger{% endif %} px-2.5 py-1 rounded-pill">
                                                             {{ 'PRESENT' if is_pres else 'ABSENT' }}
                                                         </span>

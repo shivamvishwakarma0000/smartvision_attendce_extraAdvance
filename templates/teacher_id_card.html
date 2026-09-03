@@ -29,17 +29,59 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-8 col-lg-6 col-xl-5">
 
+            <!-- Suspended Status Alert Banner (Shown if teacher is suspended) -->
+            {% if teacher.is_suspended %}
+            <div class="alert alert-danger rounded-4 shadow-sm border-danger p-3.5 mb-4 no-print">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-danger fs-4"></i>
+                        <h6 class="fw-bold text-danger mb-0">🔒 Faculty ID Card Suspended</h6>
+                    </div>
+                    <span class="badge bg-danger rounded-pill px-2.5 py-1 fs-9 fw-bold">SUSPENDED</span>
+                </div>
+                <p class="fs-8 text-dark mb-2">
+                    Your faculty identity card has been suspended by Administration. Biometric check-in and attendance operations are restricted.
+                </p>
+                <div class="p-2.5 bg-white rounded-3 border mb-3 fs-8.5">
+                    <span class="text-muted d-block fs-9 fw-bold">REASON FOR SUSPENSION:</span>
+                    <strong class="text-danger">{{ teacher.suspension_reason or 'Administrative Issue' }}</strong>
+                    {% if teacher.custom_suspension_reason and teacher.custom_suspension_reason != teacher.suspension_reason %}
+                    <p class="mb-0 text-muted fs-9 mt-1">"{{ teacher.custom_suspension_reason }}"</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if pending_request %}
+                    <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fs-8 fw-bold">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i>Reinstatement Appeal Pending Review
+                    </span>
+                    {% else %}
+                    <button type="button" class="btn btn-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-2xs" data-bs-toggle="modal" data-bs-target="#teacherRemovalModal">
+                        <i class="fa-solid fa-paper-plane me-1.5"></i>Request Removal of Suspension
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Lanyard Slot Top Graphic (Physical badge aesthetic) -->
             <div class="text-center mb-2 no-print">
                 <div class="d-inline-block bg-secondary bg-opacity-25 rounded-pill px-4 py-1 border" style="width: 70px; height: 10px;"></div>
             </div>
 
             <!-- 3D Perspective Card Container -->
-            <div class="id-card-wrapper" id="idCardWrapper">
+            <div class="id-card-wrapper position-relative" id="idCardWrapper">
                 <!-- ================= FRONT OF ID CARD ================= -->
-                <div class="id-card-front card border-0 shadow-lg rounded-4 overflow-hidden position-relative" style="background: #ffffff; border: 2px solid #e2e8f0 !important; min-height: 480px;">
+                <div class="id-card-front card border-0 shadow-lg rounded-4 overflow-hidden position-relative" style="background: #ffffff; border: 2px solid {% if teacher.is_suspended %}#ef4444{% else %}#e2e8f0{% endif %} !important; min-height: 480px;">
+                    
+                    <!-- Suspended Diagonal Watermark Overlay -->
+                    {% if teacher.is_suspended %}
+                    <div class="watermark-suspended-card">
+                        <span># SUSPENDED</span>
+                    </div>
+                    {% endif %}
+
                     <!-- Top Institutional Gradient Header -->
-                    <div class="p-3 text-white position-relative" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);">
+                    <div class="p-3 text-white position-relative" style="background: {% if teacher.is_suspended %}linear-gradient(135deg, #7f1d1d 0%, #991b1b 60%, #b91c1c 100%){% else %}linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%){% endif %};">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center gap-2">
                                 {% if university and university.logo_filename %}
@@ -52,17 +94,19 @@
                                     <span class="fs-9 text-white-50 text-uppercase letter-spacing-1">{{ university.slogan if university else 'Faculty Identity Credential' }}</span>
                                 </div>
                             </div>
-                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">FACULTY</span>
+                            <span class="badge {% if teacher.is_suspended %}bg-danger{% else %}bg-warning text-dark{% endif %} px-2.5 py-1 rounded-pill fs-9 fw-bold">
+                                {{ 'SUSPENDED' if teacher.is_suspended else 'FACULTY' }}
+                            </span>
                         </div>
                         <!-- Decorative Header Accent Bar -->
-                        <div class="position-absolute bottom-0 start-0 end-0" style="height: 4px; background: linear-gradient(90deg, #f59e0b, #6366f1, #10b981);"></div>
+                        <div class="position-absolute bottom-0 start-0 end-0" style="height: 4px; background: {% if teacher.is_suspended %}linear-gradient(90deg, #ef4444, #f59e0b, #b91c1c){% else %}linear-gradient(90deg, #f59e0b, #6366f1, #10b981){% endif %};"></div>
                     </div>
 
                     <!-- Card Body / Details Grid -->
-                    <div class="card-body p-4 text-center">
+                    <div class="card-body p-4 text-center position-relative">
                         <!-- Profile Photo Box with Holographic Verified Ring -->
                         <div class="position-relative d-inline-block mb-3">
-                            <div class="rounded-4 p-1 shadow-sm bg-white border border-2 border-primary" style="width: 120px; height: 125px; margin: 0 auto;">
+                            <div class="rounded-4 p-1 shadow-sm bg-white border border-2 {% if teacher.is_suspended %}border-danger{% else %}border-primary{% endif %}" style="width: 120px; height: 125px; margin: 0 auto;">
                                 {% if teacher.image_filename %}
                                 <img src="{{ url_for('main.uploaded_face', filename=teacher.image_filename) }}" alt="{{ teacher.name }}" class="w-100 h-100 rounded-3" style="object-fit: cover;">
                                 {% else %}
@@ -72,14 +116,14 @@
                                 {% endif %}
                             </div>
                             <!-- Verified Check Badge -->
-                            <span class="position-absolute bottom-0 end-0 bg-success text-white rounded-circle p-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 26px; height: 26px; font-size: 11px; transform: translate(15%, 15%);" title="AI Biometrics Enrolled">
-                                <i class="fa-solid fa-check"></i>
+                            <span class="position-absolute bottom-0 end-0 {% if teacher.is_suspended %}bg-danger{% else %}bg-success{% endif %} text-white rounded-circle p-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 26px; height: 26px; font-size: 11px; transform: translate(15%, 15%);" title="AI Biometrics Status">
+                                <i class="fa-solid {% if teacher.is_suspended %}fa-ban{% else %}fa-check{% endif %}"></i>
                             </span>
                         </div>
 
                         <!-- Name & Designation -->
                         <h5 class="fw-bold text-dark mb-0.5">{{ teacher.name }}</h5>
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1 rounded-pill fs-8 fw-bold mb-3">
+                        <span class="badge {% if teacher.is_suspended %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25{% else %}bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25{% endif %} px-3 py-1 rounded-pill fs-8 fw-bold mb-3">
                             {{ teacher.primary_subject or 'Assistant Professor' }}
                         </span>
 
@@ -92,7 +136,7 @@
                                 </div>
                                 <div class="col-6">
                                     <span class="text-muted fs-9 d-block fw-semibold">Department:</span>
-                                    <span class="fw-bold text-dark">{{ teacher.department or 'Computer Science' }}</span>
+                                    <span class="fw-bold text-dark">{{ teacher.effective_department or 'Computer Science' }}</span>
                                 </div>
                                 <div class="col-6">
                                     <span class="text-muted fs-9 d-block fw-semibold">Email Contact:</span>
@@ -109,26 +153,39 @@
                         <div class="d-flex align-items-center justify-content-between pt-2 border-top">
                             <div class="text-start">
                                 <span class="fs-9 text-muted fw-bold d-block text-uppercase">Security Status:</span>
+                                {% if teacher.is_suspended %}
+                                <span class="badge bg-danger bg-opacity-15 text-danger rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                    <i class="fa-solid fa-lock me-1"></i>Suspended / Inactive
+                                </span>
+                                {% else %}
                                 <span class="badge bg-success bg-opacity-15 text-success rounded-pill px-2 py-0.5 fs-9 fw-bold">
                                     <i class="fa-solid fa-shield-halved me-1"></i>Active & Verified
                                 </span>
+                                {% endif %}
                             </div>
                             <div class="text-end">
-                                <!-- Dynamic QR Image from API -->
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=65x65&data={{ qr_data|urlencode }}" alt="QR Token" class="border rounded p-1 bg-white shadow-2xs" style="width: 58px; height: 58px;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=65x65&data={{ qr_data|urlencode }}{% if teacher.is_suspended %}:SUSPENDED{% endif %}" alt="QR Token" class="border rounded p-1 bg-white shadow-2xs" style="width: 58px; height: 58px;">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- ================= BACK OF ID CARD ================= -->
-                <div class="id-card-back card border-0 shadow-lg rounded-4 overflow-hidden position-relative mt-4" style="background: #ffffff; border: 2px solid #e2e8f0 !important; min-height: 480px;">
+                <div class="id-card-back card border-0 shadow-lg rounded-4 overflow-hidden position-relative mt-4" style="background: #ffffff; border: 2px solid {% if teacher.is_suspended %}#ef4444{% else %}#e2e8f0{% endif %} !important; min-height: 480px;">
+                    
+                    <!-- Suspended Diagonal Watermark Overlay on Back -->
+                    {% if teacher.is_suspended %}
+                    <div class="watermark-suspended-card">
+                        <span># SUSPENDED</span>
+                    </div>
+                    {% endif %}
+
                     <!-- Top Strip -->
-                    <div class="bg-dark text-white p-2.5 text-center">
+                    <div class="{% if teacher.is_suspended %}bg-danger text-white{% else %}bg-dark text-white{% endif %} p-2.5 text-center">
                         <span class="fs-9 text-uppercase tracking-wide fw-bold text-white-50">General Institutional Guidelines</span>
                     </div>
 
-                    <div class="card-body p-4 text-start d-flex flex-column justify-content-between">
+                    <div class="card-body p-4 text-start d-flex flex-column justify-content-between position-relative">
                         <div>
                             <!-- Magnetic Barcode Graphic -->
                             <div class="p-2 bg-dark rounded-2 mb-3 text-center">
@@ -176,6 +233,56 @@
     </div>
 </div>
 
+<!-- ================= MODAL: TEACHER REQUEST REMOVAL OF SUSPENSION ================= -->
+{% if teacher.is_suspended and not pending_request %}
+<div class="modal fade" id="teacherRemovalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0 py-3 px-4 rounded-top-4">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="fa-solid fa-hand-holding-hand me-2"></i>Request Reinstatement of Faculty ID Card
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST" action="{{ url_for('teacher.teacher_request_suspension_removal') }}" enctype="multipart/form-data">
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <span class="text-muted fs-9 text-uppercase fw-bold d-block mb-1">Current Suspension Reason:</span>
+                        <strong class="text-danger fs-8">{{ teacher.suspension_reason or 'Administrative Issue' }}</strong>
+                        {% if teacher.custom_suspension_reason and teacher.custom_suspension_reason != teacher.suspension_reason %}
+                        <p class="text-muted fs-9 mb-0 mt-1">"{{ teacher.custom_suspension_reason }}"</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Your Written Explanation <span class="text-danger">*</span>:</label>
+                        <textarea name="explanation" class="form-control form-control-sm rounded-3" rows="4" placeholder="Explain your situation clearly to Administration..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Attach Supporting Document / Proof (Optional):</label>
+                        <input type="file" name="supporting_document" class="form-control form-control-sm rounded-3" accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Additional Comments:</label>
+                        <input type="text" name="additional_comments" class="form-control form-control-sm rounded-3" placeholder="Any extra remarks...">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fs-8 fw-bold">
+                        <i class="fa-solid fa-paper-plane me-1"></i>Submit Reinstatement Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <script>
 let isFlipped = false;
 function flipCard() {
@@ -196,6 +303,25 @@ function flipCard() {
 </script>
 
 <style>
+.watermark-suspended-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    z-index: 25;
+    pointer-events: none;
+    opacity: 0.22;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #dc2626;
+    letter-spacing: 6px;
+    border: 5px dashed #dc2626;
+    padding: 8px 30px;
+    border-radius: 16px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
 /* Print Stylesheet for exact physical CR80 badge sizing */
 @media print {
     body * {

@@ -98,7 +98,23 @@ def run_migrations(db_path="smartvision.db"):
             ("university_settings", "name_image_data", "TEXT"),
             ("university_settings", "signature_data", "TEXT"),
             ("teachers", "image_data", "TEXT"),
+            ("teachers", "id_card_status", "VARCHAR(30) DEFAULT 'Active'"),
+            ("teachers", "is_suspended", "BOOLEAN DEFAULT 0"),
+            ("teachers", "suspension_reason", "VARCHAR(255)"),
+            ("teachers", "custom_suspension_reason", "TEXT"),
+            ("teachers", "suspended_at", "DATETIME"),
+            ("teachers", "suspended_by_user_id", "INTEGER"),
+            ("teachers", "suspended_by_role", "VARCHAR(50)"),
+            ("teachers", "suspended_by_name", "VARCHAR(100)"),
             ("students", "image_data", "TEXT"),
+            ("students", "id_card_status", "VARCHAR(30) DEFAULT 'Active'"),
+            ("students", "is_suspended", "BOOLEAN DEFAULT 0"),
+            ("students", "suspension_reason", "VARCHAR(255)"),
+            ("students", "custom_suspension_reason", "TEXT"),
+            ("students", "suspended_at", "DATETIME"),
+            ("students", "suspended_by_user_id", "INTEGER"),
+            ("students", "suspended_by_role", "VARCHAR(50)"),
+            ("students", "suspended_by_name", "VARCHAR(100)"),
             ("student_edit_requests", "new_image_data", "TEXT")
         ]
 
@@ -384,6 +400,39 @@ def run_migrations(db_path="smartvision.db"):
                     vote_type VARCHAR(10) NOT NULL,
                     voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(complaint_id, student_id)
+                );
+            """),
+            ("suspension_audits", """
+                CREATE TABLE IF NOT EXISTS suspension_audits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    target_type VARCHAR(20) NOT NULL,
+                    student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES teachers(id) ON DELETE CASCADE,
+                    action VARCHAR(30) NOT NULL,
+                    reason VARCHAR(255),
+                    custom_reason TEXT,
+                    performed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    performed_by_role VARCHAR(50),
+                    performed_by_name VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """),
+            ("suspension_removal_requests", """
+                CREATE TABLE IF NOT EXISTS suspension_removal_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    target_type VARCHAR(20) NOT NULL,
+                    student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                    teacher_id INTEGER REFERENCES teachers(id) ON DELETE CASCADE,
+                    explanation TEXT NOT NULL,
+                    supporting_document VARCHAR(255),
+                    additional_comments TEXT,
+                    status VARCHAR(30) DEFAULT 'Pending',
+                    admin_notes TEXT,
+                    reviewed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    reviewed_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
         ]

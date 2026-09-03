@@ -287,27 +287,30 @@ def create_app():
 
     @app.context_processor
     def inject_admin_notifications():
-        """Injects pending leave applications and student profile correction counts for admin."""
+        """Injects pending leave applications, student profile corrections, and suspension removal request counts for admin."""
         try:
             from flask_login import current_user
             if current_user.is_authenticated and current_user.role == 'admin':
-                from models import TeacherLeave, StudentEditRequest, TeacherEditRequest, Teacher
+                from models import TeacherLeave, StudentEditRequest, TeacherEditRequest, Teacher, SuspensionRemovalRequest
                 pending_leaves = TeacherLeave.query.filter_by(status='PENDING').count()
                 pending_corrections = StudentEditRequest.query.filter_by(status='Pending').count()
                 pending_teacher_edits = TeacherEditRequest.query.filter_by(status='Pending').count()
                 pending_teachers = Teacher.query.filter_by(status='Pending').count()
+                pending_suspension_requests = SuspensionRemovalRequest.query.filter_by(status='Pending').count()
                 return {
                     'admin_pending_leaves_count': pending_leaves,
                     'admin_pending_corrections_count': pending_corrections,
                     'admin_pending_teacher_edits_count': pending_teacher_edits,
-                    'admin_pending_approvals_count': pending_leaves + pending_corrections + pending_teacher_edits + pending_teachers
+                    'admin_pending_approvals_count': pending_leaves + pending_corrections + pending_teacher_edits + pending_teachers,
+                    'pending_suspension_requests_count': pending_suspension_requests
                 }
         except Exception as e:
             print(f"Error in inject_admin_notifications: {e}")
         return {
             'admin_pending_leaves_count': 0,
             'admin_pending_corrections_count': 0,
-            'admin_pending_approvals_count': 0
+            'admin_pending_approvals_count': 0,
+            'pending_suspension_requests_count': 0
         }
 
     @app.context_processor
@@ -442,6 +445,51 @@ def ensure_postgresql_columns():
                 vote_type VARCHAR(10) NOT NULL,
                 voted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT uq_complaint_student_vote UNIQUE(complaint_id, student_id)
+            )""",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS id_card_status VARCHAR(30) DEFAULT 'Active'",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspension_reason VARCHAR(255)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS custom_suspension_reason TEXT",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP WITHOUT TIME ZONE",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_user_id INTEGER",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_role VARCHAR(50)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_name VARCHAR(100)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS id_card_status VARCHAR(30) DEFAULT 'Active'",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspension_reason VARCHAR(255)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS custom_suspension_reason TEXT",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMP WITHOUT TIME ZONE",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_user_id INTEGER",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_role VARCHAR(50)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_name VARCHAR(100)",
+            """CREATE TABLE IF NOT EXISTS suspension_audits (
+                id SERIAL PRIMARY KEY,
+                target_type VARCHAR(20) NOT NULL,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                teacher_id INTEGER REFERENCES teachers(id) ON DELETE CASCADE,
+                action VARCHAR(30) NOT NULL,
+                reason VARCHAR(255),
+                custom_reason TEXT,
+                performed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                performed_by_role VARCHAR(50),
+                performed_by_name VARCHAR(100),
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS suspension_removal_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                target_type VARCHAR(20) NOT NULL,
+                student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+                teacher_id INTEGER REFERENCES teachers(id) ON DELETE CASCADE,
+                explanation TEXT NOT NULL,
+                supporting_document VARCHAR(255),
+                additional_comments TEXT,
+                status VARCHAR(30) DEFAULT 'Pending',
+                admin_notes TEXT,
+                reviewed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                reviewed_at TIMESTAMP WITHOUT TIME ZONE,
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )"""
         ]
         for stmt in statements:

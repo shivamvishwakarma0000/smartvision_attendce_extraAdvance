@@ -297,7 +297,6 @@ def verify_teacher_face(teacher, captured_base64, session_name='checkin'):
         print(f"[verify_teacher_face Exception]: {e}")
         return True, "Geolocation verified.", None, False
 
-
 @teacher_attendance_bp.route('/teacher_attendance/status', methods=['GET'])
 @login_required
 def get_teacher_daily_status():
@@ -306,6 +305,16 @@ def get_teacher_daily_status():
         return jsonify({'success': False, 'message': 'Access denied'}), 403
 
     teacher = current_user.teacher_profile
+
+    # Strict Suspension & Campus Access Restriction Check
+    if teacher.is_suspended:
+        reason_text = teacher.custom_suspension_reason or teacher.suspension_reason or "Disciplinary / Administrative Issue"
+        return jsonify({
+            'success': False,
+            'is_suspended': True,
+            'message': f"🔒 ACCESS DENIED: Your Faculty ID Card is currently SUSPENDED.\n\nReason: {reason_text}\n\nYou cannot mark attendance while your ID card is suspended. Please meet the Admin Office or submit a suspension-removal request."
+        }), 403
+
     now, today = get_current_ist_datetime()
     office = get_active_office_location()
     settings = get_or_create_settings()
@@ -363,6 +372,16 @@ def mark_morning_attendance():
 
     captured_image_base64 = data.get('captured_image_base64')
     teacher = current_user.teacher_profile
+
+    # Strict Suspension & Campus Access Restriction Check
+    if teacher.is_suspended:
+        reason_text = teacher.custom_suspension_reason or teacher.suspension_reason or "Disciplinary / Administrative Issue"
+        return jsonify({
+            'success': False,
+            'is_suspended': True,
+            'message': f"🔒 ACCESS DENIED: Your Faculty ID Card is currently SUSPENDED.\n\nReason: {reason_text}\n\nYou cannot mark attendance while your ID card is suspended. Please meet the Admin Office or submit a suspension-removal request."
+        }), 403
+
     now, today = get_current_ist_datetime()
     office = get_active_office_location()
     settings = get_or_create_settings()
@@ -464,6 +483,15 @@ def mark_evening_attendance():
     """Process Evening Check-Out with Geolocation and Face Recognition validation."""
     if current_user.role != 'teacher' or not current_user.teacher_profile:
         return jsonify({'success': False, 'message': 'Only registered teachers can mark attendance.'}), 403
+
+    teacher = current_user.teacher_profile
+    if teacher.is_suspended:
+        reason_text = teacher.custom_suspension_reason or teacher.suspension_reason or "Disciplinary / Administrative Issue"
+        return jsonify({
+            'success': False,
+            'is_suspended': True,
+            'message': f"🔒 ACCESS DENIED: Your Faculty ID Card is currently SUSPENDED.\n\nReason: {reason_text}"
+        }), 403
 
     data = request.get_json() or {}
     try:

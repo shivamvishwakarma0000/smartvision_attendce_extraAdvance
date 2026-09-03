@@ -238,9 +238,10 @@
                 </div>
                 
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <!-- Discreet Download App Arrow Button -->
-                    <button type="button" id="baseDownloadArrowBtn" class="btn btn-link text-decoration-none p-1.5 border-0" style="color: var(--text-secondary); font-size: 0.95rem; cursor: pointer; transition: transform 0.2s;" onclick="triggerAppInstall()" title="Download & Install App">
-                        <i class="fa-solid fa-arrow-down"></i>
+                    <!-- Mobile-Only Download App Button (Auto-hides once installed) -->
+                    <button type="button" id="baseDownloadArrowBtn" class="btn btn-sm rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs border-0" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; font-size: 0.78rem; display: none;" onclick="triggerAppInstall()" title="Download & Install App">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <span>Download App</span>
                     </button>
 
                     <!-- Theme Toggle Button -->

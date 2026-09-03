@@ -93,9 +93,15 @@
                             {% else %}
                                 {% set d_info = days_data[day_number] %}
                                 <td class="p-0 position-relative calendar-day-cell cal-cell cursor-pointer"
+                                    id="cal-cell-{{ day_number }}"
                                     style="background: {{ d_info.color }}; color: {{ d_info.text_color }};"
-                                    onclick="openDayDetailModal('{{ d_info.day_num }}', '{{ month_name }} {{ d_info.day_num }}, {{ curr_year }}', '{{ d_info.status }}', '{{ d_info.total_sessions }}', {{ d_info.sessions|tojson|safe }})"
+                                    data-day="{{ d_info.day_num }}"
+                                    data-date="{{ month_name }} {{ d_info.day_num }}, {{ curr_year }}"
+                                    data-status="{{ d_info.status }}"
+                                    data-total="{{ d_info.total_sessions }}"
+                                    onclick="handleDayCellClick({{ day_number }})"
                                     title="Click to view lecture details for {{ month_name }} {{ d_info.day_num }}">
+                                    <script type="application/json" id="sessions-data-{{ day_number }}">{{ d_info.sessions|tojson|safe }}</script>
                                     
                                     <div class="d-flex flex-column align-items-center justify-content-center h-100 py-1">
                                         <span class="cal-day-num fw-bold">
@@ -323,6 +329,27 @@
 </style>
 
 <script>
+function handleDayCellClick(dayNum) {
+    const cell = document.getElementById('cal-cell-' + dayNum);
+    if (!cell) return;
+
+    const fullDateStr = cell.getAttribute('data-date');
+    const status = cell.getAttribute('data-status');
+    const totalSessions = cell.getAttribute('data-total');
+
+    let sessions = [];
+    const scriptEl = document.getElementById('sessions-data-' + dayNum);
+    if (scriptEl) {
+        try {
+            sessions = JSON.parse(scriptEl.textContent);
+        } catch (e) {
+            console.error("Error parsing sessions JSON:", e);
+        }
+    }
+
+    openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions);
+}
+
 function openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions) {
     document.getElementById('modalDayTitle').innerText = fullDateStr;
     const badgeBox = document.getElementById('modalDayBadgeBox');
@@ -330,48 +357,83 @@ function openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions
 
     let badgeHtml = '';
     if (status === 'ALL_PRESENT') {
-        badgeHtml = `<div class="p-2.5 rounded-3 bg-success bg-opacity-10 border border-success text-success d-flex align-items-center gap-2 fs-8 fw-bold">
-            <i class="fa-solid fa-circle-check fs-6"></i>
-            <span>Present in all ${totalSessions} lecture session(s) on this date.</span>
+        badgeHtml = `<div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-30 text-success d-flex align-items-center gap-2.5 fs-8 fw-bold shadow-xs">
+            <i class="fa-solid fa-circle-check fs-5 text-success"></i>
+            <div>
+                <div>Present in 100% Conducted Classes (All ${totalSessions}/${totalSessions})</div>
+                <div class="fs-9 text-success fw-normal opacity-85">Full attendance recorded on this date.</div>
+            </div>
         </div>`;
     } else if (status === 'PARTIAL_OR_ABSENT') {
-        badgeHtml = `<div class="p-2.5 rounded-3 bg-danger bg-opacity-10 border border-danger text-danger d-flex align-items-center gap-2 fs-8 fw-bold">
-            <i class="fa-solid fa-circle-xmark fs-6"></i>
-            <span>Absent or partial attendance in conducted lecture session(s).</span>
+        badgeHtml = `<div class="p-3 rounded-3 bg-danger bg-opacity-10 border border-danger border-opacity-30 text-danger d-flex align-items-center gap-2.5 fs-8 fw-bold shadow-xs">
+            <i class="fa-solid fa-circle-xmark fs-5 text-danger"></i>
+            <div>
+                <div>Absent / Partial Attendance Recorded</div>
+                <div class="fs-9 text-danger fw-normal opacity-85">Did not attend all conducted sessions on this date.</div>
+            </div>
         </div>`;
     } else if (status === 'FUTURE') {
-        badgeHtml = `<div class="p-2.5 rounded-3 bg-light border text-muted d-flex align-items-center gap-2 fs-8 fw-semibold">
-            <i class="fa-solid fa-clock text-primary fs-6"></i>
-            <span>Upcoming date. Lectures will be conducted according to the weekly timetable schedule.</span>
+        badgeHtml = `<div class="p-3 rounded-3 bg-light border text-muted d-flex align-items-center gap-2.5 fs-8 fw-semibold shadow-xs">
+            <i class="fa-solid fa-clock text-primary fs-5"></i>
+            <div>
+                <div class="text-dark fw-bold">Upcoming Calendar Date</div>
+                <div class="fs-9 text-muted fw-normal">Classes will be conducted according to the weekly timetable schedule.</div>
+            </div>
         </div>`;
     } else {
-        badgeHtml = `<div class="p-2.5 rounded-3 bg-light border text-muted d-flex align-items-center gap-2 fs-8 fw-semibold">
-            <i class="fa-solid fa-calendar-xmark fs-6"></i>
-            <span>No lecture sessions were conducted on this date (Holiday / Off).</span>
+        badgeHtml = `<div class="p-3 rounded-3 bg-light border text-muted d-flex align-items-center gap-2.5 fs-8 fw-semibold shadow-xs">
+            <i class="fa-solid fa-calendar-xmark text-secondary fs-5"></i>
+            <div>
+                <div class="text-dark fw-bold">No Classes Conducted (Holiday / Off)</div>
+                <div class="fs-9 text-muted fw-normal">No scheduled sessions were held on this date.</div>
+            </div>
         </div>`;
     }
     badgeBox.innerHTML = badgeHtml;
 
     if (!sessions || sessions.length === 0) {
-        sessionsList.innerHTML = `<div class="text-center py-4 text-muted fs-8">No lecture session records found for this date.</div>`;
+        sessionsList.innerHTML = `
+        <div class="text-center py-4 px-3 bg-light rounded-3 border border-dashed">
+            <i class="fa-solid fa-folder-open fs-2 text-muted mb-2 d-block opacity-50"></i>
+            <div class="fw-semibold text-dark fs-8">No Class Records Available</div>
+            <div class="text-muted fs-9">No attendance sessions were scheduled or logged for this day.</div>
+        </div>`;
     } else {
         let listHtml = '';
         sessions.forEach((s, idx) => {
             const isPresent = s.status === 'PRESENT';
             const statusBadge = isPresent 
-                ? `<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-check me-1"></i>Present</span>`
-                : `<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-xmark me-1"></i>Absent</span>`;
+                ? `<span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-check me-1"></i>Present</span>`
+                : (s.status === 'IN PROGRESS'
+                    ? `<span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-spinner fa-spin me-1"></i>In Progress</span>`
+                    : `<span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-xmark me-1"></i>Absent</span>`);
+
+            const periodBadge = s.period_no 
+                ? `<span class="badge bg-dark bg-opacity-75 text-white font-monospace me-1.5 fs-9">Period ${s.period_no}</span>`
+                : `<span class="badge bg-secondary bg-opacity-75 text-white font-monospace me-1.5 fs-9">Session #${idx + 1}</span>`;
 
             listHtml += `
-            <div class="p-2.5 rounded-3 border bg-light d-flex align-items-center justify-content-between gap-2">
-                <div>
-                    <div class="fw-bold text-dark fs-8">${s.subject_name}</div>
-                    <div class="fs-9 text-muted">
-                        <i class="fa-solid fa-chalkboard-user me-1"></i>${s.teacher_name} | 
-                        <i class="fa-solid fa-clock me-1 ms-1"></i>${s.start_time} - ${s.end_time}
+            <div class="p-3 rounded-3 border ${isPresent ? 'border-success border-opacity-25 bg-success bg-opacity-5' : 'border-danger border-opacity-25 bg-danger bg-opacity-5'} d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 shadow-xs">
+                <div class="d-flex align-items-start gap-2.5">
+                    <div class="p-2 rounded-2 ${isPresent ? 'bg-success text-white' : 'bg-danger text-white'} d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid ${isPresent ? 'fa-user-check' : 'fa-user-xmark'} fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center flex-wrap gap-1 mb-0.5">
+                            ${periodBadge}
+                            <span class="fw-extrabold text-dark fs-8">${s.subject_name}</span>
+                        </div>
+                        <div class="fs-9 text-muted d-flex align-items-center flex-wrap gap-2">
+                            <span><i class="fa-solid fa-chalkboard-user text-primary me-1"></i>${s.teacher_name}</span>
+                            <span>•</span>
+                            <span><i class="fa-solid fa-clock text-secondary me-1"></i>${s.start_time} – ${s.end_time}</span>
+                            ${s.room ? `<span>•</span><span><i class="fa-solid fa-location-dot text-info me-1"></i>${s.room}</span>` : ''}
+                        </div>
                     </div>
                 </div>
-                <div>${statusBadge}</div>
+                <div class="align-self-end align-self-sm-center">
+                    ${statusBadge}
+                </div>
             </div>`;
         });
         sessionsList.innerHTML = listHtml;

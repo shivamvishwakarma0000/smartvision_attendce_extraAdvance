@@ -829,9 +829,17 @@ def month_view():
         if d_str not in sessions_by_date:
             sessions_by_date[d_str] = []
         rec = rec_by_session_id.get(s.id)
+        
+        # Resolve faculty name
+        faculty_name = s.teacher.name if s.teacher else 'Faculty'
+        if s.timetable and s.timetable.teacher_assigned:
+            faculty_name = s.timetable.teacher_assigned.name
+
         sessions_by_date[d_str].append({
-            'subject_name': s.subject.name if s.subject else 'Subject',
-            'teacher_name': s.teacher.name if s.teacher else 'Faculty',
+            'subject_name': s.subject.name if s.subject else (s.timetable.custom_title if s.timetable and s.timetable.custom_title else 'Subject Lecture'),
+            'teacher_name': faculty_name,
+            'period_no': s.timetable.period_no if (s.timetable and s.timetable.period_no) else None,
+            'room': s.timetable.room if (s.timetable and s.timetable.room) else '',
             'start_time': s.start_time or 'Class',
             'end_time': s.end_time or '',
             'status': (rec.status.upper() if rec else 'ABSENT') if s.status == 'COMPLETED' else 'IN PROGRESS'

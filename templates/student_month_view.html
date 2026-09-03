@@ -255,9 +255,9 @@
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-3 p-md-4">
+            <div class="modal-body p-3 p-md-4 bg-light bg-opacity-50">
                 <div id="modalDayBadgeBox" class="mb-3"></div>
-                <div id="modalDaySessionsList" class="d-flex flex-column gap-2"></div>
+                <div id="modalDaySessionsList" class="d-flex flex-column gap-2.5"></div>
             </div>
             <div class="modal-footer border-0 pt-0 pb-3 px-3 px-md-4">
                 <button type="button" class="btn btn-sm btn-light rounded-pill px-4 fw-bold w-100" data-bs-dismiss="modal">Close</button>
@@ -400,38 +400,46 @@ function openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions
         </div>`;
     } else {
         let listHtml = '';
-        sessions.forEach((s, idx) => {
+        // Sort sessions by period_no or start_time for a neat chronological order
+        const sortedSessions = [...sessions].sort((a, b) => {
+            if (a.period_no && b.period_no) return a.period_no - b.period_no;
+            return (a.start_time || '').localeCompare(b.start_time || '');
+        });
+
+        sortedSessions.forEach((s, idx) => {
             const isPresent = s.status === 'PRESENT';
+            const isInProgress = s.status === 'IN PROGRESS';
+            
             const statusBadge = isPresent 
-                ? `<span class="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-check me-1"></i>Present</span>`
-                : (s.status === 'IN PROGRESS'
-                    ? `<span class="badge bg-warning text-dark px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-spinner fa-spin me-1"></i>In Progress</span>`
-                    : `<span class="badge bg-danger text-white px-2.5 py-1.5 rounded-pill fw-bold fs-9 shadow-xs"><i class="fa-solid fa-xmark me-1"></i>Absent</span>`);
+                ? `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1"><i class="fa-solid fa-circle-check"></i> Present</span>`
+                : (isInProgress
+                    ? `<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-30 px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> In Progress</span>`
+                    : `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2.5 py-1.5 rounded-pill fw-bold fs-9 d-inline-flex align-items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Absent</span>`);
 
             const periodBadge = s.period_no 
-                ? `<span class="badge bg-dark bg-opacity-75 text-white font-monospace me-1.5 fs-9">Period ${s.period_no}</span>`
-                : `<span class="badge bg-secondary bg-opacity-75 text-white font-monospace me-1.5 fs-9">Session #${idx + 1}</span>`;
+                ? `<span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-10 font-monospace px-2 py-0.5 rounded-2 fw-bold" style="font-size: 0.68rem;">Period ${s.period_no}</span>`
+                : `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-10 font-monospace px-2 py-0.5 rounded-2 fw-bold" style="font-size: 0.68rem;">Session #${idx + 1}</span>`;
 
             listHtml += `
-            <div class="p-3 rounded-3 border ${isPresent ? 'border-success border-opacity-25 bg-success bg-opacity-5' : 'border-danger border-opacity-25 bg-danger bg-opacity-5'} d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 shadow-xs">
-                <div class="d-flex align-items-start gap-2.5">
-                    <div class="p-2 rounded-2 ${isPresent ? 'bg-success text-white' : 'bg-danger text-white'} d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="fa-solid ${isPresent ? 'fa-user-check' : 'fa-user-xmark'} fs-6"></i>
+            <div class="p-3 rounded-3 bg-white border shadow-xs d-flex align-items-center justify-content-between gap-3 transition-all hover-shadow-sm">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 ${isPresent ? 'bg-success bg-opacity-10 text-success' : (isInProgress ? 'bg-warning bg-opacity-10 text-warning' : 'bg-danger bg-opacity-10 text-danger')} d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                        <i class="fa-solid ${isPresent ? 'fa-user-check' : (isInProgress ? 'fa-hourglass-half' : 'fa-user-xmark')} fs-5"></i>
                     </div>
                     <div>
-                        <div class="d-flex align-items-center flex-wrap gap-1 mb-0.5">
+                        <div class="d-flex align-items-center flex-wrap gap-1.5 mb-1">
                             ${periodBadge}
-                            <span class="fw-extrabold text-dark fs-8">${s.subject_name}</span>
+                            <span class="fw-bold text-dark fs-8">${s.subject_name}</span>
                         </div>
-                        <div class="fs-9 text-muted d-flex align-items-center flex-wrap gap-2">
-                            <span><i class="fa-solid fa-chalkboard-user text-primary me-1"></i>${s.teacher_name}</span>
-                            <span>•</span>
-                            <span><i class="fa-solid fa-clock text-secondary me-1"></i>${s.start_time} – ${s.end_time}</span>
-                            ${s.room ? `<span>•</span><span><i class="fa-solid fa-location-dot text-info me-1"></i>${s.room}</span>` : ''}
+                        <div class="fs-9 text-muted d-flex align-items-center flex-wrap gap-x-2 gap-y-1">
+                            <span class="text-secondary fw-medium"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i>${s.teacher_name}</span>
+                            <span class="text-muted opacity-50">•</span>
+                            <span><i class="fa-solid fa-clock text-muted me-1"></i>${s.start_time} – ${s.end_time}</span>
+                            ${s.room ? `<span class="text-muted opacity-50">•</span><span class="badge bg-light text-secondary border py-0.5 px-1.5"><i class="fa-solid fa-location-dot text-info me-1"></i>${s.room}</span>` : ''}
                         </div>
                     </div>
                 </div>
-                <div class="align-self-end align-self-sm-center">
+                <div class="flex-shrink-0">
                     ${statusBadge}
                 </div>
             </div>`;

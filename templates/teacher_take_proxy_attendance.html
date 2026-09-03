@@ -14,14 +14,14 @@
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <h3 class="fw-bold mb-0 text-dark"><i class="fas fa-camera text-primary me-2"></i>Proxy Class Attendance Scanner</h3>
-                            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fs-8 fw-bold">PROXY DUTY</span>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold">
-                                <i class="fa-solid fa-bolt me-1"></i>WebRTC Live AI Face Matcher Active
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                            <h3 class="fw-bold mb-0 text-dark fs-5 fs-md-4"><i class="fas fa-camera text-primary me-2"></i>Proxy Class Attendance Scanner</h3>
+                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">PROXY DUTY</span>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fs-9 fw-bold text-nowrap">
+                                <i class="fa-solid fa-bolt me-1"></i>WebRTC Live AI
                             </span>
                         </div>
-                        <p class="text-muted mb-0">Capture classroom photos with WebRTC AI face recognition for {{ orig_teacher.name if orig_teacher else 'Original Faculty' }}'s class and transfer roll numbers inside the app with one click.</p>
+                        <p class="text-muted mb-0 fs-8">Capture classroom photos with WebRTC AI face recognition for {{ orig_teacher.name if orig_teacher else 'Original Faculty' }}'s class and transfer roll numbers inside the app with one click.</p>
                     </div>
                     <a href="{{ url_for('teacher.proxy_classes') }}" class="btn btn-outline-secondary rounded-3">
                         <i class="fas fa-arrow-left me-1"></i>Back to Proxy Duties

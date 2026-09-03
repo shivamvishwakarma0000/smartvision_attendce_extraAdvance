@@ -40,7 +40,7 @@
         <div class="card-body p-4">
             <div class="d-flex flex-column gap-3">
                 {% for transfer in received_transfers %}
-                <div class="p-3 bg-light rounded-4 border position-relative d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="p-3 bg-light rounded-4 border position-relative overflow-hidden">
                     <!-- Top Right Cross (Cancel/Dismiss Log) -->
                     <form method="POST" action="{{ url_for('teacher.dismiss_proxy_transfer', transfer_id=transfer.id) }}" style="position: absolute; top: 8px; right: 12px; z-index: 105;">
                         <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0 fs-5 text-decoration-none fw-bold" title="Cancel / Dismiss Log" style="line-height: 1;">
@@ -48,42 +48,48 @@
                         </button>
                     </form>
 
-                    <div class="pe-4" style="flex: 1; min-width: 280px;">
-                        <div class="d-flex align-items-center gap-2 mb-1">
+                    <div class="pe-4 mb-2.5">
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                             <span class="fw-bold text-dark fs-7">
                                 <i class="fa-solid fa-user-gear text-primary me-1"></i>From Substitute: {{ transfer.substitute_teacher.name if transfer.substitute_teacher else 'Substitute Teacher' }}
                             </span>
-                            <span class="badge bg-primary bg-opacity-10 text-primary border fs-9">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border fs-9 text-nowrap">
                                 {{ transfer.subject.name if transfer.subject else 'Subject' }} ({{ transfer.class_assigned.name if transfer.class_assigned else 'Class' }})
                             </span>
                         </div>
-                        <span class="fs-8 text-muted fw-semibold d-block mb-2">
+                        <span class="fs-8 text-muted fw-semibold d-block">
                             <i class="fa-solid fa-clock me-1 text-secondary"></i>Time Slot: {{ transfer.time_slot }} | Date: {{ transfer.date.strftime('%B %d, %Y') }}
                         </span>
+                    </div>
 
-                        <!-- Editable Present Roll Numbers Form -->
-                        <form method="POST" action="{{ url_for('teacher.update_proxy_rolls', transfer_id=transfer.id) }}" class="d-flex align-items-center gap-2 bg-white p-2 rounded-3 border">
+                    <!-- Editable Present Roll Numbers Form -->
+                    <form method="POST" action="{{ url_for('teacher.update_proxy_rolls', transfer_id=transfer.id) }}" class="bg-white p-2 rounded-3 border mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <span class="fs-8 text-dark fw-bold font-monospace text-nowrap">
                                 <i class="fa-solid fa-user-check text-success me-1"></i>Present Roll Numbers:
                             </span>
-                            <input type="text" name="present_rolls" id="rolls_proxy_input_{{ transfer.id }}"
-                                   class="form-control form-control-sm fw-bold font-monospace text-primary border-0 bg-light fs-8 px-2"
-                                   value="{{ transfer.present_rolls.replace(' ', '') }}"
-                                   placeholder="e.g. 1,67,85">
-                            <button type="submit" class="btn btn-sm btn-outline-primary px-2.5 py-1 fs-9 fw-bold text-nowrap" title="Save edited rolls">
-                                <i class="fa-solid fa-check me-1"></i>Save
-                            </button>
-                        </form>
-                    </div>
+                            <div class="d-flex align-items-center gap-1.5 flex-grow-1" style="min-width: 140px;">
+                                <input type="text" name="present_rolls" id="rolls_proxy_input_{{ transfer.id }}"
+                                       class="form-control form-control-sm fw-bold font-monospace text-primary border-0 bg-light fs-8 px-2 w-100"
+                                       value="{{ transfer.present_rolls.replace(' ', '') }}"
+                                       placeholder="e.g. 1,67,85">
+                                <button type="submit" class="btn btn-sm btn-outline-primary px-2.5 py-1 fs-9 fw-bold text-nowrap flex-shrink-0" title="Save edited rolls">
+                                    <i class="fa-solid fa-check me-1"></i>Save
+                                </button>
+                            </div>
+                        </div>
+                    </form>
 
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 fw-bold fs-8"
+                    <!-- Action Buttons Toolbar -->
+                    <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-3 fw-bold fs-8 flex-grow-1 flex-sm-grow-0"
                                 onclick="const r = document.getElementById('rolls_proxy_input_{{ transfer.id }}').value.replace(/\s+/g, ''); navigator.clipboard.writeText(r); alert('Copied roll numbers: ' + r);">
                             <i class="fa-solid fa-copy me-1"></i>Copy Rolls
                         </button>
                         <form method="POST" action="{{ url_for('teacher.apply_proxy_rolls', transfer_id=transfer.id) }}"
+                              class="flex-grow-1 flex-sm-grow-0"
                               onsubmit="this.appendChild(document.getElementById('rolls_proxy_input_{{ transfer.id }}').cloneNode(true));">
-                            <button type="submit" class="btn btn-success btn-sm px-3 rounded-3 fw-bold shadow-sm fs-8 text-nowrap">
+                            <button type="submit" class="btn btn-success btn-sm px-3 rounded-3 fw-bold shadow-sm fs-8 text-nowrap w-100">
                                 <i class="fa-solid fa-check-double me-1"></i>Apply Attendance to My Session
                             </button>
                         </form>

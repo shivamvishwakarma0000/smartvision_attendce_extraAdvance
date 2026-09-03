@@ -1347,9 +1347,9 @@ def delete_teacher(teacher_id):
 
         # 7. Delete teacher edit requests & assignments
         TeacherEditRequest.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
-        TeacherAssignment.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
-
-        # 8. Unlink attendance sessions
+        # 8. Unlink attendance sessions & classes directed as class teacher
+        from models import Class
+        Class.query.filter_by(class_teacher_id=teacher_to_delete.id).update({'class_teacher_id': None})
         AttendanceSession.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
 
         # Find linked user account by user_id or email

@@ -2018,6 +2018,36 @@ def my_attendance():
     month_filter = request.args.get('month', '').strip() or today.strftime('%Y-%m')
     date_filter = request.args.get('date', '').strip()
     
+    # 1. Ensure approved leave days and today have daily attendance rows created
+    try:
+        from datetime import timedelta
+        from teacher_attendance.routes import recalculate_daily_status, get_or_create_settings
+        settings = get_or_create_settings()
+        
+        # Sync all approved leaves for this teacher
+        approved_leaves = TeacherLeave.query.filter_by(teacher_id=teacher.id, status='APPROVED').all()
+        for lv in approved_leaves:
+            curr = lv.date_from
+            while curr <= lv.date_to:
+                rec = TeacherDailyAttendance.query.filter_by(teacher_id=teacher.id, attendance_date=curr).first()
+                if not rec:
+                    rec = TeacherDailyAttendance(teacher_id=teacher.id, attendance_date=curr)
+                    db.session.add(rec)
+                recalculate_daily_status(rec, settings)
+                curr += timedelta(days=1)
+
+        # Sync today's attendance record
+        today_rec = TeacherDailyAttendance.query.filter_by(teacher_id=teacher.id, attendance_date=today).first()
+        if not today_rec:
+            today_rec = TeacherDailyAttendance(teacher_id=teacher.id, attendance_date=today)
+            db.session.add(today_rec)
+        recalculate_daily_status(today_rec, settings)
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"[Teacher My Attendance Sync Warning] {e}")
+
     query = TeacherDailyAttendance.query.filter_by(teacher_id=teacher.id)
     if date_filter:
         try:

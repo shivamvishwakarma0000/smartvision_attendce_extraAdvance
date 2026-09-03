@@ -3886,12 +3886,58 @@ def declare_college_off():
 def handle_leave_approval(leave_id, action):
     leave = TeacherLeave.query.get_or_404(leave_id)
     substitute_id_str = request.form.get('substitute_teacher_id')
+    broadcast_cancel_notice = request.form.get('broadcast_cancel_notice') == '1'
+    custom_cancel_message = request.form.get('custom_cancel_message', '').strip()
 
     if action == 'approve':
         leave.status = 'APPROVED'
         if substitute_id_str and substitute_id_str.isdigit():
             leave.substitute_teacher_id = int(substitute_id_str)
-        flash(f"Leave request for teacher '{leave.teacher.name}' APPROVED.", "success")
+        else:
+            leave.substitute_teacher_id = None
+
+        # 1. Synchronize Teacher Daily Attendance records for the leave period
+        try:
+            from datetime import timedelta
+            from models import TeacherDailyAttendance, ClassAnnouncement, Timetable
+            from teacher_attendance.routes import recalculate_daily_status, get_or_create_settings
+            settings = get_or_create_settings()
+
+            curr = leave.date_from
+            while curr <= leave.date_to:
+                rec = TeacherDailyAttendance.query.filter_by(teacher_id=leave.teacher_id, attendance_date=curr).first()
+                if not rec:
+                    rec = TeacherDailyAttendance(teacher_id=leave.teacher_id, attendance_date=curr)
+                    db.session.add(rec)
+                recalculate_daily_status(rec, settings)
+                curr += timedelta(days=1)
+
+            # 2. If No Substitute is assigned and broadcast switch is ON, post notice to affected student classes
+            if not leave.substitute_teacher_id and broadcast_cancel_notice:
+                # Find all classes taught by this teacher
+                classes_taught = db.session.query(Timetable.class_id).filter_by(teacher_id=leave.teacher_id).distinct().all()
+                class_ids = [c[0] for c in classes_taught if c[0]]
+                
+                notice_text = custom_cancel_message or f"Notice: Prof. {leave.teacher.name} is on sanctioned leave from {leave.date_from.strftime('%d %b')} to {leave.date_to.strftime('%d %b')}. Scheduled lectures are cancelled for this duration."
+                notice_title = f"Class Cancellation: Prof. {leave.teacher.name} On Leave"
+
+                for cid in class_ids:
+                    announcement = ClassAnnouncement(
+                        class_id=cid,
+                        teacher_id=leave.teacher_id,
+                        admin_id=current_user.id,
+                        posted_by_role='admin',
+                        target_role='STUDENTS',
+                        title=notice_title,
+                        content=notice_text,
+                        notice_type='Urgent Notice'
+                    )
+                    db.session.add(announcement)
+        except Exception as sync_err:
+            print(f"[Leave Approval Sync Warning] {sync_err}")
+
+        sub_name = leave.substitute_teacher.name if leave.substitute_teacher else 'None (Class Cancelled & Students Notified)'
+        flash(f"Leave request for teacher '{leave.teacher.name}' APPROVED (Substitute: {sub_name}). Marked as Approved Leave on teacher attendance log.", "success")
     elif action == 'reject':
         leave.status = 'REJECTED'
         flash(f"Leave request for teacher '{leave.teacher.name}' REJECTED.", "info")

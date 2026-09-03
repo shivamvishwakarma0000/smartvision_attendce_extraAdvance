@@ -115,10 +115,12 @@
             </div>
 
             <form action="{{ url_for('main.handle_leave_approval', leave_id=leave.id, action='approve') }}" method="POST" class="mb-2">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold fs-8 text-dark">Assign Substitute Teacher (Optional):</label>
-                    <select name="substitute_teacher_id" class="form-select form-select-sm">
-                        <option value="">No Substitute (Flag as Uncovered Leave Slot)</option>
+                <div class="mb-2.5">
+                    <label class="form-label fw-semibold fs-8 text-dark mb-1">
+                        <i class="fa-solid fa-user-plus text-primary me-1"></i>Assign Substitute Faculty (Optional):
+                    </label>
+                    <select name="substitute_teacher_id" id="substituteSelect{{ leave.id }}" class="form-select form-select-sm" onchange="toggleCancellationNoticeBox('{{ leave.id }}')">
+                        <option value="">No Substitute Available (Cancel Class & Notify Students)</option>
                         {% for t in all_teachers %}
                         {% if t.id != leave.teacher_id %}
                         <option value="{{ t.id }}">{{ t.name }} ({{ t.emp_id or 'Faculty' }})</option>
@@ -126,6 +128,22 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                <!-- Custom Cancellation Broadcast to Students (shown when No Substitute is chosen) -->
+                <div id="cancellationNoticeBox{{ leave.id }}" class="p-2.5 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3 mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <label class="form-label fw-bold fs-8 text-dark mb-0">
+                            <i class="fa-solid fa-bullhorn text-warning me-1"></i>Class Cancellation Notice to Students:
+                        </label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" name="broadcast_cancel_notice" value="1" id="broadcastCancelSwitch{{ leave.id }}" checked>
+                            <label class="form-check-label fs-9 fw-semibold text-muted" for="broadcastCancelSwitch{{ leave.id }}">Send Notice</label>
+                        </div>
+                    </div>
+                    <textarea class="form-control form-control-sm fs-8" name="custom_cancel_message" rows="2" placeholder="Write your custom reason/message to students (e.g. Prof. {{ leave.teacher.name }} is on sanctioned leave. Today's lecture is cancelled.).">Notice: Prof. {{ leave.teacher.name }} is on approved leave from {{ leave.date_from.strftime('%d %b') }} to {{ leave.date_to.strftime('%d %b') }}. Today's scheduled class has been cancelled.</textarea>
+                    <span class="fs-9 text-muted mt-1 d-block">This notice will appear on the Student Notice Board for all assigned classes.</span>
+                </div>
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-success btn-sm flex-grow-1 fw-bold rounded-3">
                         <i class="fa-solid fa-check me-1"></i> Approve Leave
@@ -833,6 +851,16 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleText.textContent = `Show All Records (${totalRecords})`;
         });
     }
-});
+function toggleCancellationNoticeBox(leaveId) {
+    const selectEl = document.getElementById('substituteSelect' + leaveId);
+    const boxEl = document.getElementById('cancellationNoticeBox' + leaveId);
+    if (selectEl && boxEl) {
+        if (!selectEl.value) {
+            boxEl.style.display = 'block';
+        } else {
+            boxEl.style.display = 'none';
+        }
+    }
+}
 </script>
 {% endblock %}

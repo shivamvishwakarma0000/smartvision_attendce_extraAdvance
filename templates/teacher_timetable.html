@@ -82,11 +82,16 @@
                             {% endif %}
 
                             {% if ps.is_lunch %}
-                            <!-- Full-Width Lunch Break Row -->
+                            <!-- Full-Width Break / Lunch Row -->
                             <td colspan="7" class="align-middle py-0.5 px-2 bg-warning bg-opacity-15 border-warning border-opacity-30">
                                 <div class="d-flex align-items-center justify-content-center gap-2 text-dark py-0.5">
+                                    {% if 'short' in ps.label.lower() or 'tea' in ps.label.lower() %}
+                                    <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-mug-hot me-1"></i>Break</span>
+                                    <span class="fw-bold text-dark me-2" style="font-size: 0.72rem;">☕ {{ ps.label|upper }} ({{ ps.start_time }} – {{ ps.end_time }})</span>
+                                    {% else %}
                                     <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold" style="font-size: 0.65rem;"><i class="fa-solid fa-utensils me-1"></i>Lunch</span>
                                     <span class="fw-bold text-dark me-2" style="font-size: 0.72rem;">🍱 {{ ps.label|upper }} ({{ ps.start_time }} – {{ ps.end_time }})</span>
+                                    {% endif %}
                                 </div>
                             </td>
                             {% else %}

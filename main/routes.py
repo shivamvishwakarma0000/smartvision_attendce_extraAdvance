@@ -3032,8 +3032,9 @@ def get_or_create_period_settings():
         (0, 'Lunch Break', '11:20', '12:20', True, 3),
         (3, 'Period 3', '12:20', '01:15', False, 4),
         (4, 'Period 4', '01:15', '02:10', False, 5),
-        (5, 'Period 5', '02:30', '03:25', False, 6),
-        (6, 'Period 6', '03:25', '04:20', False, 7)
+        (0, 'Short Break', '02:10', '02:30', True, 6),
+        (5, 'Period 5', '02:30', '03:25', False, 7),
+        (6, 'Period 6', '03:25', '04:20', False, 8)
     ]
     if not settings:
         for p_no, lbl, st, et, is_l, ord_idx in default_periods:
@@ -3049,29 +3050,64 @@ def get_or_create_period_settings():
         db.session.commit()
         settings = TimetablePeriodSetting.query.order_by(TimetablePeriodSetting.order_index).all()
     else:
-        # Check if Period 5 / Period 6 still have legacy timings and auto-upgrade them
+        # Check if 20-min break is missing or period timings need upgrading
         changed = False
-        p5 = next((s for s in settings if s.period_no == 5), None)
-        p6 = next((s for s in settings if s.period_no == 6), None)
-        if p5 and p5.start_time == '02:10' and p5.end_time == '03:05':
-            p5.start_time = '02:30'
-            p5.end_time = '03:25'
-            Timetable.query.filter_by(period_no=5, start_time='02:10').update({
-                Timetable.start_time: '02:30',
-                Timetable.end_time: '03:25'
-            }, synchronize_session=False)
+        short_break = next((s for s in settings if s.is_lunch and 'break' in s.label.lower() and s.start_time == '02:10'), None)
+        if not short_break:
+            # Re-index Period 5 and 6 to make room for short break
+            p5 = next((s for s in settings if s.period_no == 5), None)
+            p6 = next((s for s in settings if s.period_no == 6), None)
+            
+            ps_break = TimetablePeriodSetting(
+                period_no=0,
+                label='Short Break',
+                start_time='02:10',
+                end_time='02:30',
+                is_lunch=True,
+                order_index=6
+            )
+            db.session.add(ps_break)
+            if p5:
+                p5.order_index = 7
+                p5.start_time = '02:30'
+                p5.end_time = '03:25'
+                Timetable.query.filter_by(period_no=5).update({
+                    Timetable.start_time: '02:30',
+                    Timetable.end_time: '03:25'
+                }, synchronize_session=False)
+            if p6:
+                p6.order_index = 8
+                p6.start_time = '03:25'
+                p6.end_time = '04:20'
+                Timetable.query.filter_by(period_no=6).update({
+                    Timetable.start_time: '03:25',
+                    Timetable.end_time: '04:20'
+                }, synchronize_session=False)
             changed = True
-        if p6 and p6.start_time == '03:05' and p6.end_time == '04:00':
-            p6.start_time = '03:25'
-            p6.end_time = '04:20'
-            Timetable.query.filter_by(period_no=6, start_time='03:05').update({
-                Timetable.start_time: '03:25',
-                Timetable.end_time: '04:20'
-            }, synchronize_session=False)
-            changed = True
+        else:
+            p5 = next((s for s in settings if s.period_no == 5), None)
+            p6 = next((s for s in settings if s.period_no == 6), None)
+            if p5 and p5.start_time != '02:30':
+                p5.start_time = '02:30'
+                p5.end_time = '03:25'
+                Timetable.query.filter_by(period_no=5).update({
+                    Timetable.start_time: '02:30',
+                    Timetable.end_time: '03:25'
+                }, synchronize_session=False)
+                changed = True
+            if p6 and p6.start_time != '03:25':
+                p6.start_time = '03:25'
+                p6.end_time = '04:20'
+                Timetable.query.filter_by(period_no=6).update({
+                    Timetable.start_time: '03:25',
+                    Timetable.end_time: '04:20'
+                }, synchronize_session=False)
+                changed = True
+
         if changed:
             try:
                 db.session.commit()
+                settings = TimetablePeriodSetting.query.order_by(TimetablePeriodSetting.order_index).all()
             except Exception:
                 db.session.rollback()
     return settings

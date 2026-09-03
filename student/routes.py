@@ -359,6 +359,7 @@ def dashboard():
         pending_request=pending_request,
         class_notices=class_notices,
         today_cancelled_classes=today_cancelled_classes,
+        current_day_name=today.strftime('%A'),
         today=today.strftime('%Y-%m-%d')
     )
 
@@ -851,7 +852,11 @@ def month_view():
         sess_list = sessions_by_date.get(d_str, [])
         total_sessions = len(sess_list)
 
-        if total_sessions == 0:
+        if is_future:
+            status = 'FUTURE'
+            color = '#f8fafc' # subtle clean future background
+            text_color = '#94a3b8'
+        elif total_sessions == 0:
             status = 'NO_CLASS'
             no_class_days_count += 1
             color = '#f1f5f9' # light grey

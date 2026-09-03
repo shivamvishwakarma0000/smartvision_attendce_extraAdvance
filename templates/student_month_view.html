@@ -110,9 +110,14 @@
                                             <span class="cal-status-sub d-none d-sm-inline-block">
                                                 <i class="fa-solid fa-xmark me-0.5"></i>Absent
                                             </span>
-                                        {% else %}
+                                        {% elif d_info.status == 'NO_CLASS' %}
                                             <span class="cal-status-sub text-muted d-none d-sm-inline-block" style="color: {{ d_info.text_color }} !important;">
                                                 Off
+                                            </span>
+                                        {% else %}
+                                            <!-- Future Date: Clean unconducted placeholder -->
+                                            <span class="cal-status-sub text-muted d-none d-sm-inline-block opacity-50" style="color: #94a3b8 !important;">
+                                                -
                                             </span>
                                         {% endif %}
 
@@ -333,6 +338,11 @@ function openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions
         badgeHtml = `<div class="p-2.5 rounded-3 bg-danger bg-opacity-10 border border-danger text-danger d-flex align-items-center gap-2 fs-8 fw-bold">
             <i class="fa-solid fa-circle-xmark fs-6"></i>
             <span>Absent or partial attendance in conducted lecture session(s).</span>
+        </div>`;
+    } else if (status === 'FUTURE') {
+        badgeHtml = `<div class="p-2.5 rounded-3 bg-light border text-muted d-flex align-items-center gap-2 fs-8 fw-semibold">
+            <i class="fa-solid fa-clock text-primary fs-6"></i>
+            <span>Upcoming date. Lectures will be conducted according to the weekly timetable schedule.</span>
         </div>`;
     } else {
         badgeHtml = `<div class="p-2.5 rounded-3 bg-light border text-muted d-flex align-items-center gap-2 fs-8 fw-semibold">

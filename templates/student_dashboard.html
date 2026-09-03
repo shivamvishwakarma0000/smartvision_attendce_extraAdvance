@@ -276,14 +276,9 @@
                                 <i class="fa-solid fa-star me-1"></i>Today ({{ current_day_name }})
                             </button>
                         </li>
-                        <li class="nav-item">
-                            <button class="nav-link rounded-pill px-3 py-1 fw-bold text-dark border" onclick="filterStudentSchedule('all', this)">
-                                All Week
-                            </button>
-                        </li>
                         {% for d in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] %}
                         <li class="nav-item">
-                            <button class="nav-link rounded-pill px-3 py-1 fw-semibold text-dark" onclick="filterStudentSchedule('{{ d }}', this)">
+                            <button class="nav-link rounded-pill px-3 py-1 fw-semibold text-dark border" onclick="filterStudentSchedule('{{ d }}', this)">
                                 {{ d }}
                             </button>
                         </li>
@@ -401,14 +396,9 @@
 
                     <!-- Filter Mode Controls -->
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <div class="btn-group btn-group-sm p-1 bg-light rounded-pill border" role="group">
-                            <button type="button" class="btn btn-primary rounded-pill px-3 py-1 fw-bold fs-8" id="btnFilterToday" onclick="setStudentHistoryMode('today')">
-                                <i class="fa-solid fa-star me-1 text-warning"></i> Today's Sessions
-                            </button>
-                            <button type="button" class="btn btn-outline-primary border-0 rounded-pill px-3 py-1 fw-bold fs-8" id="btnFilterAll" onclick="setStudentHistoryMode('all')">
-                                <i class="fa-solid fa-list-ul me-1"></i> All History
-                            </button>
-                        </div>
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold fs-8" id="btnFilterToday" onclick="setStudentHistoryMode('today')">
+                            <i class="fa-solid fa-star me-1 text-warning"></i> Today's Sessions
+                        </button>
 
                         <div class="d-flex align-items-center gap-1.5 p-1 rounded-pill border" style="background: var(--surface-secondary); border-color: var(--border-card) !important;">
                             <span class="ps-2.5 text-primary fs-8"><i class="fa-solid fa-calendar"></i></span>

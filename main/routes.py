@@ -2828,11 +2828,77 @@ def download_risk_report():
 @login_required
 @admin_required
 def assign_students():
-    """Admin assigns unclassified students (class_id=None) to classes."""
+    """Admin assigns unclassified students (class_id=None) to classes with auto-generated alphabetical / sequential roll numbers."""
     classes = get_admin_classes()
 
+    def get_next_available_roll_number(class_id):
+        """Calculates next sequential integer roll number for a class."""
+        existing_students = Student.query.filter_by(class_id=class_id).all()
+        max_num = 0
+        import re
+        for s in existing_students:
+            digits = re.findall(r'\d+', str(s.roll_no or ''))
+            if digits:
+                try:
+                    num = int(digits[-1])
+                    if num > max_num:
+                        max_num = num
+                except Exception:
+                    pass
+        return max_num + 1
+
     if request.method == 'POST':
-        # Check if Range Bulk Assignment submitted
+        action_type = request.form.get('action_type', '')
+
+        # 1. BULK ALPHABETICAL (A-Z) / SEQUENTIAL AUTO-ROLL ASSIGNMENT
+        if action_type == 'bulk_auto_roll':
+            selected_student_ids = request.form.getlist('selected_student_ids')
+            target_class_id = request.form.get('target_class_id')
+            roll_mode = request.form.get('roll_number_mode', 'alphabetical') # 'alphabetical' or 'sequential'
+
+            if not target_class_id or not target_class_id.isdigit():
+                flash("Please select a target class to assign students.", "warning")
+                return redirect(url_for('main.assign_students'))
+
+            if not selected_student_ids:
+                flash("Please select at least one student from the table.", "warning")
+                return redirect(url_for('main.assign_students'))
+
+            target_class = Class.query.get(int(target_class_id))
+            if not target_class:
+                flash("Selected class not found.", "danger")
+                return redirect(url_for('main.assign_students'))
+
+            student_objs = Student.query.filter(Student.id.in_([int(sid) for sid in selected_student_ids if sid.isdigit()])).all()
+            if not student_objs:
+                flash("No valid students found.", "warning")
+                return redirect(url_for('main.assign_students'))
+
+            # Sort students: Alphabetical (A to Z by student name) or Sequential by registration ID
+            if roll_mode == 'alphabetical':
+                student_objs.sort(key=lambda s: (s.name or '').strip().lower())
+            else:
+                student_objs.sort(key=lambda s: s.id)
+
+            next_roll = get_next_available_roll_number(target_class.id)
+
+            for st in student_objs:
+                st.class_id = target_class.id
+                if target_class.department:
+                    st.department = target_class.department
+                st.roll_no = str(next_roll)
+                st.roll_number = str(next_roll)
+                next_roll += 1
+
+            try:
+                db.session.commit()
+                flash(f"✓ Successfully assigned {len(student_objs)} student(s) to '{target_class.name}' with auto-generated Roll Numbers ({roll_mode.capitalize()} order).", "success")
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error assigning students: {e}", "danger")
+            return redirect(url_for('main.assign_students'))
+
+        # 2. Check if Range Bulk Assignment submitted
         range_start = request.form.get('range_start', '').strip()
         range_end = request.form.get('range_end', '').strip() or range_start
         range_class_id = request.form.get('range_class_id')
@@ -2841,11 +2907,9 @@ def assign_students():
             target_cid = int(range_class_id)
             target_class = Class.query.get(target_cid)
             if target_class:
-                # Find all students matching range
                 all_students = get_admin_students()
                 assigned_count = 0
                 
-                # Check numeric range vs string roll_no matching
                 def extract_number(roll_str):
                     import re
                     digits = re.findall(r'\d+', str(roll_str or ''))
@@ -2870,7 +2934,7 @@ def assign_students():
                     flash(f"No students found in Roll No range [{range_start} – {range_end}].", "warning")
             return redirect(url_for('main.assign_students'))
 
-        # Individual / Checkbox bulk form submissions
+        # 3. Individual / Checkbox bulk form submissions
         assigned_count = 0
         for key, value in request.form.items():
             if key.startswith('class_for_student_') and value:
@@ -2883,15 +2947,21 @@ def assign_students():
                         (Class.admin_id == None) | (Class.admin_id == current_user.id)
                     ).first()
                     if student and target_class:
+                        prev_class_id = student.class_id
                         student.class_id = class_id
                         if target_class.department:
                             student.department = target_class.department
+                        # If student has no roll number or is moving to a new class, auto-assign next available roll number in that class
+                        if not student.roll_no or prev_class_id != class_id:
+                            next_r = get_next_available_roll_number(class_id)
+                            student.roll_no = str(next_r)
+                            student.roll_number = str(next_r)
                         assigned_count += 1
                 except (ValueError, TypeError):
                     continue
         if assigned_count:
             db.session.commit()
-            flash(f'Successfully assigned {assigned_count} student(s) to their classes.', 'success')
+            flash(f'Successfully assigned {assigned_count} student(s) to their classes with auto-generated Roll Numbers.', 'success')
         else:
             flash('No assignments were made. Please select a class for at least one student.', 'warning')
         return redirect(url_for('main.assign_students'))

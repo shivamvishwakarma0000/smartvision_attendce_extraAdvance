@@ -495,7 +495,7 @@ def register():
         # --- STUDENT REGISTRATION ---
         elif role == 'student':
             mobile = request.form.get('mobile', '').strip()
-            roll_no = request.form.get('roll_no', '').strip()
+            roll_no = request.form.get('roll_no', '').strip() or None
             enrollment_no = request.form.get('enrollment_no', '').strip()
             department = request.form.get('department', '').strip()
             parent_name = request.form.get('parent_name', '').strip()
@@ -504,8 +504,8 @@ def register():
             student_photo = request.files.get('student_photo')
             captured_base64 = request.form.get('captured_image_base64')
 
-            if not all([roll_no, enrollment_no]):
-                flash('Roll Number and Enrollment Number are required for student registration.', 'danger')
+            if not enrollment_no:
+                flash('Enrollment Number is required for student registration.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
             if not parent_name or not parent_email or not parent_mobile:
@@ -517,7 +517,7 @@ def register():
                 flash('Student photo is mandatory for registration. Please upload a photo or capture via camera.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 
-            if Student.query.filter_by(roll_no=roll_no).first():
+            if roll_no and Student.query.filter_by(roll_no=roll_no).first():
                 flash('A student with this Roll Number already exists.', 'danger')
                 return redirect(url_for('main.index', state='signup'))
 

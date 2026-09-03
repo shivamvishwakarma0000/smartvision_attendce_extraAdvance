@@ -104,24 +104,39 @@
 
 <div class="card border-0 shadow-sm mb-4 rounded-4" style="background: var(--bg-card); border: 1px solid var(--border-card) !important;">
     <div class="card-header border-bottom py-3" style="background: var(--bg-card);">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <span class="fw-semibold" style="color: var(--text-primary);">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <span class="fw-bold" style="color: var(--text-primary);">
                 <i class="fa-solid fa-users text-primary me-2"></i>
                 <span id="studentTableCount">{{ unclassified_students|length }}</span> Student(s) Displayed
             </span>
-            <div class="d-flex gap-2 align-items-center">
-                <!-- Bulk assign controls -->
-                <label class="text-muted fs-8 mb-0">Assign Selected To:</label>
-                <select id="bulkClassSelect" class="form-select form-select-sm" style="width: 180px; font-size: 0.82rem;">
-                    <option value="">— Select Class —</option>
-                    {% for class_item in classes %}
-                    <option value="{{ class_item.id }}">{{ class_item.name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="button" id="bulkAssignBtn" class="btn btn-primary btn-sm fw-semibold">
-                    <i class="fa-solid fa-bolt me-1"></i> Apply to Selected
+            
+            <!-- Quick Auto-Roll Number Bulk Action Controls -->
+            <form method="POST" action="{{ url_for('main.assign_students') }}" id="bulkAutoRollForm" class="d-flex gap-2 align-items-center flex-wrap">
+                <input type="hidden" name="action_type" value="bulk_auto_roll">
+                <div id="hiddenSelectedStudentsContainer"></div>
+
+                <div class="input-group input-group-sm" style="width: auto;">
+                    <span class="input-group-text bg-light text-muted fw-semibold fs-9">Target Class</span>
+                    <select name="target_class_id" id="bulkAutoRollClassSelect" class="form-select form-select-sm" required style="min-width: 150px; font-size: 0.82rem;">
+                        <option value="" disabled selected>— Select Class —</option>
+                        {% for class_item in classes %}
+                        <option value="{{ class_item.id }}">{{ class_item.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group input-group-sm" style="width: auto;">
+                    <span class="input-group-text bg-light text-muted fw-semibold fs-9">Roll Sort</span>
+                    <select name="roll_number_mode" id="bulkAutoRollModeSelect" class="form-select form-select-sm" style="font-size: 0.82rem;">
+                        <option value="alphabetical" selected>Alphabetical (A → Z)</option>
+                        <option value="sequential">Registration (First Come → First)</option>
+                    </select>
+                </div>
+
+                <button type="button" id="btnApplyAutoRoll" onclick="submitBulkAutoRoll()" class="btn btn-success btn-sm fw-bold px-3 shadow-xs">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Assign & Auto-Generate Roll No.
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -150,7 +165,7 @@
                         data-assigned="{% if student.class_id %}assigned{% else %}unassigned{% endif %}"
                         data-current-class="{{ student.class_assigned.name if student.class_assigned else '' }}">
                         <td class="ps-4">
-                            <input type="checkbox" class="form-check-input student-check" data-id="{{ student.id }}">
+                            <input type="checkbox" class="form-check-input student-check" value="{{ student.id }}" data-id="{{ student.id }}">
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
@@ -384,6 +399,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+function submitBulkAutoRoll() {
+    const classSelect = document.getElementById('bulkAutoRollClassSelect');
+    if (!classSelect || !classSelect.value) {
+        alert('Please select a Target Class from the dropdown first.');
+        if (classSelect) classSelect.focus();
+        return;
+    }
+
+    const checkedBoxes = document.querySelectorAll('.student-row:not([style*="display: none"]) .student-check:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please check/select at least one student from the table below to assign and auto-generate roll numbers.');
+        return;
+    }
+
+    const container = document.getElementById('hiddenSelectedStudentsContainer');
+    container.innerHTML = '';
+    checkedBoxes.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selected_student_ids';
+        input.value = cb.value || cb.dataset.id;
+        container.appendChild(input);
+    });
+
+    const sortMode = document.getElementById('bulkAutoRollModeSelect').value;
+    const modeName = sortMode === 'alphabetical' ? 'Alphabetical (A to Z)' : 'Registration Order';
+    const className = classSelect.options[classSelect.selectedIndex].text;
+
+    if (confirm(`Assign ${checkedBoxes.length} student(s) to "${className}" with auto-generated Roll Numbers (${modeName})?`)) {
+        document.getElementById('bulkAutoRollForm').submit();
+    }
+}
 </script>
 
 {% endblock %}

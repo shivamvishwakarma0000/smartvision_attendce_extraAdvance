@@ -573,11 +573,20 @@ def proxy_classes():
         substitute_teacher_id=teacher.id
     ).order_by(ProxyAttendanceTransfer.created_at.desc()).all()
 
-    # Build set of shared slot keys (timetable_id, date) for transfers that are SHARED or APPLIED
+    # Build set of shared slot keys (timetable_id, date) for transfers that are SHARED, APPLIED, or DISMISSED
     shared_slot_keys = set()
     for t in sent_transfers:
-        if t.status in ['SHARED', 'APPLIED'] and t.timetable_id and t.date:
+        if t.status in ['SHARED', 'APPLIED', 'DISMISSED'] and t.timetable_id and t.date:
             shared_slot_keys.add((t.timetable_id, t.date))
+
+    # Also include completed sessions taken by this substitute teacher
+    completed_sessions = AttendanceSession.query.filter_by(
+        teacher_id=teacher.id,
+        status='COMPLETED'
+    ).all()
+    for cs in completed_sessions:
+        if cs.timetable_id and cs.date:
+            shared_slot_keys.add((cs.timetable_id, cs.date))
 
     return render_template(
         'teacher_proxy_classes.html',

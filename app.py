@@ -177,50 +177,58 @@ def create_app():
                     if teacher.name:
                         filter_conds.append(AttendanceDiscrepancyRequest.teacher_name.ilike(f"%{teacher.name}%"))
 
-                    from models import TeacherLeave, Timetable, ProxyAttendanceTransfer
+                    from models import TeacherLeave, Timetable, ProxyAttendanceTransfer, AttendanceSession, DailySchedule
                     from extensions import get_current_date
                     today = get_current_date()
 
-                    # Count today's proxy duty slots that have NOT been shared yet
+                    # Collect all (timetable_id, date) pairs that are already shared, applied, dismissed, or completed
+                    sent_transfers = ProxyAttendanceTransfer.query.filter(
+                        ProxyAttendanceTransfer.substitute_teacher_id == teacher.id,
+                        ProxyAttendanceTransfer.status.in_(['SHARED', 'APPLIED', 'DISMISSED'])
+                    ).all()
+                    shared_keys = set((t.timetable_id, t.date) for t in sent_transfers if t.timetable_id and t.date)
+
+                    # Also include completed sessions taken by this substitute teacher
+                    completed_sessions = AttendanceSession.query.filter_by(
+                        teacher_id=teacher.id,
+                        status='COMPLETED'
+                    ).all()
+                    for cs in completed_sessions:
+                        if cs.timetable_id and cs.date:
+                            shared_keys.add((cs.timetable_id, cs.date))
+
+                    # Count unshared proxy duty slots assigned to this teacher
                     proxy_leaves = TeacherLeave.query.filter_by(
                         substitute_teacher_id=teacher.id,
                         status='APPROVED'
                     ).all()
 
-                    # Collect all (timetable_id, date) pairs already shared
-                    sent_shared = ProxyAttendanceTransfer.query.filter_by(
-                        substitute_teacher_id=teacher.id,
-                        status='SHARED'
-                    ).all()
-                    shared_keys = set((t.timetable_id, t.date) for t in sent_shared if t.timetable_id and t.date)
-
                     proxy_count = 0
                     for l in proxy_leaves:
-                        if l.date_from <= today <= l.date_to:
-                            orig = l.teacher
-                            if not orig:
-                                continue
-                            day_name = today.strftime('%A')
+                        orig = l.teacher
+                        if not orig:
+                            continue
+                        curr = l.date_from
+                        while curr <= l.date_to:
+                            day_name = curr.strftime('%A')
                             slots = Timetable.query.filter_by(
                                 teacher_id=orig.id,
                                 day_of_week=day_name,
                                 slot_type='CLASS'
                             ).all()
                             for slot in slots:
-                                if (slot.id, today) not in shared_keys:
+                                if (slot.id, curr) not in shared_keys:
                                     proxy_count += 1
+                            curr += timedelta(days=1)
 
                     # Count direct emergency DailySchedule proxy allocations
-                    from models import DailySchedule
-                    direct_proxy_today = DailySchedule.query.filter_by(
+                    direct_proxies = DailySchedule.query.filter_by(
                         substitute_teacher_id=teacher.id,
-                        date=today,
                         is_proxy=True
                     ).all()
-                    for dp in direct_proxy_today:
-                        if not dp.is_cancelled and (dp.timetable_id, today) not in shared_keys:
-                            if dp.timetable and dp.timetable.teacher_id not in [l.teacher_id for l in proxy_leaves if l.teacher_id]:
-                                proxy_count += 1
+                    for dp in direct_proxies:
+                        if not dp.is_cancelled and (dp.timetable_id, dp.date) not in shared_keys:
+                            proxy_count += 1
 
                     count = 0
                     if filter_conds:

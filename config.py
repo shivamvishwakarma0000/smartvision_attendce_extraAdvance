@@ -45,8 +45,11 @@ class Config:
         SQLALCHEMY_ENGINE_OPTIONS = {
             'pool_pre_ping': True,
             'pool_recycle': 280,
-            'pool_timeout': 30,
-            'max_overflow': 10
+            'pool_timeout': 10,
+            'max_overflow': 10,
+            'connect_args': {
+                'connect_timeout': 8
+            }
         }
     else:
         SQLALCHEMY_ENGINE_OPTIONS = {

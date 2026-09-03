@@ -306,10 +306,13 @@ def create_app():
         db_migrations.run_migrations(db_path)
 
     with app.app_context():
-        db.create_all()
-        ensure_postgresql_columns()
-        setup_initial_data()
-        sync_university_images_to_db()
+        try:
+            db.create_all()
+            ensure_postgresql_columns()
+            setup_initial_data()
+            sync_university_images_to_db()
+        except Exception as startup_db_err:
+            print(f"[Warning] Database startup synchronization failed (will retry on incoming request): {startup_db_err}")
 
     # Enable reverse proxy support for secure HTTPS OAuth redirects on Render / AWS / Railway
     try:

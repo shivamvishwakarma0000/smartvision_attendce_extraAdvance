@@ -369,16 +369,26 @@
             <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border" style="border-color: rgba(99, 102, 241, 0.15) !important;">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2.5 border-bottom">
                     <div>
-                        <h5 class="fw-bold text-dark mb-0 fs-6">Active Class Complaints & Voting Desk</h5>
-                        <p class="text-muted fs-9 mb-0">Cast your vote on active teaching issues submitted for <strong>{{ student.class_assigned.name if student.class_assigned else 'your class' }}</strong>.</p>
+                        <h5 class="fw-bold text-dark mb-0 fs-6">Class Complaints & Voting Desk</h5>
+                        <p class="text-muted fs-9 mb-0">Democratically voted teaching issues for <strong>{{ student.class_assigned.name if student.class_assigned else 'your class' }}</strong>.</p>
                     </div>
-                    <div class="badge bg-primary-subtle text-primary px-2.5 py-1 rounded-pill fs-8 fw-bold">
-                        Enrolled: {{ student.class_assigned.students|length if student.class_assigned else 'N/A' }} Students
+                    
+                    <!-- Filter Pills: Active / In Progress vs Resolved -->
+                    <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
+                        <button type="button" class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-primary shadow-xs" id="filter-active-complaints" onclick="filterStudentComplaints('ACTIVE')">
+                            <i class="fa-solid fa-fire me-1"></i> Active Votes
+                        </button>
+                        <button type="button" class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-light text-muted" id="filter-resolved-complaints" onclick="filterStudentComplaints('RESOLVED')">
+                            <i class="fa-solid fa-circle-check text-success me-1"></i> Resolved & History
+                        </button>
+                        <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold btn-light text-muted" id="filter-all-complaints" onclick="filterStudentComplaints('ALL')">
+                            All
+                        </button>
                     </div>
                 </div>
 
                 {% if class_complaints %}
-                    <div class="row g-3">
+                    <div class="row g-3" id="studentComplaintsGrid">
                         {% for c in class_complaints %}
                             {% set my_vote = my_votes.get(c.id) %}
                             {% set agree_cnt = c.agree_count %}
@@ -387,9 +397,10 @@
                             {% set threshold = c.required_threshold %}
                             {% set strength = c.total_eligible_students %}
                             {% set agree_pct = ((agree_cnt / strength * 100)|round(1)) if strength > 0 else 0 %}
+                            {% set is_res = (c.status in ['Resolved', 'Closed', 'Rejected']) %}
 
-                            <div class="col-md-6">
-                                <div class="card h-100 rounded-4 p-3 shadow-xs position-relative overflow-hidden border {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% else %}bg-white border-secondary-subtle{% endif %}">
+                            <div class="col-md-6 complaint-item-card" data-status="{{ 'RESOLVED' if is_res else 'ACTIVE' }}">
+                                <div class="card h-100 rounded-4 p-3 shadow-xs position-relative overflow-hidden border {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% elif is_res %}border-success-subtle bg-light-subtle opacity-90{% else %}bg-white border-secondary-subtle{% endif %}">
                                     <!-- Top Status & Category Badge (Responsive Wrap) -->
                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-1.5 mb-2">
                                         <div class="d-flex flex-wrap align-items-center gap-1">
@@ -402,7 +413,7 @@
                                                 </span>
                                             {% endif %}
                                         </div>
-                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Closed' %}bg-secondary{% elif c.status == 'Rejected' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
                                             {{ c.status }}
                                         </span>
                                     </div>
@@ -425,6 +436,14 @@
                                         "{{ c.description }}"
                                     </p>
 
+                                    <!-- Admin Resolution Remarks if resolved -->
+                                    {% if c.admin_notes %}
+                                        <div class="p-2 {% if c.status == 'Resolved' %}bg-success-subtle border border-success-subtle text-success-emphasis{% else %}bg-warning-subtle border border-warning-subtle text-dark{% endif %} rounded-3 mb-2.5 fs-9">
+                                            <strong><i class="fa-solid fa-circle-check text-success me-1"></i> Admin Resolution:</strong>
+                                            <span>{{ c.admin_notes }}</span>
+                                        </div>
+                                    {% endif %}
+
                                     <!-- Live Voting Progress Bar -->
                                     <div class="mb-2.5">
                                         <div class="d-flex justify-content-between align-items-center fs-8 fw-semibold mb-1">
@@ -440,20 +459,44 @@
                                         </div>
                                     </div>
 
-                                    <!-- Voting Buttons -->
-                                    <div class="d-flex gap-2 pt-2 border-top mt-auto">
-                                        <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold fs-8 {% if my_vote == 'AGREE' %}btn-success{% else %}btn-outline-success{% endif %}" onclick="castVote({{ c.id }}, 'AGREE')" id="btn-agree-{{ c.id }}">
-                                            <i class="fa-solid fa-thumbs-up me-1"></i> Agree {% if my_vote == 'AGREE' %}✓{% endif %}
-                                        </button>
-                                        <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold fs-8 {% if my_vote == 'DISAGREE' %}btn-danger{% else %}btn-outline-danger{% endif %}" onclick="castVote({{ c.id }}, 'DISAGREE')" id="btn-disagree-{{ c.id }}">
-                                            <i class="fa-solid fa-thumbs-down me-1"></i> Disagree {% if my_vote == 'DISAGREE' %}✓{% endif %}
-                                        </button>
+                                    <!-- Voting Buttons / Resolved Indicator -->
+                                    <div class="pt-2 border-top mt-auto">
+                                        {% if is_res %}
+                                            <div class="text-center py-1">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fs-9 fw-bold">
+                                                    <i class="fa-solid fa-lock me-1"></i> Voting Concluded & Issue Resolved
+                                                </span>
+                                            </div>
+                                        {% else %}
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold fs-8 {% if my_vote == 'AGREE' %}btn-success{% else %}btn-outline-success{% endif %}" onclick="castVote({{ c.id }}, 'AGREE')" id="btn-agree-{{ c.id }}">
+                                                    <i class="fa-solid fa-thumbs-up me-1"></i> Agree {% if my_vote == 'AGREE' %}✓{% endif %}
+                                                </button>
+                                                <button type="button" class="btn btn-sm flex-fill rounded-pill fw-bold fs-8 {% if my_vote == 'DISAGREE' %}btn-danger{% else %}btn-outline-danger{% endif %}" onclick="castVote({{ c.id }}, 'DISAGREE')" id="btn-disagree-{{ c.id }}">
+                                                    <i class="fa-solid fa-thumbs-down me-1"></i> Disagree {% if my_vote == 'DISAGREE' %}✓{% endif %}
+                                                </button>
+                                            </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
+                    
+                    <div id="noComplaintsFilterMsg" class="text-center py-4 d-none">
+                        <i class="fa-solid fa-filter text-muted fs-2 mb-1.5 opacity-50"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Complaints in this view</h6>
+                        <p class="text-muted fs-8">Switch between 'Active Votes' and 'Resolved & History' to see records.</p>
+                    </div>
                 {% else %}
+                    <div class="text-center py-4">
+                        <div class="avatar-circle-sm bg-light text-muted mx-auto mb-2">
+                            <i class="fa-solid fa-circle-check fs-4 text-success"></i>
+                        </div>
+                        <h6 class="fw-bold text-dark fs-7">No Active Complaints</h6>
+                        <p class="text-muted fs-8 mb-0">Your class currently has no open teaching complaints or replacement polls.</p>
+                    </div>
+                {% endif %}
                     <div class="text-center py-4">
                         <div class="avatar-circle-sm bg-light text-muted mx-auto mb-2">
                             <i class="fa-solid fa-circle-check fs-4 text-success"></i>
@@ -730,16 +773,52 @@ async function castVote(complaintId, voteType) {
     }
 }
 
-function populateEditModal(teacherId, tq, sk, cs, ss, pos, imp) {
-    document.getElementById('edit_teacher_id').value = teacherId;
-    document.getElementById('edit_t_quality').value = tq;
-    document.getElementById('edit_s_knowledge').value = sk;
-    document.getElementById('edit_c_style').value = cs;
-    document.getElementById('edit_s_support').value = ss;
-    document.getElementById('edit_positive').value = pos || '';
-    document.getElementById('edit_improvement').value = imp || '';
+function filterStudentComplaints(type) {
+    const cards = document.querySelectorAll('.complaint-item-card');
+    let visibleCount = 0;
 
-    new bootstrap.Modal(document.getElementById('editFeedbackModal')).show();
+    cards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (type === 'ALL' || status === type) {
+            card.classList.remove('d-none');
+            visibleCount++;
+        } else {
+            card.classList.add('d-none');
+        }
+    });
+
+    const noMsg = document.getElementById('noComplaintsFilterMsg');
+    if (noMsg) {
+        if (visibleCount === 0 && cards.length > 0) {
+            noMsg.classList.remove('d-none');
+        } else {
+            noMsg.classList.add('d-none');
+        }
+    }
+
+    // Toggle button active states
+    const btnActive = document.getElementById('filter-active-complaints');
+    const btnResolved = document.getElementById('filter-resolved-complaints');
+    const btnAll = document.getElementById('filter-all-complaints');
+
+    [btnActive, btnResolved, btnAll].forEach(b => {
+        if (b) {
+            b.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-light text-muted';
+        }
+    });
+
+    if (type === 'ACTIVE' && btnActive) {
+        btnActive.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-primary shadow-xs';
+    } else if (type === 'RESOLVED' && btnResolved) {
+        btnResolved.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-success shadow-xs';
+    } else if (type === 'ALL' && btnAll) {
+        btnAll.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-secondary shadow-xs';
+    }
 }
+
+// Initial filter: Active only
+document.addEventListener('DOMContentLoaded', function() {
+    filterStudentComplaints('ACTIVE');
+});
 </script>
 {% endblock %}

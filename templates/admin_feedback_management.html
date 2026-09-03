@@ -194,21 +194,35 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2.5 border-bottom">
                     <div>
                         <h5 class="fw-bold text-dark mb-0 fs-6">Class-Level Faculty Complaints & Replacement Desk</h5>
-                        <p class="text-muted fs-9 mb-0">Democratically voted teaching issues. High-priority complaints reach threshold when >40% of class agrees.</p>
+                        <p class="text-muted fs-9 mb-0">Democratically voted teaching issues and administrative replacements.</p>
+                    </div>
+
+                    <!-- Admin Filter Pills: Active vs Resolved -->
+                    <div class="d-flex align-items-center gap-1.5 bg-light p-1 rounded-pill border">
+                        <button type="button" class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-danger shadow-xs" id="admin-filter-active" onclick="filterAdminComplaints('ACTIVE')">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Open & In Progress
+                        </button>
+                        <button type="button" class="btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-light text-muted" id="admin-filter-resolved" onclick="filterAdminComplaints('RESOLVED')">
+                            <i class="fa-solid fa-circle-check text-success me-1"></i> Resolved & History
+                        </button>
+                        <button type="button" class="btn btn-sm rounded-pill px-2.5 py-1 fs-9 fw-bold btn-light text-muted" id="admin-filter-all" onclick="filterAdminComplaints('ALL')">
+                            All
+                        </button>
                     </div>
                 </div>
 
                 {% if all_complaints %}
-                    <div class="row g-3">
+                    <div class="row g-3" id="adminComplaintsGrid">
                         {% for c in all_complaints %}
                             {% set agree_cnt = c.agree_count %}
                             {% set disagree_cnt = c.disagree_count %}
                             {% set threshold = c.required_threshold %}
                             {% set strength = c.total_eligible_students %}
                             {% set agree_pct = ((agree_cnt / strength * 100)|round(1)) if strength > 0 else 0 %}
+                            {% set is_res = (c.status in ['Resolved', 'Closed', 'Rejected']) %}
 
-                            <div class="col-lg-6">
-                                <div class="card h-100 rounded-4 p-3 shadow-xs border {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% else %}bg-white border-secondary-subtle{% endif %}">
+                            <div class="col-lg-6 admin-complaint-card" data-status="{{ 'RESOLVED' if is_res else 'ACTIVE' }}">
+                                <div class="card h-100 rounded-4 p-3 shadow-xs border {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% elif is_res %}border-success-subtle bg-light-subtle opacity-90{% else %}bg-white border-secondary-subtle{% endif %}">
                                     <!-- Header Row (Responsive wrap preventing overflow) -->
                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-1.5 mb-2">
                                         <div class="d-flex flex-wrap align-items-center gap-1">
@@ -221,7 +235,7 @@
                                                 </span>
                                             {% endif %}
                                         </div>
-                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Action Required' %}bg-warning text-dark{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Action Required' %}bg-warning text-dark{% elif c.status == 'Closed' %}bg-secondary{% elif c.status == 'Rejected' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
                                             {{ c.status }}
                                         </span>
                                     </div>
@@ -471,4 +485,42 @@
     font-size: 0.75rem;
 }
 </style>
+
+<script>
+function filterAdminComplaints(type) {
+    const cards = document.querySelectorAll('.admin-complaint-card');
+    cards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (type === 'ALL' || status === type) {
+            card.classList.remove('d-none');
+        } else {
+            card.classList.add('d-none');
+        }
+    });
+
+    // Toggle button active states
+    const btnActive = document.getElementById('admin-filter-active');
+    const btnResolved = document.getElementById('admin-filter-resolved');
+    const btnAll = document.getElementById('admin-filter-all');
+
+    [btnActive, btnResolved, btnAll].forEach(b => {
+        if (b) {
+            b.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-light text-muted';
+        }
+    });
+
+    if (type === 'ACTIVE' && btnActive) {
+        btnActive.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-danger shadow-xs';
+    } else if (type === 'RESOLVED' && btnResolved) {
+        btnResolved.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-success shadow-xs';
+    } else if (type === 'ALL' && btnAll) {
+        btnAll.className = 'btn btn-sm rounded-pill px-3 py-1 fs-9 fw-bold btn-secondary shadow-xs';
+    }
+}
+
+// Default to showing Open & In Progress complaints
+document.addEventListener('DOMContentLoaded', function() {
+    filterAdminComplaints('ACTIVE');
+});
+</script>
 {% endblock %}

@@ -436,10 +436,10 @@
                                 {% set record_date = sess.date if sess else (r.marked_at.date() if r.marked_at else None) %}
                                 <tr class="student-history-row" data-date="{{ record_date.strftime('%Y-%m-%d') if record_date else '' }}">
                                     <td class="text-nowrap fw-bold text-dark py-2">
-                                        <i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ record_date.strftime('%b %d, %Y') if record_date else 'N/A' }}
+                                        <i class="fa-solid fa-calendar-day me-1 text-primary"></i>{{ (record_date|to_ist_date) if record_date else 'N/A' }}
                                     </td>
                                     <td class="text-nowrap text-muted font-monospace py-2">
-                                        <i class="fa-solid fa-clock me-1 text-secondary"></i>{{ r.marked_at.strftime('%I:%M %p') if r.marked_at else (sess.start_time if sess else 'Recorded') }}
+                                        <i class="fa-solid fa-clock me-1 text-secondary"></i>{{ (r.marked_at|to_ist_time) if r.marked_at else (sess.start_time if sess else 'Recorded') }}
                                     </td>
                                     <td class="py-2">
                                         <span class="badge bg-primary bg-opacity-10 text-primary px-2.5 py-1 rounded-pill fw-bold fs-8 text-nowrap">

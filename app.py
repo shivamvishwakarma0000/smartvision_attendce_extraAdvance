@@ -104,7 +104,7 @@ def create_app():
 
 
     # --------------------------------------------------------------------------
-    # 4. CUSTOM JINJA TEMPLATE FILTERS
+    # 4. CUSTOM JINJA TEMPLATE FILTERS (INDIAN STANDARD TIME CONVERSION)
     # --------------------------------------------------------------------------
     @app.template_filter('to_ist')
     def to_ist_filter(dt, fmt="%b %d, %Y %I:%M %p"):
@@ -116,6 +116,36 @@ def create_app():
             if isinstance(dt, datetime.datetime):
                 ist_dt = dt + datetime.timedelta(hours=5, minutes=30)
                 return ist_dt.strftime(fmt)
+            return str(dt)
+        except Exception:
+            return str(dt)
+
+    @app.template_filter('to_ist_time')
+    def to_ist_time_filter(dt, fmt="%I:%M %p"):
+        """Formats UTC datetimes into accurate Indian Standard Time (IST) 12-hour clock (e.g. '01:28 PM')."""
+        if not dt:
+            return "Recorded"
+        try:
+            import datetime
+            if isinstance(dt, datetime.datetime):
+                ist_dt = dt + datetime.timedelta(hours=5, minutes=30)
+                return ist_dt.strftime(fmt)
+            return str(dt)
+        except Exception:
+            return str(dt)
+
+    @app.template_filter('to_ist_date')
+    def to_ist_date_filter(dt, fmt="%b %d, %Y"):
+        """Formats UTC datetimes/dates into accurate Indian Standard Time (IST) date string."""
+        if not dt:
+            return "N/A"
+        try:
+            import datetime
+            if isinstance(dt, datetime.datetime):
+                ist_dt = dt + datetime.timedelta(hours=5, minutes=30)
+                return ist_dt.strftime(fmt)
+            elif isinstance(dt, datetime.date):
+                return dt.strftime(fmt)
             return str(dt)
         except Exception:
             return str(dt)

@@ -763,4 +763,156 @@ def timetable():
     )
 
 
+@student_bp.route('/student/month_view')
+@login_required
+@student_required
+def month_view():
+    """Renders the monthly attendance calendar matrix for the student."""
+    import calendar
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('auth.logout'))
+
+    today = get_current_date()
+    month_arg = request.args.get('month', '').strip()
+    year_arg = request.args.get('year', '').strip()
+
+    try:
+        curr_year = int(year_arg) if year_arg else today.year
+        curr_month = int(month_arg) if month_arg else today.month
+    except Exception:
+        curr_year = today.year
+        curr_month = today.month
+
+    # Boundary safety
+    if curr_month < 1:
+        curr_month = 12
+        curr_year -= 1
+    elif curr_month > 12:
+        curr_month = 1
+        curr_year += 1
+
+    month_name = calendar.month_name[curr_month]
+    first_weekday, num_days = calendar.monthrange(curr_year, curr_month)
+    # Python calendar: Monday=0, Sunday=6. We want Sunday=0, Monday=1, ..., Saturday=6
+    first_col = (first_weekday + 1) % 7
+
+    start_date = date(curr_year, curr_month, 1)
+    end_date = date(curr_year, curr_month, num_days)
+
+    # 1. Fetch all AttendanceSessions for this student's class during the month
+    sessions_in_month = []
+    if student.class_id:
+        sessions_in_month = AttendanceSession.query.filter(
+            AttendanceSession.class_id == student.class_id,
+            AttendanceSession.date >= start_date,
+            AttendanceSession.date <= end_date,
+            AttendanceSession.status != 'CANCELLED'
+        ).all()
+
+    session_ids = [s.id for s in sessions_in_month]
+    records_in_month = []
+    if session_ids:
+        records_in_month = AttendanceRecord.query.filter(
+            AttendanceRecord.student_id == student.id,
+            AttendanceRecord.session_id.in_(session_ids)
+        ).all()
+
+    rec_by_session_id = {r.session_id: r for r in records_in_month}
+
+    # Group sessions by date
+    sessions_by_date = {}
+    for s in sessions_in_month:
+        d_str = s.date.strftime('%Y-%m-%d')
+        if d_str not in sessions_by_date:
+            sessions_by_date[d_str] = []
+        rec = rec_by_session_id.get(s.id)
+        sessions_by_date[d_str].append({
+            'subject_name': s.subject.name if s.subject else 'Subject',
+            'teacher_name': s.teacher.name if s.teacher else 'Faculty',
+            'start_time': s.start_time or 'Class',
+            'end_time': s.end_time or '',
+            'status': (rec.status.upper() if rec else 'ABSENT') if s.status == 'COMPLETED' else 'IN PROGRESS'
+        })
+
+    # 2. Build Day Data Matrix
+    days_data = {}
+    present_days_count = 0
+    absent_days_count = 0
+    no_class_days_count = 0
+
+    for day_num in range(1, num_days + 1):
+        d_obj = date(curr_year, curr_month, day_num)
+        d_str = d_obj.strftime('%Y-%m-%d')
+        is_today = (d_obj == today)
+        is_future = (d_obj > today)
+
+        sess_list = sessions_by_date.get(d_str, [])
+        total_sessions = len(sess_list)
+
+        if total_sessions == 0:
+            status = 'NO_CLASS'
+            no_class_days_count += 1
+            color = '#f1f5f9' # light grey
+            text_color = '#64748b'
+        else:
+            present_count = sum(1 for s in sess_list if s['status'] == 'PRESENT')
+            # Rule: If student attended all conducted classes of that day => GREEN; else => RED
+            if present_count == total_sessions and total_sessions > 0:
+                status = 'ALL_PRESENT'
+                present_days_count += 1
+                color = '#0d9488' # elegant teal-green
+                text_color = '#ffffff'
+            else:
+                status = 'PARTIAL_OR_ABSENT'
+                absent_days_count += 1
+                color = '#e11d48' # elegant rose-red
+                text_color = '#ffffff'
+
+        days_data[day_num] = {
+            'day_num': day_num,
+            'date_str': d_str,
+            'is_today': is_today,
+            'is_future': is_future,
+            'status': status,
+            'total_sessions': total_sessions,
+            'sessions': sess_list,
+            'color': color,
+            'text_color': text_color
+        }
+
+    # Navigation months
+    prev_month = curr_month - 1
+    prev_year = curr_year
+    if prev_month < 1:
+        prev_month = 12
+        prev_year -= 1
+
+    next_month = curr_month + 1
+    next_year = curr_year
+    if next_month > 12:
+        next_month = 1
+        next_year += 1
+
+    return render_template(
+        'student_month_view.html',
+        student=student,
+        curr_year=curr_year,
+        curr_month=curr_month,
+        month_name=month_name,
+        first_col=first_col,
+        num_days=num_days,
+        days_data=days_data,
+        prev_month=prev_month,
+        prev_year=prev_year,
+        next_month=next_month,
+        next_year=next_year,
+        present_days_count=present_days_count,
+        absent_days_count=absent_days_count,
+        no_class_days_count=no_class_days_count,
+        today=today
+    )
+
+
 

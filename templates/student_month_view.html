@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Portal | Monthly Attendance Calendar{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Top Header Banner -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h3 class="fw-bold mb-0 text-dark">
+                        <i class="fa-solid fa-calendar-days text-primary me-2"></i>Month View
+                    </h3>
+                    <span class="fs-7 text-muted fw-semibold text-uppercase tracking-wider">
+                        {{ student.name }}
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border px-2.5 py-1 rounded-pill fs-8 fw-bold">
+                        {{ student.class_assigned.name if student.class_assigned else 'Class' }}
+                    </span>
+                </div>
+                <p class="text-muted mb-0 fs-8">
+                    Comprehensive daily attendance calendar. Click on any date box to view lecture breakdown and marked status.
+                </p>
+            </div>
+
+            <!-- KPI Summary Counters -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="px-3 py-2 rounded-3 border bg-light d-flex align-items-center gap-2">
+                    <span class="rounded-circle d-inline-block" style="width: 12px; height: 12px; background: #0d9488;"></span>
+                    <span class="fs-8 fw-bold text-dark">Full Present: <span class="text-success">{{ present_days_count }}</span> days</span>
+                </div>
+                <div class="px-3 py-2 rounded-3 border bg-light d-flex align-items-center gap-2">
+                    <span class="rounded-circle d-inline-block" style="width: 12px; height: 12px; background: #e11d48;"></span>
+                    <span class="fs-8 fw-bold text-dark">Partial / Absent: <span class="text-danger">{{ absent_days_count }}</span> days</span>
+                </div>
+                <div class="px-3 py-2 rounded-3 border bg-light d-flex align-items-center gap-2">
+                    <span class="rounded-circle d-inline-block" style="width: 12px; height: 12px; background: #94a3b8;"></span>
+                    <span class="fs-8 fw-bold text-dark">No Class / Off: <span class="text-muted">{{ no_class_days_count }}</span> days</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Container Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+        <!-- Calendar Header Controls -->
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <a href="{{ url_for('student.month_view', month=prev_month, year=prev_year) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs">
+                    <i class="fa-solid fa-chevron-left me-1"></i> Prev Month
+                </a>
+
+                <div class="text-center">
+                    <h4 class="fw-extrabold mb-0 text-dark tracking-tight">
+                        {{ month_name }} {{ curr_year }}
+                    </h4>
+                </div>
+
+                <a href="{{ url_for('student.month_view', month=next_month, year=next_year) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-xs">
+                    Next Month <i class="fa-solid fa-chevron-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body p-2 p-md-4 pt-0">
+            <!-- Custom Styled Responsive Month Calendar Matrix -->
+            <div class="table-responsive rounded-4 border overflow-hidden">
+                <table class="table table-bordered mb-0 text-center align-middle w-100" style="table-layout: fixed; min-width: 600px; border-color: rgba(0,0,0,0.08);">
+                    <thead>
+                        <tr class="table-light fs-8 fw-bold text-dark text-uppercase">
+                            <th style="width: 14.28%; padding: 12px 6px;">Sun</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Mon</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Tue</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Wed</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Thu</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Fri</th>
+                            <th style="width: 14.28%; padding: 12px 6px;">Sat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set total_slots = first_col + num_days %}
+                        {% set rows = ((total_slots / 7)|round(0, 'ceil'))|int if total_slots % 7 != 0 else (total_slots // 7) %}
+                        
+                        {% for r in range(rows) %}
+                        <tr>
+                            {% for c in range(7) %}
+                            {% set cell_idx = (r * 7) + c %}
+                            {% set day_number = cell_idx - first_col + 1 %}
+
+                            {% if cell_idx < first_col or day_number > num_days %}
+                                <!-- Empty Pad Cell -->
+                                <td class="bg-light bg-opacity-50 text-muted" style="height: 80px; vertical-align: middle;">
+                                    &nbsp;
+                                </td>
+                            {% else %}
+                                {% set d_info = days_data[day_number] %}
+                                <td class="p-1 position-relative calendar-day-cell cursor-pointer"
+                                    style="height: 80px; vertical-align: middle; background: {{ d_info.color }}; color: {{ d_info.text_color }}; transition: transform 0.15s ease, filter 0.15s ease;"
+                                    onclick="openDayDetailModal('{{ d_info.day_num }}', '{{ month_name }} {{ d_info.day_num }}, {{ curr_year }}', '{{ d_info.status }}', '{{ d_info.total_sessions }}', {{ d_info.sessions|tojson|safe }})"
+                                    title="Click to view lecture details for {{ month_name }} {{ d_info.day_num }}">
+                                    
+                                    <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                                        <span class="fs-6 fw-extrabold mb-0" style="line-height: 1;">
+                                            {{ day_number }}
+                                        </span>
+                                        {% if d_info.status == 'ALL_PRESENT' %}
+                                            <span class="fs-9 fw-semibold opacity-90 mt-1 d-none d-sm-block">
+                                                <i class="fa-solid fa-check-double me-0.5"></i>{{ d_info.total_sessions }}/{{ d_info.total_sessions }}
+                                            </span>
+                                        {% elif d_info.status == 'PARTIAL_OR_ABSENT' %}
+                                            <span class="fs-9 fw-semibold opacity-90 mt-1 d-none d-sm-block">
+                                                <i class="fa-solid fa-xmark me-0.5"></i>Absent
+                                            </span>
+                                        {% else %}
+                                            <span class="fs-9 text-muted opacity-75 mt-1 d-none d-sm-block" style="color: {{ d_info.text_color }} !important;">
+                                                Off
+                                            </span>
+                                        {% endif %}
+
+                                        {% if d_info.is_today %}
+                                            <span class="position-absolute top-0 end-0 m-1 badge bg-primary text-white rounded-pill px-1.5 py-0.5 fs-9 fw-bold" style="font-size: 0.6rem;">
+                                                Today
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Legend Bar -->
+            <div class="d-flex align-items-center justify-content-center flex-wrap gap-4 mt-4 pt-2 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-3 d-inline-block shadow-xs" style="width: 24px; height: 24px; background: #0d9488;"></span>
+                    <span class="fs-8 fw-bold text-dark">All Classes Present (100% Day Attendance)</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-3 d-inline-block shadow-xs" style="width: 24px; height: 24px; background: #e11d48;"></span>
+                    <span class="fs-8 fw-bold text-dark">Absent / Partial Attendance (<100%)</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="rounded-3 d-inline-block shadow-xs border" style="width: 24px; height: 24px; background: #f1f5f9;"></span>
+                    <span class="fs-8 fw-bold text-muted">No Classes Conducted / College Off</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Day Lecture Breakdown Dialog -->
+<div class="modal fade" id="studentDayDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark" id="modalDayTitle">Date Details</h5>
+                    <span class="fs-9 text-muted" id="modalDaySubtitle">Daily Lecture Attendance Log</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="modalDayBadgeBox" class="mb-3"></div>
+                <div id="modalDaySessionsList" class="d-flex flex-column gap-2"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4">
+                <button type="button" class="btn btn-sm btn-light rounded-pill px-4 fw-bold w-100" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-day-cell:hover {
+    filter: brightness(0.92);
+    transform: scale(0.98);
+    cursor: pointer;
+}
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
+
+<script>
+function openDayDetailModal(dayNum, fullDateStr, status, totalSessions, sessions) {
+    document.getElementById('modalDayTitle').innerText = fullDateStr;
+    const badgeBox = document.getElementById('modalDayBadgeBox');
+    const sessionsList = document.getElementById('modalDaySessionsList');
+
+    let badgeHtml = '';
+    if (status === 'ALL_PRESENT') {
+        badgeHtml = `<div class="p-2.5 rounded-3 bg-success bg-opacity-10 border border-success text-success d-flex align-items-center gap-2 fs-8 fw-bold">
+            <i class="fa-solid fa-circle-check fs-6"></i>
+            <span>Present in all ${totalSessions} lecture(s) on this date.</span>
+        </div>`;
+    } else if (status === 'PARTIAL_OR_ABSENT') {
+        badgeHtml = `<div class="p-2.5 rounded-3 bg-danger bg-opacity-10 border border-danger text-danger d-flex align-items-center gap-2 fs-8 fw-bold">
+            <i class="fa-solid fa-circle-xmark fs-6"></i>
+            <span>Absent or partial attendance in conducted lectures.</span>
+        </div>`;
+    } else {
+        badgeHtml = `<div class="p-2.5 rounded-3 bg-light border text-muted d-flex align-items-center gap-2 fs-8 fw-semibold">
+            <i class="fa-solid fa-calendar-xmark fs-6"></i>
+            <span>No scheduled lecture sessions were conducted on this date.</span>
+        </div>`;
+    }
+    badgeBox.innerHTML = badgeHtml;
+
+    if (!sessions || sessions.length === 0) {
+        sessionsList.innerHTML = `<div class="text-center py-4 text-muted fs-8">No lecture records found for this date.</div>`;
+    } else {
+        let listHtml = '';
+        sessions.forEach((s, idx) => {
+            const isPresent = s.status === 'PRESENT';
+            const statusBadge = isPresent 
+                ? `<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-check me-1"></i>Present</span>`
+                : `<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25 px-2.5 py-1 rounded-pill fw-bold fs-9"><i class="fa-solid fa-xmark me-1"></i>Absent</span>`;
+
+            listHtml += `
+            <div class="p-2.5 rounded-3 border bg-light d-flex align-items-center justify-content-between gap-2">
+                <div>
+                    <div class="fw-bold text-dark fs-8">${s.subject_name}</div>
+                    <div class="fs-9 text-muted">
+                        <i class="fa-solid fa-chalkboard-user me-1"></i>${s.teacher_name} | 
+                        <i class="fa-solid fa-clock me-1 ms-1"></i>${s.start_time} - ${s.end_time}
+                    </div>
+                </div>
+                <div>${statusBadge}</div>
+            </div>`;
+        });
+        sessionsList.innerHTML = listHtml;
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('studentDayDetailModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

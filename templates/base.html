@@ -186,8 +186,11 @@
                     <a href="{{ url_for('student.dashboard') }}" class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-line me-2"></i> My Dashboard
                     </a>
+                    <a href="{{ url_for('student.month_view') }}" class="nav-link {% if request.endpoint == 'student.month_view' %}active{% endif %}">
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i> Month View
+                    </a>
                     <a href="{{ url_for('student.timetable') }}" class="nav-link {% if request.endpoint == 'student.timetable' %}active{% endif %}">
-                        <i class="fa-solid fa-calendar-days me-2 text-info"></i> Class Timetable
+                        <i class="fa-solid fa-table-cells me-2 text-info"></i> Class Timetable
                     </a>
                     <a href="{{ url_for('student.student_id_card') }}" class="nav-link {% if request.endpoint == 'student.student_id_card' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-success"></i> My Digital ID Card
@@ -238,10 +241,9 @@
                 </div>
                 
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    <!-- Mobile-Only Download App Button (Auto-hides once installed) -->
-                    <button type="button" id="baseDownloadArrowBtn" class="btn btn-sm rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs border-0" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; font-size: 0.78rem; display: none;" onclick="triggerAppInstall()" title="Download & Install App">
-                        <i class="fa-solid fa-cloud-arrow-down"></i>
-                        <span>Download App</span>
+                    <!-- Discreet Download App Arrow Button -->
+                    <button type="button" id="baseDownloadArrowBtn" class="btn btn-link text-decoration-none p-1.5 border-0" style="color: var(--text-secondary); font-size: 0.95rem; cursor: pointer; transition: transform 0.2s;" onclick="triggerAppInstall()" title="Download & Install App">
+                        <i class="fa-solid fa-arrow-down"></i>
                     </button>
 
                     <!-- Theme Toggle Button -->

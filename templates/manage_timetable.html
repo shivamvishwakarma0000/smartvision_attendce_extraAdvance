@@ -783,14 +783,19 @@
                 customTitleInput.placeholder = 'e.g. Computer Networks Lab, Physics Lab, AI Lab';
                 customTitleInput.required = false;
             }
-            // Automatically adapt end time for 2-hour lab duration (~110 mins) based on start time / period
+            // Automatically adapt end time for 2-hour lab duration across consecutive periods
             if (startTimeInput && endTimeInput) {
                 const sVal = startTimeInput.value.trim();
-                if (sVal === '09:30') {
+                const pVal = periodInput ? parseInt(periodInput.value) : 1;
+                if (sVal === '09:30' || pVal === 1) {
                     endTimeInput.value = '11:20'; // Period 1 + Period 2
-                } else if (sVal === '12:20') {
+                } else if (sVal === '10:25' || pVal === 2) {
+                    endTimeInput.value = '01:15'; // Period 2 + Period 3 (spanning lunch)
+                } else if (sVal === '12:20' || pVal === 3) {
                     endTimeInput.value = '02:10'; // Period 3 + Period 4
-                } else if (sVal === '02:30') {
+                } else if (sVal === '01:15' || pVal === 4) {
+                    endTimeInput.value = '03:25'; // Period 4 + Period 5
+                } else if (sVal === '02:30' || pVal === 5) {
                     endTimeInput.value = '04:20'; // Period 5 + Period 6
                 }
             }

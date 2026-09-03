@@ -3345,18 +3345,11 @@ def manage_timetable():
             db.session.commit()
             generate_daily_schedule(date.today())
 
+            lab_name = subj_obj.name if subj_obj else (custom_title or 'Lab')
             if is_practical and paired_p_no:
-                flash(f"✓ Practical / Lab ({subj_obj.name}) successfully allocated for 2 continuous class periods (Period {period_int} & Period {paired_p_no} — ~2 Hours total)!", "success")
+                flash(f"✓ Practical / Lab ({lab_name}) successfully allocated for 2 continuous class periods (Period {period_int} & Period {paired_p_no} — ~2 Hours total)!", "success")
             else:
                 flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!", "success")
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error creating timetable slot: {e}", "danger")
-
-            # Regenerate daily schedule for today
-            generate_daily_schedule(date.today())
-
-            flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"Error creating timetable slot: {e}", "danger")
@@ -3419,14 +3412,34 @@ def manage_timetable():
         declared_holidays=declared_holidays
     )
 
-@main_bp.route('/admin/delete_timetable/<int:slot_id>', methods=['POST'])
+@main_bp.route('/admin/delete_timetable/<int:slot_id>', methods=['POST', 'GET'])
 @login_required
 @admin_required
 def delete_timetable_slot(slot_id):
     slot = Timetable.query.get_or_404(slot_id)
     class_id = slot.class_id
     try:
+        # Also clean up any paired duplicate slots if this was a 2-period lab slot
+        is_lab = slot.slot_type in ['LAB', 'PRACTICAL'] or (slot.subject_assigned and slot.subject_assigned.subject_type == 'Practical')
+        dow = slot.day_of_week
+        p_no = slot.period_no
+        s_id = slot.subject_id
+        c_title = slot.custom_title
+
         db.session.delete(slot)
+
+        # If it was part of a paired lab slot on period 1-2, 3-4, or 5-6, remove paired sibling if requested
+        if is_lab and p_no:
+            sibling_p = (p_no + 1) if p_no in [1, 3, 5] else ((p_no - 1) if p_no in [2, 4, 6] else None)
+            if sibling_p:
+                sibling_slot = Timetable.query.filter_by(
+                    class_id=class_id,
+                    day_of_week=dow,
+                    period_no=sibling_p
+                ).first()
+                if sibling_slot and (sibling_slot.slot_type in ['LAB', 'PRACTICAL'] or sibling_slot.subject_id == s_id or sibling_slot.custom_title == c_title):
+                    db.session.delete(sibling_slot)
+
         db.session.commit()
         generate_daily_schedule(date.today())
         flash("Timetable slot removed successfully.", "success")

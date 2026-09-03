@@ -748,6 +748,127 @@ class UniversitySettings(db.Model):
 
 
 # ==============================================================================
+# SECTION 8.5: STUDENT FEEDBACK, TEACHER RATING & FACULTY COMPLAINT MODELS
+# ==============================================================================
+
+class TeacherFeedback(db.Model):
+    """
+    Student evaluation and ratings for assigned teachers across 4 parameters:
+    1. Teaching Quality (1-5)
+    2. Subject Knowledge (1-5)
+    3. Communication Style (1-5)
+    4. Student Support & Engagement (1-5)
+    Strictly anonymous to teachers. Full audit visible to Admin.
+    """
+    __tablename__ = 'teacher_feedbacks'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='SET NULL'), nullable=True)
+
+    teaching_quality = db.Column(db.Float, nullable=False, default=5.0)
+    subject_knowledge = db.Column(db.Float, nullable=False, default=5.0)
+    communication_style = db.Column(db.Float, nullable=False, default=5.0)
+    student_support = db.Column(db.Float, nullable=False, default=5.0)
+    overall_rating = db.Column(db.Float, nullable=False, default=5.0)
+
+    positive_feedback = db.Column(db.Text, nullable=True)
+    improvement_areas = db.Column(db.Text, nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('Student', backref=db.backref('given_feedbacks', lazy=True, cascade='all, delete-orphan'))
+    teacher = db.relationship('Teacher', backref=db.backref('received_feedbacks', lazy=True, cascade='all, delete-orphan'))
+    class_assigned = db.relationship('Class', backref=db.backref('class_feedbacks', lazy=True))
+    subject_assigned = db.relationship('Subject', backref=db.backref('subject_feedbacks', lazy=True))
+
+    __table_args__ = (
+        db.UniqueConstraint('student_id', 'teacher_id', 'class_id', name='uq_student_teacher_class_feedback'),
+    )
+
+
+class FacultyComplaint(db.Model):
+    """
+    Student faculty complaint with class-level student voting mechanism.
+    When agreed votes reach class-level threshold (e.g. >30 for class of 70),
+    triggers 'Threshold Reached' -> 'Admin Review Required'.
+    """
+    __tablename__ = 'faculty_complaints'
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='SET NULL'), nullable=True)
+
+    category = db.Column(db.String(100), nullable=False)
+    is_replacement_requested = db.Column(db.Boolean, default=False)
+    description = db.Column(db.Text, nullable=False)
+
+    # Status workflow: 'Voting in Progress', 'Threshold Reached', 'Under Review', 'Action Required', 'Resolved', 'Rejected', 'Closed'
+    status = db.Column(db.String(30), default='Voting in Progress')
+    admin_notes = db.Column(db.Text, nullable=True)
+    reviewed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student = db.relationship('Student', backref=db.backref('submitted_complaints', lazy=True, cascade='all, delete-orphan'))
+    teacher = db.relationship('Teacher', backref=db.backref('received_complaints', lazy=True, cascade='all, delete-orphan'))
+    class_assigned = db.relationship('Class', backref=db.backref('class_complaints', lazy=True))
+    subject_assigned = db.relationship('Subject', backref=db.backref('subject_complaints', lazy=True))
+    reviewed_by = db.relationship('User', foreign_keys=[reviewed_by_user_id])
+    votes = db.relationship('ComplaintVote', backref='complaint', lazy=True, cascade='all, delete-orphan')
+
+    @property
+    def agree_count(self):
+        return sum(1 for v in self.votes if v.vote_type == 'AGREE')
+
+    @property
+    def disagree_count(self):
+        return sum(1 for v in self.votes if v.vote_type == 'DISAGREE')
+
+    @property
+    def total_eligible_students(self):
+        if self.class_assigned:
+            return len(self.class_assigned.students)
+        return 0
+
+    @property
+    def required_threshold(self):
+        """Dynamic threshold based on class strength: > 40% of class or minimum 1 if small class."""
+        strength = self.total_eligible_students
+        if strength <= 2:
+            return 1
+        # E.g., for 70 students -> int(70 * 0.43) + 1 = 31 votes
+        return max(1, int(strength * 0.43) + 1)
+
+    @property
+    def is_threshold_reached(self):
+        return self.agree_count >= self.required_threshold
+
+
+class ComplaintVote(db.Model):
+    """
+    Individual student vote (AGREE / DISAGREE) on a class-level faculty complaint.
+    One vote allowed per student per complaint.
+    """
+    __tablename__ = 'complaint_votes'
+    id = db.Column(db.Integer, primary_key=True)
+    complaint_id = db.Column(db.Integer, db.ForeignKey('faculty_complaints.id', ondelete='CASCADE'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    vote_type = db.Column(db.String(10), nullable=False) # 'AGREE' or 'DISAGREE'
+    voted_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    student = db.relationship('Student', backref=db.backref('complaint_votes', lazy=True, cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('complaint_id', 'student_id', name='uq_complaint_student_vote'),
+    )
+
+
+# ==============================================================================
 # SECTION 9: FLASK-LOGIN USER LOADER CALLBACK
 # ==============================================================================
 @login_manager.user_loader

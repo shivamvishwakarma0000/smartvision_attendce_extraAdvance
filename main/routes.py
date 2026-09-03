@@ -27,7 +27,8 @@ from models import (
     TeacherAssignment, Timetable, Holiday, TeacherLeave, DailySchedule,
     AttendanceSession, AttendanceRecord, CorrectionRequest, AttendanceAuditLog,
     TeacherDailyAttendance, TimetablePeriodSetting, Department, ProxyAttendanceTransfer,
-    TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings, TeacherEditRequest
+    TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings, TeacherEditRequest,
+    TeacherFeedback, FacultyComplaint, ComplaintVote
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -4429,6 +4430,157 @@ def university_details():
 
     return render_template('admin_university_details.html', settings=settings)
 
+
+# ==============================================================================
+# SECTION 17: ADMIN FEEDBACK, RATING & COMPLAINT MANAGEMENT DESK
+# ==============================================================================
+
+@main_bp.route('/admin/feedback_management')
+@login_required
+@admin_required
+def feedback_management():
+    """
+    Centralized administrative hub for:
+    1. Faculty Evaluation Analytics & Leaderboard (sorting, filtering by dept/class/subject)
+    2. Student Reviews & 4-parameter scoring matrix
+    3. Class-Level Faculty Complaints & Live Voting tracker
+    4. Threshold-reached high priority review queue
+    """
+    active_tab = request.args.get('tab', 'rankings').strip()
+    selected_dept = request.args.get('department', '').strip()
+    selected_class_id = request.args.get('class_id', type=int)
+
+    all_departments = Department.query.order_by(Department.name.asc()).all()
+    all_classes = get_admin_classes()
+
+    # Query teachers
+    teacher_query = Teacher.query
+    if selected_dept:
+        teacher_query = teacher_query.filter_by(department=selected_dept)
+    teachers = teacher_query.order_by(Teacher.name.asc()).all()
+
+    # Build Faculty Analytics Matrix
+    faculty_analytics = []
+    for t in teachers:
+        feedbacks = TeacherFeedback.query.filter_by(teacher_id=t.id).all()
+        complaints = FacultyComplaint.query.filter_by(teacher_id=t.id).all()
+        
+        # If class filter is applied
+        if selected_class_id:
+            feedbacks = [f for f in feedbacks if f.class_id == selected_class_id]
+            complaints = [c for c in complaints if c.class_id == selected_class_id]
+
+        total_reviews = len(feedbacks)
+        total_complaints = len(complaints)
+        active_complaints = sum(1 for c in complaints if c.status in ['Voting in Progress', 'Threshold Reached', 'Under Review', 'Action Required'])
+        threshold_complaints = sum(1 for c in complaints if c.status == 'Threshold Reached')
+
+        avg_overall = round(sum(f.overall_rating for f in feedbacks) / total_reviews, 2) if total_reviews > 0 else 0.0
+        avg_quality = round(sum(f.teaching_quality for f in feedbacks) / total_reviews, 2) if total_reviews > 0 else 0.0
+        avg_knowledge = round(sum(f.subject_knowledge for f in feedbacks) / total_reviews, 2) if total_reviews > 0 else 0.0
+        avg_comm = round(sum(f.communication_style for f in feedbacks) / total_reviews, 2) if total_reviews > 0 else 0.0
+        avg_support = round(sum(f.student_support for f in feedbacks) / total_reviews, 2) if total_reviews > 0 else 0.0
+
+        if avg_overall >= 4.5:
+            perf_status = 'Excellent'
+            badge_class = 'success'
+        elif avg_overall >= 3.8:
+            perf_status = 'Good'
+            badge_class = 'primary'
+        elif avg_overall >= 3.0:
+            perf_status = 'Satisfactory'
+            badge_class = 'info'
+        elif total_reviews > 0:
+            perf_status = 'Needs Review'
+            badge_class = 'danger'
+        else:
+            perf_status = 'No Ratings Yet'
+            badge_class = 'secondary'
+
+        faculty_analytics.append({
+            'teacher': t,
+            'total_reviews': total_reviews,
+            'total_complaints': total_complaints,
+            'active_complaints': active_complaints,
+            'threshold_complaints': threshold_complaints,
+            'avg_overall': avg_overall,
+            'avg_quality': avg_quality,
+            'avg_knowledge': avg_knowledge,
+            'avg_comm': avg_comm,
+            'avg_support': avg_support,
+            'perf_status': perf_status,
+            'badge_class': badge_class,
+            'feedbacks': feedbacks,
+            'complaints': complaints
+        })
+
+    # Sort faculty by rating descending (high performers first)
+    faculty_analytics.sort(key=lambda x: (x['avg_overall'], x['total_reviews']), reverse=True)
+
+    # Query all complaints
+    complaint_query = FacultyComplaint.query
+    if selected_dept:
+        complaint_query = complaint_query.join(Teacher).filter(Teacher.department == selected_dept)
+    if selected_class_id:
+        complaint_query = complaint_query.filter(FacultyComplaint.class_id == selected_class_id)
+    
+    all_complaints = complaint_query.order_by(
+        FacultyComplaint.status.desc(), # 'Threshold Reached' on top
+        FacultyComplaint.created_at.desc()
+    ).all()
+
+    # Query all reviews
+    feedback_query = TeacherFeedback.query
+    if selected_class_id:
+        feedback_query = feedback_query.filter_by(class_id=selected_class_id)
+    all_feedbacks = feedback_query.order_by(TeacherFeedback.updated_at.desc()).limit(200).all()
+
+    # Threshold alerts count
+    threshold_alerts_count = sum(1 for c in all_complaints if c.status == 'Threshold Reached')
+
+    return render_template(
+        'admin_feedback_management.html',
+        faculty_analytics=faculty_analytics,
+        all_complaints=all_complaints,
+        all_feedbacks=all_feedbacks,
+        all_departments=all_departments,
+        all_classes=all_classes,
+        selected_dept=selected_dept,
+        selected_class_id=selected_class_id,
+        threshold_alerts_count=threshold_alerts_count,
+        active_tab=active_tab
+    )
+
+
+@main_bp.route('/admin/update_complaint_status/<int:complaint_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_complaint_status(complaint_id):
+    """Administrative action on a class complaint (e.g. Under Review, Action Required, Resolved, Rejected, Closed)."""
+    complaint = FacultyComplaint.query.get_or_404(complaint_id)
+    new_status = request.form.get('status', '').strip()
+    admin_notes = request.form.get('admin_notes', '').strip()
+
+    valid_statuses = ['Voting in Progress', 'Threshold Reached', 'Under Review', 'Action Required', 'Resolved', 'Rejected', 'Closed']
+    if new_status not in valid_statuses:
+        flash("Invalid status choice.", "warning")
+        return redirect(url_for('main.feedback_management', tab='complaints'))
+
+    try:
+        complaint.status = new_status
+        if admin_notes:
+            complaint.admin_notes = admin_notes
+        complaint.reviewed_by_user_id = current_user.id
+        complaint.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash(f"✓ Complaint #{complaint.id} status updated to '{new_status}' successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error updating complaint: {e}", "danger")
+
+    return redirect(url_for('main.feedback_management', tab='complaints'))
+
+
 @main_bp.app_context_processor
 def inject_pending_approvals():
     if current_user.is_authenticated and current_user.role == 'admin':
@@ -4440,12 +4592,15 @@ def inject_pending_approvals():
             ).count()
             teacher_pending_count = Teacher.query.filter_by(status='Pending').count()
             teacher_edit_req_count = TeacherEditRequest.query.filter_by(status='Pending').count()
+            threshold_complaint_count = FacultyComplaint.query.filter_by(status='Threshold Reached').count()
+
             total_pending = student_req_count + teacher_pending_count + teacher_edit_req_count
             unclassified_count = Student.query.filter(Student.class_id == None).count()
             return {
                 'pending_approvals_count': total_pending,
-                'unclassified_students_count': unclassified_count
+                'unclassified_students_count': unclassified_count,
+                'admin_threshold_complaints_count': threshold_complaint_count
             }
         except Exception:
-            return {'pending_approvals_count': 0, 'unclassified_students_count': 0}
-    return {'pending_approvals_count': 0, 'unclassified_students_count': 0}
+            return {'pending_approvals_count': 0, 'unclassified_students_count': 0, 'admin_threshold_complaints_count': 0}
+    return {'pending_approvals_count': 0, 'unclassified_students_count': 0, 'admin_threshold_complaints_count': 0}

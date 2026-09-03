@@ -20,8 +20,9 @@ from functools import wraps
 
 from extensions import db, get_current_date
 from models import (
-    User, Student, Class, Subject, Attendance, StudentEditRequest, ClassAnnouncement, StudentDismissedNotice,
-    StudentReadNotice, Timetable, DailySchedule, AttendanceSession, AttendanceRecord, AttendanceDiscrepancyRequest, Holiday, Department
+    User, Student, Class, Subject, Teacher, Attendance, StudentEditRequest, ClassAnnouncement, StudentDismissedNotice,
+    StudentReadNotice, Timetable, DailySchedule, AttendanceSession, AttendanceRecord, AttendanceDiscrepancyRequest, Holiday, Department,
+    TeacherFeedback, FacultyComplaint, ComplaintVote
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -954,6 +955,270 @@ def month_view():
         overall_total_pct=overall_total_pct,
         today=today
     )
+
+
+# ==============================================================================
+# SECTION 8: STUDENT FEEDBACK, TEACHER RATING & CLASS COMPLAINT SYSTEM
+# ==============================================================================
+
+@student_bp.route('/student/feedback')
+@login_required
+@student_required
+def feedback():
+    """
+    Main feedback & rating hub for students:
+    1. Evaluate teachers assigned to student's class (4 parameters, reviews, improvement suggestions)
+    2. Submit faculty complaints & replacement requests
+    3. Class-based complaint voting system (Agree / Disagree) with dynamic threshold
+    4. View submitted feedback history
+    """
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student.dashboard'))
+
+    active_tab = request.args.get('tab', 'rate').strip()
+    
+    # Identify all teachers assigned to student's class
+    eligible_teachers = []
+    class_subjects = []
+    if student.class_id:
+        class_subjects = Subject.query.filter_by(class_id=student.class_id).all()
+        teacher_ids = set()
+        
+        # From subjects
+        for s in class_subjects:
+            if s.teacher_id:
+                teacher_ids.add(s.teacher_id)
+                
+        # From timetable slots
+        timetable_slots = Timetable.query.filter_by(class_id=student.class_id).all()
+        for slot in timetable_slots:
+            if slot.teacher_id:
+                teacher_ids.add(slot.teacher_id)
+
+        if teacher_ids:
+            eligible_teachers = Teacher.query.filter(Teacher.id.in_(list(teacher_ids))).order_by(Teacher.name.asc()).all()
+
+    # If no specific teachers found via class, fallback to all active department teachers
+    if not eligible_teachers and student.department:
+        eligible_teachers = Teacher.query.filter_by(department=student.department).order_by(Teacher.name.asc()).all()
+    if not eligible_teachers:
+        eligible_teachers = Teacher.query.order_by(Teacher.name.asc()).all()
+
+    # Get student's submitted feedbacks
+    my_feedbacks = TeacherFeedback.query.filter_by(student_id=student.id).order_by(TeacherFeedback.updated_at.desc()).all()
+    feedback_by_teacher_id = {f.teacher_id: f for f in my_feedbacks}
+
+    # Class-level complaints (active and past) for student's class
+    class_complaints = []
+    if student.class_id:
+        class_complaints = FacultyComplaint.query.filter_by(class_id=student.class_id).order_by(FacultyComplaint.created_at.desc()).all()
+
+    # Student's cast votes
+    my_votes = {v.complaint_id: v.vote_type for v in ComplaintVote.query.filter_by(student_id=student.id).all()}
+
+    return render_template(
+        'student_feedback.html',
+        student=student,
+        eligible_teachers=eligible_teachers,
+        class_subjects=class_subjects,
+        my_feedbacks=my_feedbacks,
+        feedback_by_teacher_id=feedback_by_teacher_id,
+        class_complaints=class_complaints,
+        my_votes=my_votes,
+        active_tab=active_tab
+    )
+
+
+@student_bp.route('/student/submit_feedback', methods=['POST'])
+@login_required
+@student_required
+def submit_feedback():
+    """Submits or updates a 4-parameter teacher evaluation with detailed written review."""
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student.dashboard'))
+
+    teacher_id = request.form.get('teacher_id', type=int)
+    subject_id = request.form.get('subject_id', type=int)
+    
+    t_quality = float(request.form.get('teaching_quality', 5.0))
+    s_knowledge = float(request.form.get('subject_knowledge', 5.0))
+    c_style = float(request.form.get('communication_style', 5.0))
+    s_support = float(request.form.get('student_support', 5.0))
+
+    positive_feedback = request.form.get('positive_feedback', '').strip()
+    improvement_areas = request.form.get('improvement_areas', '').strip()
+
+    if not teacher_id:
+        flash("Please select a teacher to evaluate.", "warning")
+        return redirect(url_for('student.feedback', tab='rate'))
+
+    # Clamp ratings between 1.0 and 5.0
+    t_quality = max(1.0, min(5.0, t_quality))
+    s_knowledge = max(1.0, min(5.0, s_knowledge))
+    c_style = max(1.0, min(5.0, c_style))
+    s_support = max(1.0, min(5.0, s_support))
+    overall = round((t_quality + s_knowledge + c_style + s_support) / 4.0, 2)
+
+    try:
+        # Check if student already evaluated this teacher for this class
+        existing = TeacherFeedback.query.filter_by(
+            student_id=student.id,
+            teacher_id=teacher_id,
+            class_id=student.class_id
+        ).first()
+
+        teacher_obj = Teacher.query.get(teacher_id)
+        teacher_name = teacher_obj.name if teacher_obj else "Teacher"
+
+        if existing:
+            existing.subject_id = subject_id or existing.subject_id
+            existing.teaching_quality = t_quality
+            existing.subject_knowledge = s_knowledge
+            existing.communication_style = c_style
+            existing.student_support = s_support
+            existing.overall_rating = overall
+            existing.positive_feedback = positive_feedback or None
+            existing.improvement_areas = improvement_areas or None
+            existing.updated_at = datetime.utcnow()
+            flash(f"✓ Your evaluation for {teacher_name} has been updated successfully! Overall: {overall} ⭐", "success")
+        else:
+            fb = TeacherFeedback(
+                student_id=student.id,
+                teacher_id=teacher_id,
+                class_id=student.class_id,
+                subject_id=subject_id or None,
+                teaching_quality=t_quality,
+                subject_knowledge=s_knowledge,
+                communication_style=c_style,
+                student_support=s_support,
+                overall_rating=overall,
+                positive_feedback=positive_feedback or None,
+                improvement_areas=improvement_areas or None
+            )
+            db.session.add(fb)
+            flash(f"✓ Thank you! Your anonymous evaluation for {teacher_name} ({overall} ⭐) was submitted securely.", "success")
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error saving feedback: {e}", "danger")
+
+    return redirect(url_for('student.feedback', tab='history'))
+
+
+@student_bp.route('/student/submit_complaint', methods=['POST'])
+@login_required
+@student_required
+def submit_complaint():
+    """Submits a formal faculty teaching complaint and initiates class voting."""
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student.dashboard'))
+
+    teacher_id = request.form.get('teacher_id', type=int)
+    subject_id = request.form.get('subject_id', type=int)
+    category = request.form.get('category', '').strip()
+    is_replacement = bool(request.form.get('is_replacement_requested'))
+    description = request.form.get('description', '').strip()
+
+    if not teacher_id or not category or not description:
+        flash("Teacher, category, and a detailed description are required to submit a complaint.", "warning")
+        return redirect(url_for('student.feedback', tab='complaint'))
+
+    try:
+        complaint = FacultyComplaint(
+            student_id=student.id,
+            teacher_id=teacher_id,
+            class_id=student.class_id,
+            subject_id=subject_id or None,
+            category=category,
+            is_replacement_requested=is_replacement,
+            description=description,
+            status='Voting in Progress'
+        )
+        db.session.add(complaint)
+        db.session.flush()
+
+        # The submitting student automatically registers an AGREE vote
+        vote = ComplaintVote(
+            complaint_id=complaint.id,
+            student_id=student.id,
+            vote_type='AGREE'
+        )
+        db.session.add(vote)
+        db.session.commit()
+
+        flash("✓ Faculty complaint submitted for class voting. Your classmates can now vote on this issue.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error submitting complaint: {e}", "danger")
+
+    return redirect(url_for('student.feedback', tab='voting'))
+
+
+@student_bp.route('/student/vote_complaint/<int:complaint_id>/<vote_type>', methods=['POST'])
+@login_required
+@student_required
+def vote_complaint(complaint_id, vote_type):
+    """Casts an AGREE or DISAGREE vote on an active class complaint with threshold detection."""
+    student = current_user.student_profile
+    if not student:
+        return jsonify({'success': False, 'message': 'Student profile not found.'}), 400
+
+    vote_type = vote_type.upper()
+    if vote_type not in ['AGREE', 'DISAGREE']:
+        return jsonify({'success': False, 'message': 'Invalid vote type.'}), 400
+
+    complaint = FacultyComplaint.query.get_or_404(complaint_id)
+
+    # Verify student belongs to the complaint's class
+    if complaint.class_id != student.class_id:
+        return jsonify({'success': False, 'message': 'You can only vote on complaints for your enrolled class.'}), 403
+
+    try:
+        existing_vote = ComplaintVote.query.filter_by(complaint_id=complaint.id, student_id=student.id).first()
+        if existing_vote:
+            existing_vote.vote_type = vote_type
+            existing_vote.voted_at = datetime.utcnow()
+        else:
+            new_vote = ComplaintVote(
+                complaint_id=complaint.id,
+                student_id=student.id,
+                vote_type=vote_type
+            )
+            db.session.add(new_vote)
+
+        db.session.flush()
+
+        # Check if dynamic threshold is reached
+        agree_count = complaint.agree_count
+        disagree_count = complaint.disagree_count
+        threshold = complaint.required_threshold
+
+        if agree_count >= threshold and complaint.status == 'Voting in Progress':
+            complaint.status = 'Threshold Reached'
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'vote_type': vote_type,
+            'agree_count': agree_count,
+            'disagree_count': disagree_count,
+            'threshold': threshold,
+            'status': complaint.status,
+            'threshold_reached': complaint.is_threshold_reached,
+            'message': f"Your vote ({vote_type.capitalize()}) has been recorded successfully!"
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 

@@ -27,7 +27,8 @@ from models import (
     TeacherAssignment, Timetable, Holiday, TeacherLeave, DailySchedule,
     AttendanceSession, AttendanceRecord, CorrectionRequest, AttendanceDiscrepancyRequest, AttendanceAuditLog,
     ProxyAttendanceTransfer, TeacherDailyAttendance, TeacherAttendanceSettings, TeacherOfficeLocation,
-    TeacherDismissedNotice, TeacherReadNotice, Department, TeacherEditRequest
+    TeacherDismissedNotice, TeacherReadNotice, Department, TeacherEditRequest,
+    TeacherFeedback, FacultyComplaint
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
@@ -2362,6 +2363,91 @@ def cancel_edit_request(req_id):
     db.session.commit()
     flash("Profile change request has been cancelled.", "info")
     return redirect(url_for('teacher.edit_profile'))
+
+
+# ==============================================================================
+# SECTION 16: FACULTY ANONYMOUS RATINGS & PERFORMANCE DASHBOARD
+# ==============================================================================
+
+@teacher_bp.route('/teacher/feedback_ratings')
+@login_required
+@teacher_required
+def feedback_ratings():
+    """
+    Teacher performance and student feedback dashboard.
+    100% ANONYMOUS: No student names, emails, roll numbers, or IDs are ever rendered.
+    Shows 4-parameter score breakdowns, overall rating average, constructive improvement areas,
+    positive highlights, and total student evaluations count.
+    """
+    teacher = get_current_teacher()
+    if not teacher:
+        flash("Teacher profile not found.", "danger")
+        return redirect(url_for('teacher.dashboard'))
+
+    # Retrieve all student feedbacks for this faculty
+    feedbacks = TeacherFeedback.query.filter_by(teacher_id=teacher.id).order_by(TeacherFeedback.updated_at.desc()).all()
+    total_ratings_count = len(feedbacks)
+
+    avg_overall = 0.0
+    avg_quality = 0.0
+    avg_knowledge = 0.0
+    avg_communication = 0.0
+    avg_support = 0.0
+
+    if total_ratings_count > 0:
+        avg_overall = round(sum(f.overall_rating for f in feedbacks) / total_ratings_count, 2)
+        avg_quality = round(sum(f.teaching_quality for f in feedbacks) / total_ratings_count, 2)
+        avg_knowledge = round(sum(f.subject_knowledge for f in feedbacks) / total_ratings_count, 2)
+        avg_communication = round(sum(f.communication_style for f in feedbacks) / total_ratings_count, 2)
+        avg_support = round(sum(f.student_support for f in feedbacks) / total_ratings_count, 2)
+
+    # Calculate rating star distribution (5 star, 4 star, 3 star, 2 star, 1 star)
+    star_counts = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+    for f in feedbacks:
+        rounded_star = int(round(f.overall_rating))
+        rounded_star = max(1, min(5, rounded_star))
+        star_counts[rounded_star] += 1
+
+    star_percentages = {}
+    for star, count in star_counts.items():
+        star_percentages[star] = round((count / total_ratings_count * 100), 1) if total_ratings_count > 0 else 0.0
+
+    # Extract written reviews (anonymized)
+    positive_reviews = [f.positive_feedback for f in feedbacks if f.positive_feedback]
+    improvement_suggestions = [f.improvement_areas for f in feedbacks if f.improvement_areas]
+
+    # Performance rating badge label
+    if avg_overall >= 4.5:
+        performance_status = 'Outstanding / Excellent'
+        status_color = 'success'
+    elif avg_overall >= 3.8:
+        performance_status = 'Good / High Performing'
+        status_color = 'primary'
+    elif avg_overall >= 3.0:
+        performance_status = 'Satisfactory'
+        status_color = 'info'
+    else:
+        performance_status = 'Improvement Recommended'
+        status_color = 'warning'
+
+    return render_template(
+        'teacher_feedback_ratings.html',
+        teacher=teacher,
+        feedbacks=feedbacks,
+        total_ratings_count=total_ratings_count,
+        avg_overall=avg_overall,
+        avg_quality=avg_quality,
+        avg_knowledge=avg_knowledge,
+        avg_communication=avg_communication,
+        avg_support=avg_support,
+        star_counts=star_counts,
+        star_percentages=star_percentages,
+        positive_reviews=positive_reviews,
+        improvement_suggestions=improvement_suggestions,
+        performance_status=performance_status,
+        status_color=status_color
+    )
+
 
 
 

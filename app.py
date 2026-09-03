@@ -403,21 +403,45 @@ def ensure_postgresql_columns():
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS logo_data TEXT",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS name_image_data TEXT",
             "ALTER TABLE university_settings ADD COLUMN IF NOT EXISTS signature_data TEXT",
-            """CREATE TABLE IF NOT EXISTS teacher_edit_requests (
+            """CREATE TABLE IF NOT EXISTS teacher_feedbacks (
                 id SERIAL PRIMARY KEY,
+                student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
                 teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
-                new_name VARCHAR(100) NOT NULL,
-                new_emp_id VARCHAR(50),
-                new_department VARCHAR(100),
-                new_mobile VARCHAR(20),
-                new_primary_subject VARCHAR(100),
-                new_secondary_subject VARCHAR(100),
-                new_tertiary_subject VARCHAR(100),
-                new_image_filename VARCHAR(255),
-                new_image_data TEXT,
-                new_face_encoding BYTEA,
-                status VARCHAR(20) DEFAULT 'Pending',
-                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+                teaching_quality DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                subject_knowledge DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                communication_style DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                student_support DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                overall_rating DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+                positive_feedback TEXT,
+                improvement_areas TEXT,
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_student_teacher_class_feedback UNIQUE(student_id, teacher_id, class_id)
+            )""",
+            """CREATE TABLE IF NOT EXISTS faculty_complaints (
+                id SERIAL PRIMARY KEY,
+                student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+                teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+                class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+                category VARCHAR(100) NOT NULL,
+                is_replacement_requested BOOLEAN DEFAULT FALSE,
+                description TEXT NOT NULL,
+                status VARCHAR(30) DEFAULT 'Voting in Progress',
+                admin_notes TEXT,
+                reviewed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS complaint_votes (
+                id SERIAL PRIMARY KEY,
+                complaint_id INTEGER NOT NULL REFERENCES faculty_complaints(id) ON DELETE CASCADE,
+                student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+                vote_type VARCHAR(10) NOT NULL,
+                voted_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_complaint_student_vote UNIQUE(complaint_id, student_id)
             )"""
         ]
         for stmt in statements:

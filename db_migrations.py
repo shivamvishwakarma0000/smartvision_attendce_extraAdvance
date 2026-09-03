@@ -339,6 +339,52 @@ def run_migrations(db_path="smartvision.db"):
                     is_lunch BOOLEAN DEFAULT 0,
                     order_index INTEGER DEFAULT 1
                 );
+            """),
+            ("teacher_feedbacks", """
+                CREATE TABLE IF NOT EXISTS teacher_feedbacks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+                    teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+                    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                    subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+                    teaching_quality REAL NOT NULL DEFAULT 5.0,
+                    subject_knowledge REAL NOT NULL DEFAULT 5.0,
+                    communication_style REAL NOT NULL DEFAULT 5.0,
+                    student_support REAL NOT NULL DEFAULT 5.0,
+                    overall_rating REAL NOT NULL DEFAULT 5.0,
+                    positive_feedback TEXT,
+                    improvement_areas TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, teacher_id, class_id)
+                );
+            """),
+            ("faculty_complaints", """
+                CREATE TABLE IF NOT EXISTS faculty_complaints (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+                    teacher_id INTEGER NOT NULL REFERENCES teachers(id) ON DELETE CASCADE,
+                    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                    subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+                    category VARCHAR(100) NOT NULL,
+                    is_replacement_requested BOOLEAN DEFAULT 0,
+                    description TEXT NOT NULL,
+                    status VARCHAR(30) DEFAULT 'Voting in Progress',
+                    admin_notes TEXT,
+                    reviewed_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """),
+            ("complaint_votes", """
+                CREATE TABLE IF NOT EXISTS complaint_votes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    complaint_id INTEGER NOT NULL REFERENCES faculty_complaints(id) ON DELETE CASCADE,
+                    student_id INTEGER NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+                    vote_type VARCHAR(10) NOT NULL,
+                    voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(complaint_id, student_id)
+                );
             """)
         ]
 

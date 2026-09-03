@@ -123,6 +123,12 @@
                             <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.75rem; min-width: 22px;">{{ unclassified_students_count }}</span>
                         {% endif %}
                     </a>
+                    <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Faculty Feedback & Complaints</span>
+                        {% if admin_threshold_complaints_count and admin_threshold_complaints_count > 0 %}
+                            <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 animate-pulse" title="Threshold Reached Complaints">{{ admin_threshold_complaints_count }}</span>
+                        {% endif %}
+                    </a>
                     <a href="{{ url_for('main.recommend_teachers') }}" class="nav-link {% if request.endpoint == 'main.recommend_teachers' %}active{% endif %}">
                         <i class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i> Smart Recommender
                     </a>
@@ -133,6 +139,9 @@
                     <!-- Teacher Navigation -->
                     <a href="{{ url_for('teacher.dashboard') }}" class="nav-link {% if request.endpoint == 'teacher.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-line me-2"></i> Teacher Dashboard
+                    </a>
+                    <a href="{{ url_for('teacher.feedback_ratings') }}" class="nav-link {% if request.endpoint == 'teacher.feedback_ratings' %}active{% endif %}">
+                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Ratings & Feedback
                     </a>
                     <a href="{{ url_for('teacher.teacher_id_card') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_id_card' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-warning"></i> My Digital ID Card
@@ -185,6 +194,9 @@
                     <!-- Student Navigation -->
                     <a href="{{ url_for('student.dashboard') }}" class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-line me-2"></i> My Dashboard
+                    </a>
+                    <a href="{{ url_for('student.feedback') }}" class="nav-link {% if request.endpoint == 'student.feedback' %}active{% endif %}">
+                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Rating
                     </a>
                     <a href="{{ url_for('student.month_view') }}" class="nav-link {% if request.endpoint == 'student.month_view' %}active{% endif %}">
                         <i class="fa-solid fa-calendar-days me-2 text-primary"></i> Month View

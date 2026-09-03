@@ -188,6 +188,14 @@
                                 <span class="btn btn-xs btn-success rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs" style="pointer-events:none;">
                                     <i class="fa-solid fa-circle-check me-1"></i>Shared &#10003;
                                 </span>
+                                {% elif item.is_active_today and item.not_started_yet %}
+                                <button class="btn btn-xs btn-warning bg-opacity-10 text-dark rounded-pill px-3 py-1.5 fw-bold fs-9 border border-warning border-opacity-25" disabled title="Proxy attendance opens strictly at {{ item.start_time }}">
+                                    <i class="fa-solid fa-clock me-1 text-warning"></i>Starts at {{ item.start_time }}
+                                </button>
+                                {% elif item.is_active_today and item.is_after_cutoff %}
+                                <button class="btn btn-xs btn-secondary bg-opacity-10 text-muted rounded-pill px-3 py-1.5 fw-bold fs-9 border" disabled title="Proxy attendance closed for today at 11:00 PM IST">
+                                    <i class="fa-solid fa-lock me-1"></i>Closed (Past 11 PM)
+                                </button>
                                 {% elif item.is_active_today %}
                                 <a href="{{ url_for('teacher.take_proxy_attendance', slot_id=item.slot.id, leave_id=(item.leave.id if item.leave else ''), duty_date=item.duty_date.strftime('%Y-%m-%d')) }}" class="btn btn-xs btn-primary rounded-pill px-3 py-1.5 fw-bold fs-9 shadow-xs">
                                     <i class="fa-solid fa-camera me-1"></i>Take Proxy Attendance

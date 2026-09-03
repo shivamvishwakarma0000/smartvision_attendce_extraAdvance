@@ -597,10 +597,17 @@
                                         </div>
                                     </div>
                                     {% elif item.is_today and item.can_take_attendance %}
-                                    <a href="{{ url_for('teacher.take_attendance', subject_id=item.slot.subject_id, slot_id=item.slot.id) }}"
-                                        class="btn btn-sm btn-primary w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs">
-                                        <i class="fa-solid fa-camera me-1"></i>Take Attendance Now
-                                    </a>
+                                        {% if item.is_proxy %}
+                                        <a href="{{ item.proxy_take_url or url_for('teacher.proxy_classes') }}"
+                                            class="btn btn-sm btn-warning text-dark w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs border border-warning">
+                                            <i class="fa-solid fa-camera me-1"></i>Take Proxy Attendance
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('teacher.take_attendance', subject_id=item.slot.subject_id, slot_id=item.slot.id) }}"
+                                            class="btn btn-sm btn-primary w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs">
+                                            <i class="fa-solid fa-camera me-1"></i>Take Attendance Now
+                                        </a>
+                                        {% endif %}
                                     {% elif item.is_today and item.attendance_marked %}
                                     <div
                                         class="d-flex align-items-center justify-content-between px-2.5 py-1.5 rounded-2 bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 fw-bold">

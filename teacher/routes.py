@@ -285,6 +285,114 @@ def dashboard():
             'completed_session_id': sess_today.id if sess_today else None
         })
 
+    # Include assigned substitute PROXY duties for today directly into the Schedule Matrix!
+    # 1. Check approved teacher leaves assigned to current teacher as substitute
+    today_sub_leaves = TeacherLeave.query.filter_by(
+        substitute_teacher_id=teacher.id,
+        status='APPROVED'
+    ).filter(TeacherLeave.date_from <= today, TeacherLeave.date_to >= today).all()
+
+    today_day_name = today.strftime('%A')
+    proxy_slot_ids_seen = set()
+
+    for p_leave in today_sub_leaves:
+        p_orig = p_leave.teacher
+        if not p_orig:
+            continue
+        orig_slots = Timetable.query.filter_by(
+            teacher_id=p_orig.id,
+            day_of_week=today_day_name,
+            slot_type='CLASS'
+        ).all()
+        for p_slot in orig_slots:
+            proxy_slot_ids_seen.add(p_slot.id)
+            # Check if proxy attendance already taken and shared/saved
+            saved_proxy_tr = ProxyAttendanceTransfer.query.filter_by(
+                timetable_id=p_slot.id,
+                date=today
+            ).first()
+            proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls))
+            
+            p_start_24h = convert_to_24h(p_slot.start_time)
+            p_not_started = (current_time_24h < p_start_24h)
+            p_after_cutoff = (current_time_24h >= "23:00")
+            p_can_take = (not proxy_marked and not p_not_started and not p_after_cutoff)
+
+            weekly_timetable_schedule.append({
+                'slot': p_slot,
+                'day': today_day_name,
+                'period': p_slot.period_no or 1,
+                'class_name': p_slot.class_assigned.name if p_slot.class_assigned else 'N/A',
+                'subject_name': p_slot.subject_assigned.name if p_slot.subject_assigned else 'N/A',
+                'start_time': p_slot.start_time,
+                'end_time': p_slot.end_time,
+                'room_number': p_slot.room or 'N/A',
+                'is_today': True,
+                'is_proxy': True,
+                'original_teacher_name': p_orig.name,
+                'is_cancelled': False,
+                'cancellation_reason': None,
+                'not_started_yet': p_not_started,
+                'is_after_cutoff': p_after_cutoff,
+                'faculty_is_present_today': True,
+                'can_take_attendance': p_can_take,
+                'attendance_marked': proxy_marked,
+                'completed_session_id': None,
+                'proxy_take_url': url_for('teacher.take_proxy_attendance', slot_id=p_slot.id, leave_id=p_leave.id, duty_date=today.strftime('%Y-%m-%d'))
+            })
+
+    # 2. Check direct DailySchedule proxy allocations for today
+    direct_proxies = DailySchedule.query.filter_by(
+        substitute_teacher_id=teacher.id,
+        date=today,
+        is_proxy=True
+    ).all()
+    for dp_item in direct_proxies:
+        if dp_item.is_cancelled:
+            continue
+        dp_slot = dp_item.timetable
+        if not dp_slot or dp_slot.id in proxy_slot_ids_seen:
+            continue
+        proxy_slot_ids_seen.add(dp_slot.id)
+        dp_orig = dp_slot.teacher_assigned
+
+        saved_proxy_tr = ProxyAttendanceTransfer.query.filter_by(
+            timetable_id=dp_slot.id,
+            date=today
+        ).first()
+        proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls))
+
+        p_start_24h = convert_to_24h(dp_slot.start_time)
+        p_not_started = (current_time_24h < p_start_24h)
+        p_after_cutoff = (current_time_24h >= "23:00")
+        p_can_take = (not proxy_marked and not p_not_started and not p_after_cutoff)
+
+        weekly_timetable_schedule.append({
+            'slot': dp_slot,
+            'day': today_day_name,
+            'period': dp_slot.period_no or 1,
+            'class_name': dp_slot.class_assigned.name if dp_slot.class_assigned else 'N/A',
+            'subject_name': dp_slot.subject_assigned.name if dp_slot.subject_assigned else 'N/A',
+            'start_time': dp_slot.start_time,
+            'end_time': dp_slot.end_time,
+            'room_number': dp_slot.room or 'N/A',
+            'is_today': True,
+            'is_proxy': True,
+            'original_teacher_name': dp_orig.name if dp_orig else 'Absent Faculty',
+            'is_cancelled': False,
+            'cancellation_reason': None,
+            'not_started_yet': p_not_started,
+            'is_after_cutoff': p_after_cutoff,
+            'faculty_is_present_today': True,
+            'can_take_attendance': p_can_take,
+            'attendance_marked': proxy_marked,
+            'completed_session_id': None,
+            'proxy_take_url': url_for('teacher.take_proxy_attendance', slot_id=dp_slot.id, duty_date=today.strftime('%Y-%m-%d'))
+        })
+
+    # Sort today's and weekly timetable by period / start_time
+    weekly_timetable_schedule.sort(key=lambda x: (x['day'] != today_day_name, x['period'], convert_to_24h(x['start_time'])))
+
     # Today's Completed Session Logs for Teacher (Scoped to official timetable lecture sessions)
     todays_sessions = AttendanceSession.query.filter_by(
         teacher_id=teacher.id, date=today, status='COMPLETED'
@@ -386,6 +494,10 @@ def proxy_classes():
                     status='COMPLETED'
                 ).first()
                 is_completed = (sess_today is not None)
+                p_start_24h = convert_to_24h(slot.start_time)
+                p_cur_24h = get_current_24h_time_str()
+                p_not_started = (curr == today and p_cur_24h < p_start_24h)
+                p_after_cutoff = (curr == today and p_cur_24h >= "23:00")
 
                 proxy_slots.append({
                     'leave': l,
@@ -399,6 +511,8 @@ def proxy_classes():
                     'end_time': slot.end_time,
                     'room_number': slot.room or 'N/A',
                     'is_active_today': (curr == today),
+                    'not_started_yet': p_not_started,
+                    'is_after_cutoff': p_after_cutoff,
                     'is_completed': is_completed
                 })
             curr += timedelta(days=1)
@@ -425,6 +539,10 @@ def proxy_classes():
             AttendanceSession.status == 'COMPLETED'
         ).first()
         is_completed = (sess_today is not None)
+        p_start_24h = convert_to_24h(ptt.start_time)
+        p_cur_24h = get_current_24h_time_str()
+        p_not_started = (pds.date == today and p_cur_24h < p_start_24h)
+        p_after_cutoff = (pds.date == today and p_cur_24h >= "23:00")
 
         proxy_slots.append({
             'leave': None,
@@ -440,6 +558,8 @@ def proxy_classes():
             'end_time': ptt.end_time,
             'room_number': ptt.room or 'N/A',
             'is_active_today': (pds.date == today),
+            'not_started_yet': p_not_started,
+            'is_after_cutoff': p_after_cutoff,
             'is_completed': is_completed
         })
 
@@ -503,6 +623,21 @@ def take_proxy_attendance():
 
     # Original absent teacher
     orig_teacher = leave.teacher if leave else (Teacher.query.get(slot.teacher_id) if slot.teacher_id else None)
+
+    # Time Window Validation for Proxy Attendance Duty
+    current_time_24h = get_current_24h_time_str()
+    slot_start_24h = convert_to_24h(slot.start_time)
+
+    if duty_date == today:
+        if current_time_24h < slot_start_24h:
+            flash(f"⚠️ Proxy Attendance Locked: This substituted lecture is scheduled at {slot.start_time}. Proxy attendance opens strictly at {slot.start_time} (or after) and stays open until 11:00 PM IST.", "warning")
+            return redirect(url_for('teacher.proxy_classes'))
+        if current_time_24h >= "23:00":
+            flash("⚠️ Proxy Attendance Window Closed: Today's proxy attendance window closed at 11:00 PM IST.", "warning")
+            return redirect(url_for('teacher.proxy_classes'))
+    elif duty_date > today:
+        flash(f"⚠️ Proxy Duty Scheduled for Future: This proxy lecture is scheduled for {duty_date.strftime('%b %d, %Y')}. Attendance can only be taken on the duty date.", "warning")
+        return redirect(url_for('teacher.proxy_classes'))
 
     matched_student_ids = set()
     confidence_scores = {}

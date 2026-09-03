@@ -911,19 +911,49 @@ def get_user_notifications():
         elif role == 'teacher':
             teacher = getattr(current_user, 'teacher_profile', None)
             if teacher:
-                # 1. Proxy duty assignments for today
-                from models import TeacherLeave
+                # 1. Proxy duty assignments for today (Only notify if NOT yet taken / shared)
+                from models import TeacherLeave, DailySchedule, Timetable, ProxyAttendanceTransfer
                 today = get_current_date()
-                today_proxies = TeacherLeave.query.filter_by(
+                day_name = today.strftime('%A')
+
+                # Find all shared/completed proxy transfers for current teacher today
+                completed_shared_keys = set(
+                    (t.timetable_id, t.date) for t in ProxyAttendanceTransfer.query.filter_by(
+                        substitute_teacher_id=teacher.id,
+                        date=today
+                    ).all() if t.status in ('SHARED', 'APPLIED') or bool(t.present_rolls)
+                )
+
+                pending_proxy_count = 0
+
+                # A. Approved substitute leaves for today
+                today_sub_leaves = TeacherLeave.query.filter_by(
                     substitute_teacher_id=teacher.id,
                     status='APPROVED'
-                ).filter(TeacherLeave.date_from <= today, TeacherLeave.date_to >= today).count()
+                ).filter(TeacherLeave.date_from <= today, TeacherLeave.date_to >= today).all()
 
-                if today_proxies > 0:
+                for p_leave in today_sub_leaves:
+                    if p_leave.teacher:
+                        slots = Timetable.query.filter_by(teacher_id=p_leave.teacher.id, day_of_week=day_name, slot_type='CLASS').all()
+                        for s in slots:
+                            if (s.id, today) not in completed_shared_keys:
+                                pending_proxy_count += 1
+
+                # B. Direct emergency proxy allocations
+                direct_proxies = DailySchedule.query.filter_by(
+                    substitute_teacher_id=teacher.id,
+                    date=today,
+                    is_proxy=True
+                ).all()
+                for dp in direct_proxies:
+                    if not dp.is_cancelled and (dp.timetable_id, today) not in completed_shared_keys:
+                        pending_proxy_count += 1
+
+                if pending_proxy_count > 0:
                     notifications.append({
-                        'id': f'teacher_proxy_{today}_{today_proxies}',
+                        'id': f'teacher_proxy_{today}_{pending_proxy_count}',
                         'title': 'Proxy Duty Assigned',
-                        'body': f'You have {today_proxies} proxy lecture duty scheduled for today.',
+                        'body': f'You have {pending_proxy_count} pending proxy lecture duty scheduled for today.',
                         'url': url_for('teacher.proxy_classes'),
                         'tag': 'teacher_proxy'
                     })

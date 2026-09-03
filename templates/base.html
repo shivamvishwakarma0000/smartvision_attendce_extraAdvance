@@ -993,13 +993,17 @@
             {% if current_user.is_authenticated %}
                 setTimeout(requestNotificationPermission, 2500);
                 pollRoleNotifications();
-                // Check for updates every 45 seconds while app/tab is active
-                setInterval(pollRoleNotifications, 45000);
+                // Check for updates every 3 minutes (180s) to conserve network egress
+                setInterval(() => {
+                    if (!document.hidden) {
+                        pollRoleNotifications();
+                    }
+                }, 180000);
             {% endif %}
         });
 
         function pollRoleNotifications() {
-            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            if (!('Notification' in window) || Notification.permission !== 'granted' || document.hidden) return;
 
             fetch('/api/user/notifications')
                 .then(res => res.json())

@@ -4538,6 +4538,9 @@ def feedback_management():
     # Threshold alerts count
     threshold_alerts_count = sum(1 for c in all_complaints if c.status == 'Threshold Reached')
 
+    # All active teachers for replacement dropdown
+    all_active_teachers = Teacher.query.filter_by(status='Approved').order_by(Teacher.name.asc()).all()
+
     return render_template(
         'admin_feedback_management.html',
         faculty_analytics=faculty_analytics,
@@ -4545,6 +4548,7 @@ def feedback_management():
         all_feedbacks=all_feedbacks,
         all_departments=all_departments,
         all_classes=all_classes,
+        all_active_teachers=all_active_teachers,
         selected_dept=selected_dept,
         selected_class_id=selected_class_id,
         threshold_alerts_count=threshold_alerts_count,
@@ -4577,6 +4581,102 @@ def update_complaint_status(complaint_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Error updating complaint: {e}", "danger")
+
+    return redirect(url_for('main.feedback_management', tab='complaints'))
+
+
+@main_bp.route('/admin/replace_faculty_from_complaint/<int:complaint_id>', methods=['POST'])
+@login_required
+@admin_required
+def replace_faculty_from_complaint(complaint_id):
+    """
+    Direct Faculty Replacement Action:
+    Replaces the current faculty with the selected new faculty across:
+    1. Subject allocation (`subjects.teacher_id`) for that class.
+    2. Weekly Timetable entries (`timetables.teacher_id`) for that class & subject.
+    3. Teacher-Class assignments (`teacher_assignments`).
+    4. Daily Schedules for future dates.
+    5. Updates complaint status to 'Resolved' with replacement audit note.
+    """
+    complaint = FacultyComplaint.query.get_or_404(complaint_id)
+    new_teacher_id = request.form.get('new_teacher_id', type=int)
+
+    if not new_teacher_id:
+        flash("Please select a new faculty to replace.", "warning")
+        return redirect(url_for('main.feedback_management', tab='complaints'))
+
+    old_teacher = complaint.teacher
+    new_teacher = Teacher.query.get_or_404(new_teacher_id)
+    target_class = complaint.class_assigned
+    target_subject = complaint.subject_assigned
+
+    if not target_class:
+        flash("No class linked with this complaint.", "danger")
+        return redirect(url_for('main.feedback_management', tab='complaints'))
+
+    try:
+        # 1. Update Subject teacher allocation
+        updated_subjects = 0
+        if target_subject:
+            target_subject.teacher_id = new_teacher.id
+            updated_subjects += 1
+        else:
+            # Find subject taught by old teacher in that class
+            subs = Subject.query.filter_by(class_id=target_class.id, teacher_id=old_teacher.id).all()
+            for s in subs:
+                s.teacher_id = new_teacher.id
+                updated_subjects += 1
+
+        # 2. Update Teacher Assignment
+        if target_subject:
+            assign = TeacherAssignment.query.filter_by(
+                class_id=target_class.id,
+                subject_id=target_subject.id,
+                teacher_id=old_teacher.id
+            ).first()
+            if assign:
+                assign.teacher_id = new_teacher.id
+            else:
+                db.session.add(TeacherAssignment(
+                    class_id=target_class.id,
+                    subject_id=target_subject.id,
+                    teacher_id=new_teacher.id
+                ))
+
+        # 3. Update Timetable entries
+        timetable_query = Timetable.query.filter_by(class_id=target_class.id, teacher_id=old_teacher.id)
+        if target_subject:
+            timetable_query = timetable_query.filter_by(subject_id=target_subject.id)
+        
+        updated_slots = 0
+        for slot in timetable_query.all():
+            slot.teacher_id = new_teacher.id
+            updated_slots += 1
+
+        # 4. Update future Daily Schedules
+        today = get_current_date()
+        daily_query = DailySchedule.query.filter(
+            DailySchedule.class_id == target_class.id,
+            DailySchedule.teacher_id == old_teacher.id,
+            DailySchedule.date >= today
+        )
+        if target_subject:
+            daily_query = daily_query.filter_by(subject_id=target_subject.id)
+        
+        for ds in daily_query.all():
+            ds.teacher_id = new_teacher.id
+
+        # 5. Mark Complaint as Resolved with replacement audit record
+        complaint.status = 'Resolved'
+        complaint.admin_notes = f"Faculty Replaced: {old_teacher.name} replaced by {new_teacher.name} for {target_class.name} ({target_subject.name if target_subject else 'All Assigned Subjects'}). Timetables ({updated_slots} slots) updated."
+        complaint.reviewed_by_user_id = current_user.id
+        complaint.updated_at = datetime.utcnow()
+
+        db.session.commit()
+        flash(f"✓ Success! Faculty {old_teacher.name} replaced by {new_teacher.name} in {target_class.name}. Timetable and schedules updated successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error replacing faculty: {e}", "danger")
 
     return redirect(url_for('main.feedback_management', tab='complaints'))
 

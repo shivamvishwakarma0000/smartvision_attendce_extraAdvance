@@ -1195,13 +1195,17 @@ def vote_complaint(complaint_id, vote_type):
 
         db.session.flush()
 
-        # Check if dynamic threshold is reached
+        # Check if dynamic threshold is reached or dropped below threshold
         agree_count = complaint.agree_count
         disagree_count = complaint.disagree_count
         threshold = complaint.required_threshold
 
-        if agree_count >= threshold and complaint.status == 'Voting in Progress':
-            complaint.status = 'Threshold Reached'
+        if agree_count >= threshold and agree_count > 0:
+            if complaint.status in ['Voting in Progress', 'Submitted']:
+                complaint.status = 'Threshold Reached'
+        else:
+            if complaint.status == 'Threshold Reached':
+                complaint.status = 'Voting in Progress'
 
         db.session.commit()
 

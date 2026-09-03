@@ -3,51 +3,51 @@
 {% block title %}Ratings & Feedback Dashboard - Faculty Portal | SmartVision{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 px-md-4 py-4">
+<div class="container-fluid px-2 px-md-4 py-3 py-md-4">
     <!-- Header Banner -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-gradient-primary-soft overflow-hidden">
-        <div class="card-body p-4">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 bg-gradient-primary-soft overflow-hidden" style="border: 1px solid rgba(99, 102, 241, 0.15) !important;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2.5">
                 <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-bold fs-8">
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 mb-1.5">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fw-bold fs-8">
                             <i class="fa-solid fa-user-shield me-1"></i> Anonymous Student Evaluations
                         </span>
-                        <span class="badge bg-white text-dark border px-3 py-1 rounded-pill fw-semibold fs-8">
-                            <i class="fa-solid fa-id-badge me-1"></i> Faculty: {{ teacher.name }}
+                        <span class="badge bg-white text-dark border border-secondary-subtle px-2.5 py-1 rounded-pill fw-semibold fs-8 text-truncate" style="max-width: 260px;">
+                            <i class="fa-solid fa-id-badge me-1 text-primary"></i> Faculty: {{ teacher.name }}
                         </span>
                     </div>
-                    <h3 class="fw-bold text-dark mb-1">Faculty Performance & Rating Analytics</h3>
-                    <p class="text-muted mb-0 fs-7">
+                    <h4 class="fw-bold text-dark mb-1">Faculty Performance & Rating Analytics</h4>
+                    <p class="text-muted mb-0 fs-8">
                         Comprehensive summary of student feedback across teaching quality, subject knowledge, communication style, and student support.
                     </p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-white shadow-xs rounded-pill px-3 py-2 fs-7 fw-semibold border">
-                        <i class="fa-solid fa-arrow-left me-1"></i> Back to Dashboard
+                <div class="d-flex align-self-start align-self-md-center">
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-white shadow-xs rounded-pill px-3 py-1.5 fs-8 fw-semibold border border-secondary-subtle">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Dashboard
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Top KPI Cards -->
-    <div class="row g-3 mb-4">
+    <!-- Top KPI Cards with Rich Colored Accent Borders -->
+    <div class="row g-2.5 g-md-3 mb-3 mb-md-4">
         <!-- Overall Rating Card -->
-        <div class="col-lg-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 border-start border-4 border-warning">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted fs-8 fw-bold text-uppercase tracking-wider">Overall Rating</span>
-                    <div class="badge bg-warning-subtle text-warning p-2 rounded-circle">
-                        <i class="fa-solid fa-star fs-6"></i>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-warning" style="box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Overall Rating</span>
+                    <div class="badge bg-warning-subtle text-warning p-1.5 rounded-circle">
+                        <i class="fa-solid fa-star fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-2">
-                    <h2 class="fw-bold text-dark mb-0">{{ avg_overall }}</h2>
-                    <span class="text-muted fs-7">/ 5.0</span>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-bold text-dark mb-0">{{ avg_overall }}</h3>
+                    <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-2 fs-9">
-                    <span class="badge bg-{{ status_color }}-subtle text-{{ status_color }} border border-{{ status_color }}-subtle rounded-pill px-2.5 py-0.5 fw-bold">
+                <div class="mt-1.5">
+                    <span class="badge bg-{{ status_color }}-subtle text-{{ status_color }} border border-{{ status_color }}-subtle rounded-pill px-2 py-0.5 fw-bold fs-9 text-truncate d-inline-block" style="max-width: 100%;">
                         {{ performance_status }}
                     </span>
                 </div>
@@ -55,115 +55,118 @@
         </div>
 
         <!-- Total Reviews -->
-        <div class="col-lg-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 border-start border-4 border-primary">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted fs-8 fw-bold text-uppercase tracking-wider">Total Evaluations</span>
-                    <div class="badge bg-primary-subtle text-primary p-2 rounded-circle">
-                        <i class="fa-solid fa-users fs-6"></i>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-primary" style="box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Total Evaluations</span>
+                    <div class="badge bg-primary-subtle text-primary p-1.5 rounded-circle">
+                        <i class="fa-solid fa-users fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-2">
-                    <h2 class="fw-bold text-dark mb-0">{{ total_ratings_count }}</h2>
-                    <span class="text-muted fs-7">students</span>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-bold text-dark mb-0">{{ total_ratings_count }}</h3>
+                    <span class="text-muted fs-8">students</span>
                 </div>
-                <div class="mt-2 text-muted fs-9">
-                    <i class="fa-solid fa-lock text-success me-1"></i> Aggregated anonymously
+                <div class="mt-1.5 text-muted fs-9">
+                    <i class="fa-solid fa-lock text-success me-1"></i> Anonymous
                 </div>
             </div>
         </div>
 
         <!-- Teaching Quality -->
-        <div class="col-lg-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 border-start border-4 border-success">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted fs-8 fw-bold text-uppercase tracking-wider">Teaching Quality</span>
-                    <div class="badge bg-success-subtle text-success p-2 rounded-circle">
-                        <i class="fa-solid fa-chalkboard-user fs-6"></i>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-success" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Teaching Quality</span>
+                    <div class="badge bg-success-subtle text-success p-1.5 rounded-circle">
+                        <i class="fa-solid fa-chalkboard-user fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-2">
-                    <h2 class="fw-bold text-dark mb-0">{{ avg_quality }}</h2>
-                    <span class="text-muted fs-7">/ 5.0</span>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-bold text-dark mb-0">{{ avg_quality }}</h3>
+                    <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-2 text-muted fs-9">
-                    Clarity & concept delivery score
+                <div class="mt-1.5 text-muted fs-9 text-truncate">
+                    Concept Delivery
                 </div>
             </div>
         </div>
 
         <!-- Subject Knowledge -->
-        <div class="col-lg-3 col-sm-6">
-            <div class="card border-0 shadow-sm rounded-4 p-3.5 bg-white h-100 border-start border-4 border-info">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted fs-8 fw-bold text-uppercase tracking-wider">Subject Knowledge</span>
-                    <div class="badge bg-info-subtle text-info p-2 rounded-circle">
-                        <i class="fa-solid fa-book-open fs-6"></i>
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-info" style="box-shadow: 0 4px 12px rgba(6, 182, 212, 0.08) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Knowledge</span>
+                    <div class="badge bg-info-subtle text-info p-1.5 rounded-circle">
+                        <i class="fa-solid fa-book-open fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-2">
-                    <h2 class="fw-bold text-dark mb-0">{{ avg_knowledge }}</h2>
-                    <span class="text-muted fs-7">/ 5.0</span>
+                <div class="d-flex align-items-baseline gap-1.5">
+                    <h3 class="fw-bold text-dark mb-0">{{ avg_knowledge }}</h3>
+                    <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-2 text-muted fs-9">
-                    Expertise & domain accuracy
+                <div class="mt-1.5 text-muted fs-9 text-truncate">
+                    Domain Accuracy
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 4 Evaluation Parameter Breakdown & Star Distribution -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-3 mb-md-4">
         <!-- 4 Parameters Matrix -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <h5 class="fw-bold text-dark mb-1">Evaluation Parameter Breakdown</h5>
-                <p class="text-muted fs-8 mb-4">Granular performance metrics assessed across 4 fundamental pedagogical parameters.</p>
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border" style="border-color: rgba(99, 102, 241, 0.12) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h5 class="fw-bold text-dark mb-0 fs-6">Evaluation Parameter Breakdown</h5>
+                    <span class="badge bg-light text-primary border rounded-pill px-2.5 py-0.5 fs-9 fw-bold">Scale: 1 – 5</span>
+                </div>
+                <p class="text-muted fs-9 mb-3">Granular performance metrics assessed across 4 fundamental pedagogical parameters.</p>
 
-                <div class="d-flex flex-column gap-3.5">
+                <div class="d-flex flex-column gap-3">
                     <!-- Param 1 -->
-                    <div>
+                    <div class="p-2.5 rounded-3 bg-light-subtle border">
                         <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
-                            <span class="fw-bold text-dark"><i class="fa-solid fa-chalkboard text-primary me-2"></i> 1. Teaching Quality</span>
-                            <span class="fw-bold text-dark">{{ avg_quality }} / 5.0</span>
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-chalkboard text-primary me-1.5"></i> 1. Teaching Quality</span>
+                            <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_quality }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
                             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (avg_quality / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
                         <div class="fs-9 text-muted mt-1">Concept clarity, pace of explanation, and syllabus presentation</div>
                     </div>
 
                     <!-- Param 2 -->
-                    <div>
+                    <div class="p-2.5 rounded-3 bg-light-subtle border">
                         <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
-                            <span class="fw-bold text-dark"><i class="fa-solid fa-brain text-success me-2"></i> 2. Subject Knowledge</span>
-                            <span class="fw-bold text-dark">{{ avg_knowledge }} / 5.0</span>
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-brain text-success me-1.5"></i> 2. Subject Knowledge</span>
+                            <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_knowledge }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
                             <div class="progress-bar bg-success" role="progressbar" style="width: {{ (avg_knowledge / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
                         <div class="fs-9 text-muted mt-1">Subject depth, real-world examples, and accuracy of academic material</div>
                     </div>
 
                     <!-- Param 3 -->
-                    <div>
+                    <div class="p-2.5 rounded-3 bg-light-subtle border">
                         <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
-                            <span class="fw-bold text-dark"><i class="fa-solid fa-comments text-info me-2"></i> 3. Teaching Style & Communication</span>
-                            <span class="fw-bold text-dark">{{ avg_communication }} / 5.0</span>
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-comments text-info me-1.5"></i> 3. Communication & Style</span>
+                            <span class="badge bg-info text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_communication }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
                             <div class="progress-bar bg-info" role="progressbar" style="width: {{ (avg_communication / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
                         <div class="fs-9 text-muted mt-1">Audibility, interactive style, and student engagement in class</div>
                     </div>
 
                     <!-- Param 4 -->
-                    <div>
+                    <div class="p-2.5 rounded-3 bg-light-subtle border">
                         <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
-                            <span class="fw-bold text-dark"><i class="fa-solid fa-hand-holding-hand text-warning me-2"></i> 4. Student Support & Doubt Resolution</span>
-                            <span class="fw-bold text-dark">{{ avg_support }} / 5.0</span>
+                            <span class="fw-bold text-dark"><i class="fa-solid fa-hand-holding-hand text-warning me-1.5"></i> 4. Student Support & Doubts</span>
+                            <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_support }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill" style="height: 10px;">
+                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
                             <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (avg_support / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
                         <div class="fs-9 text-muted mt-1">Patience in answering questions, accessibility, and doubt clearing</div>
@@ -174,29 +177,29 @@
 
         <!-- Star Rating Distribution -->
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <h5 class="fw-bold text-dark mb-1">Rating Star Distribution</h5>
-                <p class="text-muted fs-8 mb-4">Breakdown of student ratings on a 1–5 star scale.</p>
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border" style="border-color: rgba(245, 158, 11, 0.15) !important;">
+                <h5 class="fw-bold text-dark mb-1 fs-6">Rating Star Distribution</h5>
+                <p class="text-muted fs-9 mb-3">Breakdown of student ratings on a 1–5 star scale.</p>
 
-                <div class="d-flex flex-column gap-2.5">
+                <div class="d-flex flex-column gap-2">
                     {% for s in [5, 4, 3, 2, 1] %}
                         {% set pct = star_percentages.get(s, 0.0) %}
                         {% set cnt = star_counts.get(s, 0) %}
                         <div class="d-flex align-items-center gap-2 fs-8">
-                            <span class="fw-bold text-muted" style="min-width: 45px;">{{ s }} ⭐</span>
-                            <div class="progress flex-grow-1 rounded-pill" style="height: 10px;">
+                            <span class="fw-bold text-muted" style="min-width: 40px;">{{ s }} ⭐</span>
+                            <div class="progress flex-grow-1 rounded-pill bg-secondary-subtle" style="height: 8px;">
                                 <div class="progress-bar {% if s >= 4 %}bg-success{% elif s == 3 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ pct }}%;"></div>
                             </div>
-                            <span class="text-dark fw-bold" style="min-width: 35px; text-align: right;">{{ cnt }}</span>
+                            <span class="text-dark fw-bold" style="min-width: 25px; text-align: right;">{{ cnt }}</span>
                             <span class="text-muted fs-9" style="min-width: 45px;">({{ pct }}%)</span>
                         </div>
                     {% endfor %}
                 </div>
 
-                <div class="mt-4 p-3 bg-light rounded-3 border text-center">
-                    <span class="text-muted fs-8">
-                        <i class="fa-solid fa-shield-halved text-success me-1"></i>
-                        Student identities are protected. Individual review submissions remain strictly confidential.
+                <div class="mt-auto pt-3 border-top mt-3 text-center">
+                    <span class="text-muted fs-9 d-flex align-items-center justify-content-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-success"></i>
+                        Student identities are protected. Reviews are aggregated anonymously.
                     </span>
                 </div>
             </div>
@@ -204,24 +207,24 @@
     </div>
 
     <!-- Anonymous Qualitative Feedback Highlights -->
-    <div class="row g-4">
+    <div class="row g-3">
         <!-- Positive Feedback -->
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border border-success-subtle">
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <div class="badge bg-success-subtle text-success p-2 rounded-circle">
-                        <i class="fa-solid fa-thumbs-up fs-6"></i>
+                        <i class="fa-solid fa-thumbs-up fs-7"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold text-dark mb-0">What Students Appreciate</h5>
-                        <span class="text-muted fs-9">Positive feedback and teaching strengths</span>
+                        <h6 class="fw-bold text-dark mb-0 fs-7">What Students Appreciate</h6>
+                        <span class="text-muted fs-9">Positive feedback and strengths</span>
                     </div>
                 </div>
 
                 {% if positive_reviews %}
-                    <div class="d-flex flex-column gap-2.5 overflow-auto" style="max-height: 380px;">
+                    <div class="d-flex flex-column gap-2 overflow-auto" style="max-height: 320px;">
                         {% for review in positive_reviews %}
-                            <div class="p-3 bg-light rounded-3 border border-success-subtle">
+                            <div class="p-2.5 bg-success-subtle bg-opacity-25 rounded-3 border border-success-subtle">
                                 <div class="d-flex align-items-center gap-1.5 mb-1 text-success fs-9 fw-bold">
                                     <i class="fa-solid fa-quote-left"></i> Verified Student Review
                                 </div>
@@ -230,8 +233,8 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="fa-regular fa-comment-dots fs-1 mb-2 opacity-50"></i>
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-regular fa-comment-dots fs-2 mb-1.5 opacity-50"></i>
                         <p class="fs-8 mb-0">No written positive reviews recorded yet.</p>
                     </div>
                 {% endif %}
@@ -240,21 +243,21 @@
 
         <!-- Improvement Areas -->
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border border-warning-subtle">
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <div class="badge bg-warning-subtle text-warning p-2 rounded-circle">
-                        <i class="fa-solid fa-lightbulb fs-6"></i>
+                        <i class="fa-solid fa-lightbulb fs-7"></i>
                     </div>
                     <div>
-                        <h5 class="fw-bold text-dark mb-0">Areas for Improvement</h5>
+                        <h6 class="fw-bold text-dark mb-0 fs-7">Areas for Improvement</h6>
                         <span class="text-muted fs-9">Constructive student recommendations</span>
                     </div>
                 </div>
 
                 {% if improvement_suggestions %}
-                    <div class="d-flex flex-column gap-2.5 overflow-auto" style="max-height: 380px;">
+                    <div class="d-flex flex-column gap-2 overflow-auto" style="max-height: 320px;">
                         {% for sugg in improvement_suggestions %}
-                            <div class="p-3 bg-light rounded-3 border border-warning-subtle">
+                            <div class="p-2.5 bg-warning-subtle bg-opacity-25 rounded-3 border border-warning-subtle">
                                 <div class="d-flex align-items-center gap-1.5 mb-1 text-warning fs-9 fw-bold">
                                     <i class="fa-solid fa-lightbulb"></i> Constructive Suggestion
                                 </div>
@@ -263,8 +266,8 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-5 text-muted">
-                        <i class="fa-regular fa-circle-check fs-1 mb-2 opacity-50 text-success"></i>
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-regular fa-circle-check fs-2 mb-1.5 opacity-50 text-success"></i>
                         <p class="fs-8 mb-0">No specific improvement suggestions recorded yet.</p>
                     </div>
                 {% endif %}
@@ -275,7 +278,13 @@
 
 <style>
 .bg-gradient-primary-soft {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.07) 0%, rgba(147, 51, 234, 0.04) 100%);
+}
+.kpi-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi-card:hover {
+    transform: translateY(-2px);
 }
 .tracking-wider {
     letter-spacing: 0.05em;

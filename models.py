@@ -837,16 +837,15 @@ class FacultyComplaint(db.Model):
 
     @property
     def required_threshold(self):
-        """Dynamic threshold based on class strength: > 40% of class or minimum 1 if small class."""
+        """Dynamic threshold based on class strength: ~43% of class strength (e.g., 31 for 70 students, 2 for 4 students, 1 for 1-2 students)."""
         strength = self.total_eligible_students
-        if strength <= 2:
+        if strength <= 1:
             return 1
-        # E.g., for 70 students -> int(70 * 0.43) + 1 = 31 votes
-        return max(1, int(strength * 0.43) + 1)
+        return max(1, int(round(strength * 0.43)))
 
     @property
     def is_threshold_reached(self):
-        return self.agree_count >= self.required_threshold
+        return self.agree_count >= self.required_threshold and self.agree_count > 0
 
 
 class ComplaintVote(db.Model):

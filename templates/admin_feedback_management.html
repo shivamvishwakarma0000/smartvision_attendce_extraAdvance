@@ -3,29 +3,29 @@
 {% block title %}Faculty Feedback, Ratings & Complaints Desk - Admin Portal | SmartVision{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 px-md-4 py-4">
+<div class="container-fluid px-2 px-md-4 py-3 py-md-4">
     <!-- Top Header Banner -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-gradient-primary-soft overflow-hidden">
-        <div class="card-body p-4">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div class="card border-0 shadow-sm rounded-4 mb-3 mb-md-4 bg-gradient-primary-soft overflow-hidden" style="border: 1px solid rgba(99, 102, 241, 0.15) !important;">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2.5">
                 <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-primary text-white px-3 py-1 rounded-pill fw-bold fs-8">
-                            <i class="fa-solid fa-crown me-1"></i> Academic Quality Administration
+                    <div class="d-flex flex-wrap align-items-center gap-1.5 mb-1.5">
+                        <span class="badge bg-primary text-white px-2.5 py-1 rounded-pill fw-bold fs-8 shadow-xs">
+                            <i class="fa-solid fa-crown me-1"></i> Quality Administration
                         </span>
                         {% if threshold_alerts_count and threshold_alerts_count > 0 %}
-                            <span class="badge bg-danger text-white px-3 py-1 rounded-pill fw-bold fs-8 animate-pulse">
+                            <span class="badge bg-danger text-white px-2.5 py-1 rounded-pill fw-bold fs-8 animate-pulse shadow-xs">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ threshold_alerts_count }} Threshold Reached (Action Required)
                             </span>
                         {% endif %}
                     </div>
-                    <h3 class="fw-bold text-dark mb-1">Faculty Feedback, Rating & Complaint Management</h3>
-                    <p class="text-muted mb-0 fs-7">
-                        Comprehensive institutional oversight: evaluate teacher performance, track 4-parameter scoring metrics, and resolve class-level voting complaints.
+                    <h4 class="fw-bold text-dark mb-1">Faculty Feedback, Rating & Complaint Management</h4>
+                    <p class="text-muted mb-0 fs-8">
+                        Comprehensive institutional oversight: evaluate teacher performance, track 4-parameter scoring metrics, and resolve or reallocate class faculties.
                     </p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-white shadow-xs rounded-pill px-3 py-2 fs-7 fw-semibold border">
+                <div class="d-flex align-self-start align-self-md-center">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-white shadow-xs rounded-pill px-3 py-1.5 fs-8 fw-semibold border border-secondary-subtle">
                         <i class="fa-solid fa-arrow-left me-1"></i> Admin Dashboard
                     </a>
                 </div>
@@ -34,15 +34,15 @@
     </div>
 
     <!-- Filter & Scoping Bar -->
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <div class="card border-0 shadow-sm rounded-4 p-2.5 p-md-3 mb-3 mb-md-4 bg-white border border-secondary-subtle">
         <form method="GET" action="{{ url_for('main.feedback_management') }}" class="row g-2 align-items-center">
             <input type="hidden" name="tab" value="{{ active_tab }}">
             
-            <div class="col-md-4">
+            <div class="col-12 col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 rounded-start-pill fs-8"><i class="fa-solid fa-building-columns text-muted"></i></span>
                     <select name="department" class="form-select border-start-0 rounded-end-pill fs-8">
-                        <option value="">-- All Academic Departments --</option>
+                        <option value="">-- All Departments --</option>
                         {% for d in all_departments %}
                             <option value="{{ d.name }}" {% if selected_dept == d.name %}selected{% endif %}>{{ d.name }} - {{ d.full_name }}</option>
                         {% endfor %}
@@ -50,7 +50,7 @@
                 </div>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-12 col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 rounded-start-pill fs-8"><i class="fa-solid fa-school text-muted"></i></span>
                     <select name="class_id" class="form-select border-start-0 rounded-end-pill fs-8">
@@ -62,11 +62,11 @@
                 </div>
             </div>
 
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary rounded-pill px-3.5 py-2 fs-8 fw-bold flex-fill shadow-xs">
-                    <i class="fa-solid fa-filter me-1"></i> Apply Filters
+            <div class="col-12 col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary rounded-pill px-3 py-1.5 fs-8 fw-bold flex-fill shadow-xs">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
-                <a href="{{ url_for('main.feedback_management', tab=active_tab) }}" class="btn btn-light rounded-pill px-3 py-2 fs-8 border">
+                <a href="{{ url_for('main.feedback_management', tab=active_tab) }}" class="btn btn-light rounded-pill px-3 py-1.5 fs-8 border">
                     Reset
                 </a>
             </div>
@@ -74,25 +74,25 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <ul class="nav nav-pills custom-nav-pills gap-2 mb-4 bg-white p-2 rounded-4 shadow-sm border" id="adminFeedbackTabs" role="tablist">
+    <ul class="nav nav-pills custom-nav-pills gap-1.5 mb-3 mb-md-4 bg-white p-1.5 p-md-2 rounded-4 shadow-sm border border-secondary-subtle" id="adminFeedbackTabs" role="tablist">
         <li class="nav-item flex-fill text-center" role="presentation">
-            <button class="nav-link w-100 rounded-pill py-2.5 fw-semibold fs-7 {% if active_tab == 'rankings' %}active{% endif %}" id="rankings-tab" data-bs-toggle="pill" data-bs-target="#rankings-pane" type="button" role="tab">
-                <i class="fa-solid fa-ranking-star text-warning me-1.5"></i> Faculty Leaderboard & Rankings
-                <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1.5 px-2 py-0.5 fs-9">{{ faculty_analytics|length }}</span>
+            <button class="nav-link w-100 rounded-pill py-2 px-2 fw-semibold fs-8 {% if active_tab == 'rankings' %}active{% endif %}" id="rankings-tab" data-bs-toggle="pill" data-bs-target="#rankings-pane" type="button" role="tab">
+                <i class="fa-solid fa-ranking-star text-warning me-1"></i> Faculty Leaderboard
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1 px-1.5 py-0.5 fs-9">{{ faculty_analytics|length }}</span>
             </button>
         </li>
         <li class="nav-item flex-fill text-center" role="presentation">
-            <button class="nav-link w-100 rounded-pill py-2.5 fw-semibold fs-7 {% if active_tab == 'complaints' %}active{% endif %}" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-pane" type="button" role="tab">
-                <i class="fa-solid fa-triangle-exclamation text-danger me-1.5"></i> Faculty Complaints & Voting Tracker
+            <button class="nav-link w-100 rounded-pill py-2 px-2 fw-semibold fs-8 {% if active_tab == 'complaints' %}active{% endif %}" id="complaints-tab" data-bs-toggle="pill" data-bs-target="#complaints-pane" type="button" role="tab">
+                <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Complaints & Voting
                 {% if all_complaints %}
-                    <span class="badge bg-danger text-white rounded-pill ms-1.5 px-2 py-0.5 fs-9">{{ all_complaints|length }}</span>
+                    <span class="badge bg-danger text-white rounded-pill ms-1 px-1.5 py-0.5 fs-9">{{ all_complaints|length }}</span>
                 {% endif %}
             </button>
         </li>
         <li class="nav-item flex-fill text-center" role="presentation">
-            <button class="nav-link w-100 rounded-pill py-2.5 fw-semibold fs-7 {% if active_tab == 'feedbacks' %}active{% endif %}" id="feedbacks-tab" data-bs-toggle="pill" data-bs-target="#feedbacks-pane" type="button" role="tab">
-                <i class="fa-solid fa-comments text-primary me-1.5"></i> Student Written Reviews & Suggestions
-                <span class="badge bg-primary-subtle text-primary rounded-pill ms-1.5 px-2 py-0.5 fs-9">{{ all_feedbacks|length }}</span>
+            <button class="nav-link w-100 rounded-pill py-2 px-2 fw-semibold fs-8 {% if active_tab == 'feedbacks' %}active{% endif %}" id="feedbacks-tab" data-bs-toggle="pill" data-bs-target="#feedbacks-pane" type="button" role="tab">
+                <i class="fa-solid fa-comments text-primary me-1"></i> Student Reviews
+                <span class="badge bg-primary-subtle text-primary rounded-pill ms-1 px-1.5 py-0.5 fs-9">{{ all_feedbacks|length }}</span>
             </button>
         </li>
     </ul>
@@ -102,11 +102,11 @@
 
         <!-- ================= TAB 1: FACULTY LEADERBOARD & COMPARISON ================= -->
         <div class="tab-pane fade {% if active_tab == 'rankings' %}show active{% endif %}" id="rankings-pane" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4 pb-3 border-bottom">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border" style="border-color: rgba(99, 102, 241, 0.15) !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2.5 border-bottom">
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">Faculty Performance Ranking & 4-Parameter Matrix</h5>
-                        <p class="text-muted fs-8 mb-0">Sorted by overall student evaluation score with quick status indicators and complaint audits.</p>
+                        <h5 class="fw-bold text-dark mb-0 fs-6">Faculty Performance Ranking & 4-Parameter Matrix</h5>
+                        <p class="text-muted fs-9 mb-0">Sorted by overall student evaluation score with quick status indicators and complaint audits.</p>
                     </div>
                 </div>
 
@@ -125,51 +125,51 @@
                                     <th>Support</th>
                                     <th>Reviews</th>
                                     <th>Complaints</th>
-                                    <th>Performance Status</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in faculty_analytics %}
                                     {% set t = item.teacher %}
                                     <tr>
-                                        <td class="fw-bold text-muted fs-8">{{ loop.index }}</td>
+                                        <td class="fw-bold text-muted fs-9">{{ loop.index }}</td>
                                         <td>
-                                            <div class="d-flex align-items-center gap-2.5">
-                                                <div class="avatar-circle-sm bg-primary text-white fw-bold">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-circle-xs bg-primary text-white fw-bold">
                                                     {{ t.name[0]|upper }}
                                                 </div>
                                                 <div>
                                                     <div class="fw-bold text-dark fs-8">{{ t.name }}</div>
-                                                    <div class="text-muted fs-9">{{ t.emp_id or t.employee_code or 'ID: ' ~ t.id }}</div>
+                                                    <div class="text-muted" style="font-size: 0.72rem;">{{ t.emp_id or t.employee_code or 'ID: ' ~ t.id }}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="fs-8 text-secondary">{{ t.department or 'N/A' }}</td>
+                                        <td class="fs-9 text-secondary">{{ t.department or 'N/A' }}</td>
                                         <td>
-                                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                            <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold fs-9">
                                                 {{ item.avg_overall }} ⭐
                                             </span>
                                         </td>
-                                        <td class="fs-8 fw-semibold text-dark">{{ item.avg_quality }} / 5</td>
-                                        <td class="fs-8 fw-semibold text-dark">{{ item.avg_knowledge }} / 5</td>
-                                        <td class="fs-8 fw-semibold text-dark">{{ item.avg_comm }} / 5</td>
-                                        <td class="fs-8 fw-semibold text-dark">{{ item.avg_support }} / 5</td>
+                                        <td class="fs-9 fw-semibold text-dark">{{ item.avg_quality }}</td>
+                                        <td class="fs-9 fw-semibold text-dark">{{ item.avg_knowledge }}</td>
+                                        <td class="fs-9 fw-semibold text-dark">{{ item.avg_comm }}</td>
+                                        <td class="fs-9 fw-semibold text-dark">{{ item.avg_support }}</td>
                                         <td>
-                                            <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill fs-9 fw-semibold">
-                                                {{ item.total_reviews }} reviews
+                                            <span class="badge bg-light text-dark border px-2 py-0.5 rounded-pill fs-9 fw-semibold">
+                                                {{ item.total_reviews }}
                                             </span>
                                         </td>
                                         <td>
                                             {% if item.total_complaints > 0 %}
-                                                <span class="badge {% if item.threshold_complaints > 0 %}bg-danger animate-pulse{% else %}bg-warning text-dark{% endif %} px-2.5 py-1 rounded-pill fs-9 fw-bold">
-                                                    {{ item.total_complaints }} ({% if item.threshold_complaints > 0 %}{{ item.threshold_complaints }} Threshold{% else %}Active{% endif %})
+                                                <span class="badge {% if item.threshold_complaints > 0 %}bg-danger animate-pulse{% else %}bg-warning text-dark{% endif %} px-2 py-0.5 rounded-pill fs-9 fw-bold">
+                                                    {{ item.total_complaints }} ({% if item.threshold_complaints > 0 %}{{ item.threshold_complaints }} Alert{% else %}Active{% endif %})
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-success-subtle text-success px-2 py-0.5 rounded-pill fs-9">0 None</span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ item.badge_class }}-subtle text-{{ item.badge_class }} border border-{{ item.badge_class }}-subtle px-3 py-1 rounded-pill fs-8 fw-bold">
+                                            <span class="badge bg-{{ item.badge_class }}-subtle text-{{ item.badge_class }} border border-{{ item.badge_class }}-subtle px-2.5 py-0.5 rounded-pill fs-9 fw-bold">
                                                 {{ item.perf_status }}
                                             </span>
                                         </td>
@@ -179,9 +179,9 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="text-center py-5">
-                        <i class="fa-solid fa-users-slash text-muted fs-1 mb-2 opacity-50"></i>
-                        <h6 class="fw-bold text-dark">No Faculty Records Found</h6>
+                    <div class="text-center py-4">
+                        <i class="fa-solid fa-users-slash text-muted fs-2 mb-1.5 opacity-50"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Faculty Records Found</h6>
                         <p class="text-muted fs-8">No teachers match the selected department or class filter.</p>
                     </div>
                 {% endif %}
@@ -190,16 +190,16 @@
 
         <!-- ================= TAB 2: FACULTY COMPLAINTS & VOTING TRACKER ================= -->
         <div class="tab-pane fade {% if active_tab == 'complaints' %}show active{% endif %}" id="complaints-pane" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4 pb-3 border-bottom">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border" style="border-color: rgba(99, 102, 241, 0.15) !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2.5 border-bottom">
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">Class-Level Faculty Complaints & Voting Tracker</h5>
-                        <p class="text-muted fs-8 mb-0">Democratically voted teaching issues. High-priority complaints reach threshold when >40% of class agrees.</p>
+                        <h5 class="fw-bold text-dark mb-0 fs-6">Class-Level Faculty Complaints & Replacement Desk</h5>
+                        <p class="text-muted fs-9 mb-0">Democratically voted teaching issues. High-priority complaints reach threshold when >40% of class agrees.</p>
                     </div>
                 </div>
 
                 {% if all_complaints %}
-                    <div class="row g-4">
+                    <div class="row g-3">
                         {% for c in all_complaints %}
                             {% set agree_cnt = c.agree_count %}
                             {% set disagree_cnt = c.disagree_count %}
@@ -208,69 +208,97 @@
                             {% set agree_pct = ((agree_cnt / strength * 100)|round(1)) if strength > 0 else 0 %}
 
                             <div class="col-lg-6">
-                                <div class="card h-100 rounded-4 border p-4 shadow-xs {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% else %}bg-white{% endif %}">
-                                    <!-- Header Row -->
-                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                        <div>
-                                            <span class="badge {% if c.is_replacement_requested %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-1 fs-8 fw-bold">
+                                <div class="card h-100 rounded-4 p-3 shadow-xs border {% if c.status == 'Threshold Reached' %}border-danger bg-danger-soft-subtle{% else %}bg-white border-secondary-subtle{% endif %}">
+                                    <!-- Header Row (Responsive wrap preventing overflow) -->
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-1.5 mb-2">
+                                        <div class="d-flex flex-wrap align-items-center gap-1">
+                                            <span class="badge {% if c.is_replacement_requested %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-2.5 py-1 fs-9 fw-bold text-truncate" style="max-width: 240px;">
                                                 {{ c.category }}
                                             </span>
                                             {% if c.is_replacement_requested %}
-                                                <span class="badge bg-dark text-white rounded-pill px-2 py-0.5 fs-9 fw-semibold ms-1">
+                                                <span class="badge bg-dark text-white rounded-pill px-2 py-0.5 fs-9 fw-semibold">
                                                     Replacement Requested
                                                 </span>
                                             {% endif %}
                                         </div>
-                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Action Required' %}bg-warning text-dark{% else %}bg-light text-muted border{% endif %} rounded-pill px-3 py-1 fs-8 fw-bold">
+                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Action Required' %}bg-warning text-dark{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
                                             {{ c.status }}
                                         </span>
                                     </div>
 
                                     <!-- Faculty & Class Info -->
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-1 mb-2">
                                         <div>
-                                            <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-chalkboard-user text-primary me-1.5"></i> {{ c.teacher.name if c.teacher else 'Faculty' }}</h6>
-                                            <span class="text-muted fs-8">Class: <strong>{{ c.class_assigned.name if c.class_assigned else 'N/A' }}</strong> {% if c.subject_assigned %}| Subject: {{ c.subject_assigned.name }}{% endif %}</span>
+                                            <h6 class="fw-bold text-dark mb-0 fs-7"><i class="fa-solid fa-chalkboard-user text-primary me-1"></i> {{ c.teacher.name if c.teacher else 'Faculty' }}</h6>
+                                            <span class="text-muted fs-9">Class: <strong>{{ c.class_assigned.name if c.class_assigned else 'N/A' }}</strong> {% if c.subject_assigned %}| Subject: <strong>{{ c.subject_assigned.name }}</strong>{% endif %}</span>
                                         </div>
                                         <div class="text-end">
-                                            <span class="text-muted fs-9 d-block">Lodged By (Admin Audit)</span>
-                                            <span class="badge bg-light text-dark border fs-9">{{ c.student.name if c.student else 'Confidential Student' }}</span>
+                                            <span class="text-muted" style="font-size: 0.7rem; display: block;">Lodged By</span>
+                                            <span class="badge bg-light text-dark border fs-9">{{ c.student.name if c.student else 'Student' }}</span>
                                         </div>
                                     </div>
 
                                     <!-- Description -->
-                                    <div class="bg-light p-3 rounded-3 border mb-3">
+                                    <div class="bg-light p-2.5 rounded-3 border mb-2.5">
                                         <p class="text-dark fs-8 mb-0 font-monospace">"{{ c.description }}"</p>
                                     </div>
 
                                     <!-- Admin Notes if any -->
                                     {% if c.admin_notes %}
-                                        <div class="p-2.5 bg-warning-subtle rounded-3 border border-warning-subtle mb-3">
+                                        <div class="p-2 bg-warning-subtle rounded-3 border border-warning-subtle mb-2.5">
                                             <span class="fw-bold fs-9 text-dark d-block"><i class="fa-solid fa-note-sticky text-warning me-1"></i> Admin Action Note:</span>
-                                            <span class="fs-8 text-dark">{{ c.admin_notes }}</span>
+                                            <span class="fs-9 text-dark">{{ c.admin_notes }}</span>
                                         </div>
                                     {% endif %}
 
                                     <!-- Voting Progress -->
-                                    <div class="mb-3">
+                                    <div class="mb-2.5">
                                         <div class="d-flex justify-content-between align-items-center fs-8 fw-semibold mb-1">
                                             <span class="text-success"><i class="fa-solid fa-thumbs-up me-1"></i> {{ agree_cnt }} Agreed</span>
                                             <span class="text-danger"><i class="fa-solid fa-thumbs-down me-1"></i> {{ disagree_cnt }} Disagreed</span>
                                         </div>
-                                        <div class="progress rounded-pill" style="height: 10px;">
+                                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
                                             <div class="progress-bar bg-success" role="progressbar" style="width: {{ agree_pct }}%;"></div>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center fs-9 text-muted mt-1">
-                                            <span>{{ agree_pct }}% of class supporting</span>
+                                            <span>{{ agree_pct }}% supporting</span>
                                             <span>Threshold: <strong>{{ threshold }}</strong> / {{ strength }} class strength</span>
                                         </div>
                                     </div>
 
-                                    <!-- Admin Action Form -->
+                                    <!-- Direct Faculty Replacement Section (When replacement is requested) -->
+                                    {% if c.is_replacement_requested and c.status != 'Resolved' and c.status != 'Closed' %}
+                                        <div class="p-2.5 rounded-3 bg-danger-soft border border-danger-subtle mb-2.5">
+                                            <span class="fw-bold text-danger fs-8 d-block mb-1.5">
+                                                <i class="fa-solid fa-people-arrows me-1"></i> Direct Faculty Replacement Action:
+                                            </span>
+                                            <form action="{{ url_for('main.replace_faculty_from_complaint', complaint_id=c.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to replace {{ c.teacher.name if c.teacher else 'this faculty' }} with the selected teacher? This will automatically update the timetable, subjects, and schedules for {{ c.class_assigned.name if c.class_assigned else 'this class' }}.');">
+                                                <div class="row g-1.5 align-items-center">
+                                                    <div class="col-8">
+                                                        <select name="new_teacher_id" class="form-select form-select-sm rounded-pill fs-9" required>
+                                                            <option value="">-- Select New Replacement Faculty --</option>
+                                                            {% for act_t in all_active_teachers %}
+                                                                {% if not c.teacher or act_t.id != c.teacher.id %}
+                                                                    <option value="{{ act_t.id }}">{{ act_t.name }} ({{ act_t.primary_subject or act_t.department or 'Faculty' }})</option>
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <button type="submit" class="btn btn-sm btn-danger rounded-pill w-100 fw-bold fs-9 shadow-xs">
+                                                            <i class="fa-solid fa-check me-1"></i> Replace
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Admin Status Action Form -->
                                     <form action="{{ url_for('main.update_complaint_status', complaint_id=c.id) }}" method="POST" class="pt-2 border-top mt-auto">
-                                        <div class="row g-2 align-items-center">
+                                        <div class="row g-1.5 align-items-center">
                                             <div class="col-sm-5">
-                                                <select name="status" class="form-select form-select-sm rounded-pill fs-8">
+                                                <select name="status" class="form-select form-select-sm rounded-pill fs-9">
                                                     <option value="Voting in Progress" {% if c.status == 'Voting in Progress' %}selected{% endif %}>Voting in Progress</option>
                                                     <option value="Threshold Reached" {% if c.status == 'Threshold Reached' %}selected{% endif %}>Threshold Reached</option>
                                                     <option value="Under Review" {% if c.status == 'Under Review' %}selected{% endif %}>Under Review</option>
@@ -281,10 +309,10 @@
                                                 </select>
                                             </div>
                                             <div class="col-sm-4">
-                                                <input type="text" name="admin_notes" class="form-control form-control-sm rounded-pill fs-8" placeholder="Action remarks..." value="{{ c.admin_notes or '' }}">
+                                                <input type="text" name="admin_notes" class="form-control form-control-sm rounded-pill fs-9" placeholder="Action remarks..." value="{{ c.admin_notes or '' }}">
                                             </div>
                                             <div class="col-sm-3">
-                                                <button type="submit" class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-8">
+                                                <button type="submit" class="btn btn-sm btn-primary rounded-pill w-100 fw-bold fs-9">
                                                     Update
                                                 </button>
                                             </div>
@@ -295,9 +323,9 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-5">
-                        <i class="fa-solid fa-circle-check text-success fs-1 mb-2 opacity-50"></i>
-                        <h6 class="fw-bold text-dark">No Complaints Registered</h6>
+                    <div class="text-center py-4">
+                        <i class="fa-solid fa-circle-check text-success fs-2 mb-1.5 opacity-50"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Complaints Registered</h6>
                         <p class="text-muted fs-8">There are currently no active teaching issues or replacement complaints in the system.</p>
                     </div>
                 {% endif %}
@@ -306,11 +334,11 @@
 
         <!-- ================= TAB 3: STUDENT REVIEWS & SUGGESTIONS ================= -->
         <div class="tab-pane fade {% if active_tab == 'feedbacks' %}show active{% endif %}" id="feedbacks-pane" role="tabpanel">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4 pb-3 border-bottom">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border" style="border-color: rgba(99, 102, 241, 0.15) !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3 pb-2.5 border-bottom">
                     <div>
-                        <h5 class="fw-bold text-dark mb-1">Student Written Feedback & Suggestions Audit</h5>
-                        <p class="text-muted fs-8 mb-0">Detailed qualitative review log submitted by students across classes and subjects.</p>
+                        <h5 class="fw-bold text-dark mb-0 fs-6">Student Written Feedback & Suggestions Audit</h5>
+                        <p class="text-muted fs-9 mb-0">Detailed qualitative review log submitted by students across classes and subjects.</p>
                     </div>
                 </div>
 
@@ -321,7 +349,7 @@
                                 <tr>
                                     <th>Faculty</th>
                                     <th>Class</th>
-                                    <th>Student (Confidential Admin Audit)</th>
+                                    <th>Student Reviewer</th>
                                     <th>Overall</th>
                                     <th>Positive Feedback</th>
                                     <th>Improvement Suggestions</th>
@@ -335,7 +363,7 @@
                                             <div class="fw-bold text-dark fs-8">{{ fb.teacher.name if fb.teacher else 'Faculty' }}</div>
                                             <div class="text-muted fs-9">{{ fb.teacher.primary_subject or 'N/A' }}</div>
                                         </td>
-                                        <td class="fs-8 fw-semibold text-secondary">{{ fb.class_assigned.name if fb.class_assigned else 'N/A' }}</td>
+                                        <td class="fs-9 fw-semibold text-secondary">{{ fb.class_assigned.name if fb.class_assigned else 'N/A' }}</td>
                                         <td>
                                             <span class="badge bg-light text-dark border fs-9">
                                                 <i class="fa-solid fa-user-lock text-success me-1"></i>
@@ -343,18 +371,18 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold fs-8">
+                                            <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold fs-9">
                                                 {{ fb.overall_rating }} ⭐
                                             </span>
                                         </td>
-                                        <td class="fs-8 text-dark" style="max-width: 250px;">
+                                        <td class="fs-9 text-dark" style="max-width: 220px;">
                                             {% if fb.positive_feedback %}
                                                 <span class="text-success"><i class="fa-regular fa-thumbs-up me-1"></i> {{ fb.positive_feedback }}</span>
                                             {% else %}
                                                 <span class="text-muted fst-italic">None provided</span>
                                             {% endif %}
                                         </td>
-                                        <td class="fs-8 text-dark" style="max-width: 250px;">
+                                        <td class="fs-9 text-dark" style="max-width: 220px;">
                                             {% if fb.improvement_areas %}
                                                 <span class="text-danger"><i class="fa-solid fa-lightbulb me-1 text-warning"></i> {{ fb.improvement_areas }}</span>
                                             {% else %}
@@ -368,9 +396,9 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="text-center py-5">
-                        <i class="fa-regular fa-comment-dots text-muted fs-1 mb-2 opacity-50"></i>
-                        <h6 class="fw-bold text-dark">No Feedback Records Found</h6>
+                    <div class="text-center py-4">
+                        <i class="fa-regular fa-comment-dots text-muted fs-2 mb-1.5 opacity-50"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Feedback Records Found</h6>
                         <p class="text-muted fs-8">No student written reviews recorded yet.</p>
                     </div>
                 {% endif %}
@@ -382,7 +410,10 @@
 
 <style>
 .bg-gradient-primary-soft {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.07) 0%, rgba(147, 51, 234, 0.04) 100%);
+}
+.bg-danger-soft {
+    background-color: rgba(239, 68, 68, 0.06);
 }
 .bg-danger-soft-subtle {
     background-color: rgba(239, 68, 68, 0.03);
@@ -394,14 +425,14 @@
     0%, 100% { opacity: 1; }
     50% { opacity: .6; }
 }
-.avatar-circle-sm {
-    width: 32px;
-    height: 32px;
+.avatar-circle-xs {
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 </style>
 {% endblock %}

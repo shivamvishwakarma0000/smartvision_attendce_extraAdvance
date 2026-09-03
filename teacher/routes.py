@@ -2609,7 +2609,7 @@ def teacher_suspend_student_id():
 
     ann = ClassAnnouncement(
         title="🔒 ID Card Suspended by Faculty",
-        message=f"Dear {student.name}, your student ID card has been suspended by Faculty {teacher.name}.\n\nReason: {full_reason}\n\nCampus access & attendance are restricted. Please meet your faculty/Admin or submit a suspension removal request via your portal.",
+        content=f"Dear {student.name}, your student ID card has been suspended by Faculty {teacher.name}.\n\nReason: {full_reason}\n\nCampus access & attendance are restricted. Please meet your faculty/Admin or submit a suspension removal request via your portal.",
         target_role='STUDENTS',
         class_id=student.class_id,
         admin_id=None,

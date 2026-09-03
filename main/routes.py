@@ -4417,7 +4417,7 @@ def admin_suspend_id_card():
         # Send official notification
         ann = ClassAnnouncement(
             title="🔒 Your ID Card Has Been Suspended",
-            message=f"Dear {student.name}, your institutional ID card and campus access have been SUSPENDED by Administration.\n\nReason: {full_reason}\n\nYour attendance permissions and campus entry are blocked while active. Please visit the Admin Office or submit a suspension removal request via your portal.",
+            content=f"Dear {student.name}, your institutional ID card and campus access have been SUSPENDED by Administration.\n\nReason: {full_reason}\n\nYour attendance permissions and campus entry are blocked while active. Please visit the Admin Office or submit a suspension removal request via your portal.",
             target_role='STUDENTS',
             class_id=student.class_id,
             admin_id=current_user.id,
@@ -4457,7 +4457,7 @@ def admin_suspend_id_card():
         # Send official notification
         ann = ClassAnnouncement(
             title="🔒 Faculty ID Card Suspended",
-            message=f"Faculty ID card for {teacher.name} has been SUSPENDED.\n\nReason: {full_reason}\n\nCampus biometric check-in & attendance recording permissions are blocked.",
+            content=f"Faculty ID card for {teacher.name} has been SUSPENDED.\n\nReason: {full_reason}\n\nCampus biometric check-in & attendance recording permissions are blocked.",
             target_role='TEACHERS',
             admin_id=current_user.id,
             posted_by_role='admin',
@@ -4510,7 +4510,7 @@ def admin_restore_id_card():
 
         ann = ClassAnnouncement(
             title="✓ ID Card Suspension Lifted & Active",
-            message=f"Dear {student.name}, your ID card suspension has been revoked by Administration.\n\nYour campus access and attendance eligibility are fully restored.",
+            content=f"Dear {student.name}, your ID card suspension has been revoked by Administration.\n\nYour campus access and attendance eligibility are fully restored.",
             target_role='STUDENTS',
             class_id=student.class_id,
             admin_id=current_user.id,
@@ -4545,7 +4545,7 @@ def admin_restore_id_card():
 
         ann = ClassAnnouncement(
             title="✓ Faculty ID Card Suspension Revoked",
-            message=f"Faculty ID card for {teacher.name} has been restored to Active status by Administration. Biometric check-in is now enabled.",
+            content=f"Faculty ID card for {teacher.name} has been restored to Active status by Administration. Biometric check-in is now enabled.",
             target_role='TEACHERS',
             admin_id=current_user.id,
             posted_by_role='admin',
@@ -4618,7 +4618,7 @@ def review_suspension_request(req_id):
 
             ann = ClassAnnouncement(
                 title="✓ Suspension Removal Request Approved",
-                message=f"Dear {req_obj.student.name}, your request to lift ID card suspension has been APPROVED.\n\nAdmin Remarks: {admin_notes or 'All campus permissions and attendance recording eligibility restored.'}",
+                content=f"Dear {req_obj.student.name}, your request to lift ID card suspension has been APPROVED.\n\nAdmin Remarks: {admin_notes or 'All campus permissions and attendance recording eligibility restored.'}",
                 target_role='STUDENTS',
                 class_id=req_obj.student.class_id,
                 admin_id=current_user.id,
@@ -4662,7 +4662,7 @@ def review_suspension_request(req_id):
 
         ann = ClassAnnouncement(
             title="⚠️ Suspension Removal Request Rejected",
-            message=f"Dear {name}, your suspension removal request has been REJECTED.\n\nReason/Remarks: {admin_notes or 'Suspension remains active. Please contact the Admin Office in person.'}",
+            content=f"Dear {name}, your suspension removal request has been REJECTED.\n\nReason/Remarks: {admin_notes or 'Suspension remains active. Please contact the Admin Office in person.'}",
             target_role=target_r,
             class_id=cls_id,
             admin_id=current_user.id,

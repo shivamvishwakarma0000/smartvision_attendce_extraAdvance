@@ -58,6 +58,49 @@ def get_current_teacher():
         return current_user.teacher_profile
     return Teacher.query.filter_by(email=current_user.email).first()
 
+def convert_to_24h(time_str):
+    """
+    Parses any time format (e.g. '03:05', '3:05', '03:05 PM', '3:05 PM', '15:05')
+    and returns a standardized 24-hour string 'HH:MM'.
+    Defaulting heuristic: If no AM/PM is specified and hour is between 1 and 6,
+    it is treated as PM (post-lunch academic session e.g. 03:05 is 15:05 PM).
+    """
+    if not time_str:
+        return "00:00"
+    t_clean = time_str.strip()
+    # 1. Try with AM/PM
+    for fmt in ("%I:%M %p", "%I:%M%p", "%H:%M", "%I:%M"):
+        try:
+            dt = datetime.strptime(t_clean, fmt)
+            # If parsed via %I:%M without AM/PM and hour <= 6, treat as PM (13:00 - 18:00)
+            if fmt in ("%I:%M", "%H:%M") and ('AM' not in t_clean.upper() and 'PM' not in t_clean.upper()):
+                if 1 <= dt.hour <= 6:
+                    dt = dt.replace(hour=dt.hour + 12)
+            return dt.strftime('%H:%M')
+        except ValueError:
+            pass
+    return "00:00"
+
+def get_faculty_daily_attendance_status(teacher_id, target_date):
+    """
+    Returns True if the faculty member is marked PRESENT (Checked-In/Present/On Time/Late)
+    or is currently in a valid pending grace period for today.
+    Returns False if the faculty is Absent, on Leave, or has not checked in past the cutoff.
+    """
+    if not teacher_id:
+        return False
+    rec = TeacherDailyAttendance.query.filter_by(teacher_id=teacher_id, attendance_date=target_date).first()
+    if not rec:
+        return False
+    # If checked in or marked Present
+    if rec.check_in_at is not None or rec.status in ('Present', 'Half Day'):
+        return True
+    # If admin explicitly marked present
+    if rec.is_admin_overridden and rec.status == 'Present':
+        return True
+    return False
+
+
 # ==============================================================================
 # SECTION 2: TEACHER DASHBOARD & TIMETABLE SCHEDULE
 # ==============================================================================
@@ -137,10 +180,19 @@ def dashboard():
             session_status = session_rec.status if session_rec else 'SCHEDULED'
 
             is_cancelled = (ds.is_cancelled or ds.resolved_status == 'CANCELLED')
+            faculty_present_chk = get_faculty_daily_attendance_status(teacher.id, today)
+            start_24h_chk = convert_to_24h(tt.start_time)
+            cur_24h_chk = get_current_24h_time_str()
+            is_started = (cur_24h_chk >= start_24h_chk)
+            is_before_11pm = (cur_24h_chk < "23:00")
+
             can_take_attendance = (
                 tt.slot_type == 'CLASS' and 
                 not is_cancelled and
-                session_status not in ('COMPLETED', 'CANCELLED')
+                session_status not in ('COMPLETED', 'CANCELLED') and
+                is_started and
+                is_before_11pm and
+                faculty_present_chk
             )
 
             todays_classes.append({
@@ -169,6 +221,7 @@ def dashboard():
     ).order_by(Timetable.day_of_week, Timetable.start_time).all()
 
     current_time_24h = get_current_24h_time_str()
+    faculty_is_present_today = get_faculty_daily_attendance_status(teacher.id, today)
 
     weekly_timetable_schedule = []
     for slot in all_teacher_slots:
@@ -188,10 +241,28 @@ def dashboard():
         is_cancelled = (ds_today.is_cancelled or ds_today.resolved_status == 'CANCELLED') if ds_today else False
         cancellation_reason = ds_today.cancellation_reason if ds_today else "Faculty Absent & No Proxy Available"
 
-        start_t = slot.start_time or "00:00"
-        start_t_clean = start_t.split()[0] if ' ' in start_t else start_t
-        not_started_yet = (is_today and current_time_24h < start_t_clean)
-        can_take = (is_today and slot.slot_type == 'CLASS' and not sess_today and not not_started_yet and not is_cancelled)
+        # Accurately convert slot start time to 24-hour 'HH:MM' (e.g. 03:05 -> 15:05)
+        start_t_24h = convert_to_24h(slot.start_time)
+        not_started_yet = (is_today and current_time_24h < start_t_24h)
+        is_after_cutoff = (is_today and current_time_24h >= "23:00")
+
+        # Teacher can take attendance only if:
+        # 1. Today is the scheduled day
+        # 2. Slot is a CLASS slot
+        # 3. Not marked yet today
+        # 4. Slot start time has arrived (>= start_time)
+        # 5. Before 11:00 PM IST cutoff
+        # 6. Not cancelled by Admin
+        # 7. Faculty is present/checked-in today (if absent, cannot take live attendance)
+        can_take = (
+            is_today and 
+            slot.slot_type == 'CLASS' and 
+            not sess_today and 
+            not not_started_yet and 
+            not is_after_cutoff and 
+            not is_cancelled and 
+            faculty_is_present_today
+        )
 
         weekly_timetable_schedule.append({
             'slot': slot,
@@ -207,6 +278,8 @@ def dashboard():
             'is_cancelled': is_cancelled,
             'cancellation_reason': cancellation_reason,
             'not_started_yet': not_started_yet,
+            'is_after_cutoff': is_after_cutoff,
+            'faculty_is_present_today': faculty_is_present_today,
             'can_take_attendance': can_take,
             'attendance_marked': (is_today and sess_today is not None),
             'completed_session_id': sess_today.id if sess_today else None
@@ -1005,6 +1078,27 @@ def take_attendance():
         ds_chk = DailySchedule.query.filter_by(timetable_id=int(timetable_id), date=today).first()
         if ds_chk and ds_chk.is_cancelled:
             flash(f"This class period has been cancelled for today ({ds_chk.cancellation_reason or 'Faculty unavailable'}). Attendance cannot be marked.", "warning")
+            return redirect(url_for('teacher.dashboard'))
+
+    # Time Window & Faculty Attendance Validation for Official Sessions
+    if session_rec:
+        current_time_24h = get_current_24h_time_str()
+        slot_start_24h = convert_to_24h(session_rec.start_time)
+        faculty_present = get_faculty_daily_attendance_status(teacher.id, today)
+
+        # Check if faculty is marked absent or not checked in
+        if not faculty_present:
+            flash("⚠️ Attendance Taking Blocked: Your faculty attendance for today is either pending, absent, or unverified. You cannot mark live student attendance until you check in or merge a proxy.", "warning")
+            return redirect(url_for('teacher.dashboard'))
+
+        # Check if slot time has arrived
+        if session_rec.date == today and current_time_24h < slot_start_24h:
+            flash(f"⚠️ Class Attendance Locked: This lecture is scheduled at {session_rec.start_time}. Attendance opens strictly at {session_rec.start_time} (or after) and stays open until 11:00 PM IST.", "warning")
+            return redirect(url_for('teacher.dashboard'))
+
+        # Check if after 11 PM cutoff
+        if session_rec.date == today and current_time_24h >= "23:00":
+            flash("⚠️ Attendance Window Closed: Today's attendance window closed at 11:00 PM IST. Please submit a correction request to update records.", "warning")
             return redirect(url_for('teacher.dashboard'))
 
     is_sandbox_mode = (session_rec is None)

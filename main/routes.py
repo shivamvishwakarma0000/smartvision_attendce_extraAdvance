@@ -1202,9 +1202,34 @@ def delete_class(class_id):
     class_to_delete = Class.query.get_or_404(class_id)
         
     try:
+        from models import Timetable, DailySchedule, ProxyAttendanceTransfer, AttendanceSession, AttendanceRecord, AttendanceAuditLog, ClassAnnouncement, StudentEditRequest, Student
+        
+        # 1. Clean proxy transfers for this class
+        ProxyAttendanceTransfer.query.filter_by(class_id=class_id).delete(synchronize_session=False)
+
+        # 2. Clean timetable slots & daily schedules for this class
+        tt_ids = [t.id for t in Timetable.query.filter_by(class_id=class_id).all()]
+        if tt_ids:
+            DailySchedule.query.filter(DailySchedule.timetable_id.in_(tt_ids)).delete(synchronize_session=False)
+            Timetable.query.filter_by(class_id=class_id).delete(synchronize_session=False)
+
+        # 3. Clean attendance audit logs, records and sessions for students in this class
+        st_ids = [st.id for st in Student.query.filter_by(class_id=class_id).all()]
+        if st_ids:
+            AttendanceAuditLog.query.filter(AttendanceAuditLog.student_id.in_(st_ids)).delete(synchronize_session=False)
+
+        sess_ids = [s.id for s in AttendanceSession.query.filter_by(class_id=class_id).all()]
+        if sess_ids:
+            AttendanceRecord.query.filter(AttendanceRecord.session_id.in_(sess_ids)).delete(synchronize_session=False)
+            AttendanceSession.query.filter_by(class_id=class_id).delete(synchronize_session=False)
+
+        # 4. Clean class announcements & student edit requests
+        ClassAnnouncement.query.filter_by(class_id=class_id).delete(synchronize_session=False)
+        StudentEditRequest.query.filter_by(new_class_id=class_id).delete(synchronize_session=False)
+
         db.session.delete(class_to_delete)
         db.session.commit()
-        flash(f"Class '{class_to_delete.name}' and all its associated data have been deleted.", 'success')
+        flash(f"Class '{class_to_delete.name}' and all associated student/schedule data have been deleted successfully.", 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting class: {e}", 'danger')
@@ -1293,9 +1318,39 @@ def delete_teacher(teacher_id):
     teacher_to_delete = Teacher.query.get_or_404(teacher_id)
     
     try:
-        # Unassign subjects before deletion
+        # 1. Unassign subjects
         for sub in teacher_to_delete.subjects:
             sub.teacher_id = None
+
+        # 2. Clean up proxy transfers where teacher was original OR substitute
+        from models import ProxyAttendanceTransfer, TeacherLeave, DailySchedule, Timetable, TeacherEditRequest, TeacherAssignment, AttendanceSession, TeacherDailyAttendance, TeacherAttendanceAuditLog
+        ProxyAttendanceTransfer.query.filter(
+            (ProxyAttendanceTransfer.substitute_teacher_id == teacher_to_delete.id) |
+            (ProxyAttendanceTransfer.original_teacher_id == teacher_to_delete.id)
+        ).delete(synchronize_session=False)
+
+        # 3. Clean up leaves where teacher is the applicant OR designated substitute
+        TeacherLeave.query.filter(
+            (TeacherLeave.teacher_id == teacher_to_delete.id) |
+            (TeacherLeave.substitute_teacher_id == teacher_to_delete.id)
+        ).delete(synchronize_session=False)
+
+        # 4. Clean up teacher daily attendance and audit logs
+        TeacherAttendanceAuditLog.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        TeacherDailyAttendance.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+
+        # 5. Clean up daily schedule proxy allocations
+        DailySchedule.query.filter_by(substitute_teacher_id=teacher_to_delete.id).update({'substitute_teacher_id': None, 'is_proxy': False})
+
+        # 6. Nullify timetable slot allocations for this teacher
+        Timetable.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
+
+        # 7. Delete teacher edit requests & assignments
+        TeacherEditRequest.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        TeacherAssignment.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+
+        # 8. Unlink attendance sessions
+        AttendanceSession.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
 
         # Find linked user account by user_id or email
         user_account = None
@@ -1325,7 +1380,7 @@ def delete_teacher(teacher_id):
 
         db.session.delete(teacher_to_delete)
         db.session.commit()
-        flash(f"Teacher '{teacher_to_delete.name}' ({email_freed}) deleted. Linked registration key is now Vacant and free for re-use.", 'success')
+        flash(f"Teacher '{teacher_to_delete.name}' ({email_freed}) deleted successfully.", 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting teacher: {e}", "danger")
@@ -2149,7 +2204,11 @@ def delete_student(student_id):
             session.pop('reg_otp_' + u.email.lower(), None) if u.email else None
             db.session.delete(u)
 
-        # Delete any linked attendance and edit request records
+        # Delete all linked attendance audit logs, discrepancy requests, attendance records, and edit requests
+        from models import AttendanceAuditLog, AttendanceRecord, AttendanceDiscrepancyRequest
+        AttendanceAuditLog.query.filter_by(student_id=student_to_delete.id).delete()
+        AttendanceDiscrepancyRequest.query.filter_by(student_id=student_to_delete.id).delete()
+        AttendanceRecord.query.filter_by(student_id=student_to_delete.id).delete()
         Attendance.query.filter_by(student_id=student_to_delete.id).delete()
         StudentEditRequest.query.filter_by(student_id=student_to_delete.id).delete()
 

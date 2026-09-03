@@ -163,7 +163,7 @@ class Teacher(db.Model):
 
     subjects = db.relationship('Subject', backref='teacher', lazy=True)
     assignments = db.relationship('TeacherAssignment', backref='teacher', lazy=True, cascade="all, delete-orphan")
-    leaves = db.relationship('TeacherLeave', foreign_keys='TeacherLeave.teacher_id', backref='teacher', lazy=True)
+    leaves = db.relationship('TeacherLeave', foreign_keys='TeacherLeave.teacher_id', backref='teacher', lazy=True, cascade="all, delete-orphan")
 
     @property
     def effective_department(self):

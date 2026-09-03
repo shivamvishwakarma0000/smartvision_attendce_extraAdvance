@@ -79,48 +79,15 @@
                 </div>
                 
                 {% if current_user.role == 'admin' %}
-                    <!-- Admin Navigation -->
+                    <!-- Admin Navigation: Prioritized & Grouped -->
                     <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-simple me-2"></i> Dashboard
                     </a>
-                    <a href="{{ url_for('main.university_details') }}" class="nav-link {% if request.endpoint == 'main.university_details' %}active{% endif %}">
-                        <i class="fa-solid fa-building-columns me-2 text-warning"></i> University Profile
-                    </a>
-                    <a href="{{ url_for('main.view_reports') }}" class="nav-link {% if request.endpoint == 'main.view_reports' %}active{% endif %}">
-                        <i class="fa-solid fa-users me-2"></i> Enrolled Students
-                    </a>
-                    <a href="{{ url_for('main.enrolled_teachers') }}" class="nav-link {% if request.endpoint == 'main.enrolled_teachers' %}active{% endif %}">
-                        <i class="fa-solid fa-chalkboard-user me-2"></i> Enrolled Teachers
-                    </a>
-                    <a href="{{ url_for('main.retention_risk_report') }}" class="nav-link {% if request.endpoint == 'main.retention_risk_report' %}active{% endif %}">
-                        <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i> Retention Warning
-                    </a>
-                    <a href="{{ url_for('main.manage_subjects') }}" class="nav-link {% if request.endpoint == 'main.manage_subjects' %}active{% endif %}">
-                        <i class="fa-solid fa-book me-2"></i> Manage Subjects
-                    </a>
-                    <a href="{{ url_for('main.manage_classes') }}" class="nav-link {% if request.endpoint == 'main.manage_classes' %}active{% endif %}">
-                        <i class="fa-solid fa-school me-2"></i> Manage Classes
-                    </a>
-                    <a href="{{ url_for('main.manage_timetable') }}" class="nav-link {% if request.endpoint == 'main.manage_timetable' %}active{% endif %}">
-                        <i class="fa-solid fa-calendar-days me-2"></i> Class Timetable
-                    </a>
-                    <a href="{{ url_for('main.manage_announcements') }}" class="nav-link {% if request.endpoint == 'main.manage_announcements' %}active{% endif %} text-nowrap">
-                        <i class="fa-solid fa-bullhorn me-2 text-warning"></i> Announcements
-                    </a>
-                    <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="nav-link {% if request.endpoint and 'teacher_attendance' in request.endpoint %}active{% endif %}">
-                        <i class="fa-solid fa-location-dot me-2 text-primary"></i> Teacher Attendance
-                    </a>
                     <a href="{{ url_for('main.approvals') }}" class="nav-link {% if request.endpoint == 'main.approvals' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-user-shield me-2"></i> Approvals</span>
+                        <span><i class="fa-solid fa-user-shield me-2 text-primary"></i> Approvals</span>
                         {% set a_count = (pending_approvals_count if pending_approvals_count is defined and pending_approvals_count > 0 else admin_pending_approvals_count) %}
                         {% if a_count > 0 %}
                             <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2" style="font-size: 0.75rem; min-width: 22px;">{{ a_count }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{{ url_for('main.assign_students') }}" class="nav-link {% if request.endpoint == 'main.assign_students' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-people-arrows me-2"></i> Assign Classes</span>
-                        {% if unclassified_students_count > 0 %}
-                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.75rem; min-width: 22px;">{{ unclassified_students_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center">
@@ -129,31 +96,61 @@
                             <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 animate-pulse" title="Threshold Reached Complaints">{{ admin_threshold_complaints_count }}</span>
                         {% endif %}
                     </a>
+                    <a href="{{ url_for('main.manage_timetable') }}" class="nav-link {% if request.endpoint == 'main.manage_timetable' %}active{% endif %}">
+                        <i class="fa-solid fa-calendar-days me-2 text-info"></i> Class Timetable
+                    </a>
+                    <a href="{{ url_for('teacher_attendance.admin_teacher_attendance') }}" class="nav-link {% if request.endpoint and 'teacher_attendance' in request.endpoint %}active{% endif %}">
+                        <i class="fa-solid fa-location-dot me-2 text-success"></i> Teacher Attendance
+                    </a>
+                    <a href="{{ url_for('main.manage_classes') }}" class="nav-link {% if request.endpoint == 'main.manage_classes' %}active{% endif %}">
+                        <i class="fa-solid fa-school me-2"></i> Manage Classes
+                    </a>
+                    <a href="{{ url_for('main.manage_subjects') }}" class="nav-link {% if request.endpoint == 'main.manage_subjects' %}active{% endif %}">
+                        <i class="fa-solid fa-book me-2"></i> Manage Subjects
+                    </a>
+                    <a href="{{ url_for('main.view_reports') }}" class="nav-link {% if request.endpoint == 'main.view_reports' %}active{% endif %}">
+                        <i class="fa-solid fa-users me-2"></i> Enrolled Students
+                    </a>
+                    <a href="{{ url_for('main.enrolled_teachers') }}" class="nav-link {% if request.endpoint == 'main.enrolled_teachers' %}active{% endif %}">
+                        <i class="fa-solid fa-chalkboard-user me-2"></i> Enrolled Teachers
+                    </a>
+                    <a href="{{ url_for('main.assign_students') }}" class="nav-link {% if request.endpoint == 'main.assign_students' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-people-arrows me-2"></i> Assign Classes</span>
+                        {% if unclassified_students_count > 0 %}
+                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.75rem; min-width: 22px;">{{ unclassified_students_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('main.retention_risk_report') }}" class="nav-link {% if request.endpoint == 'main.retention_risk_report' %}active{% endif %}">
+                        <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i> Retention Warning
+                    </a>
+                    <a href="{{ url_for('main.manage_announcements') }}" class="nav-link {% if request.endpoint == 'main.manage_announcements' %}active{% endif %} text-nowrap">
+                        <i class="fa-solid fa-bullhorn me-2 text-warning"></i> Announcements
+                    </a>
                     <a href="{{ url_for('main.recommend_teachers') }}" class="nav-link {% if request.endpoint == 'main.recommend_teachers' %}active{% endif %}">
                         <i class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i> Smart Recommender
                     </a>
                     <a href="{{ url_for('main.admin_id_cards') }}" class="nav-link {% if request.endpoint == 'main.admin_id_cards' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-info"></i> ID Cards Portal
                     </a>
+                    <a href="{{ url_for('main.university_details') }}" class="nav-link {% if request.endpoint == 'main.university_details' %}active{% endif %}">
+                        <i class="fa-solid fa-building-columns me-2 text-warning"></i> University Profile
+                    </a>
                 {% elif current_user.role == 'teacher' %}
-                    <!-- Teacher Navigation -->
+                    <!-- Teacher Navigation: Prioritized & Grouped -->
                     <a href="{{ url_for('teacher.dashboard') }}" class="nav-link {% if request.endpoint == 'teacher.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-line me-2"></i> Teacher Dashboard
                     </a>
-                    <a href="{{ url_for('teacher.feedback_ratings') }}" class="nav-link {% if request.endpoint == 'teacher.feedback_ratings' %}active{% endif %}">
-                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Ratings & Feedback
+                    <a href="{{ url_for('teacher.take_attendance') }}" class="nav-link {% if request.endpoint == 'teacher.take_attendance' %}active{% endif %}">
+                        <i class="fa-solid fa-camera me-2 text-primary"></i> Take Attendance
                     </a>
-                    <a href="{{ url_for('teacher.teacher_id_card') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_id_card' %}active{% endif %}">
-                        <i class="fa-solid fa-id-badge me-2 text-warning"></i> My Digital ID Card
-                    </a>
-                    <a href="{{ url_for('teacher.edit_profile') }}" class="nav-link {% if request.endpoint == 'teacher.edit_profile' %}active{% endif %}">
-                        <i class="fa-solid fa-user-pen me-2 text-primary"></i> Edit Profile
+                    <a href="{{ url_for('teacher.timetable') }}" class="nav-link {% if request.endpoint == 'teacher.timetable' %}active{% endif %}">
+                        <i class="fa-solid fa-calendar-days me-2 text-info"></i> Class Timetable
                     </a>
                     <a href="{{ url_for('teacher.my_attendance') }}" class="nav-link {% if request.endpoint == 'teacher.my_attendance' %}active{% endif %}">
                         <i class="fa-solid fa-calendar-check me-2 text-success"></i> My Attendance
                     </a>
-                    <a href="{{ url_for('teacher.timetable') }}" class="nav-link {% if request.endpoint == 'teacher.timetable' %}active{% endif %}">
-                        <i class="fa-solid fa-calendar-days me-2 text-info"></i> Class Timetable
+                    <a href="{{ url_for('teacher.feedback_ratings') }}" class="nav-link {% if request.endpoint == 'teacher.feedback_ratings' %}active{% endif %}">
+                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Ratings & Feedback
                     </a>
                     {% if current_user.teacher_profile and current_user.teacher_profile.classes_directed %}
                     <a href="{{ url_for('teacher.class_teacher_dashboard') }}" class="nav-link {% if request.endpoint == 'teacher.class_teacher_dashboard' %}active{% endif %}">
@@ -163,23 +160,8 @@
                     <a href="{{ url_for('teacher.enrolled_students') }}" class="nav-link {% if request.endpoint == 'teacher.enrolled_students' %}active{% endif %}">
                         <i class="fa-solid fa-graduation-cap me-2"></i> Enrolled Students
                     </a>
-                    <a href="{{ url_for('teacher.take_attendance') }}" class="nav-link {% if request.endpoint == 'teacher.take_attendance' %}active{% endif %}">
-                        <i class="fa-solid fa-camera me-2 text-primary"></i> Take Attendance
-                    </a>
-                    <a href="{{ url_for('teacher.announcements') }}" class="nav-link {% if request.endpoint == 'teacher.announcements' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-bullhorn me-2 text-warning"></i> Notice Board</span>
-                        {% if teacher_notice_count and teacher_notice_count > 0 %}
-                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 shadow-xs notice-badge">{{ teacher_notice_count }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{{ url_for('teacher.student_modifications') }}" class="nav-link {% if request.endpoint == 'teacher.student_modifications' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-file-signature me-2 text-warning"></i> Modification Requests</span>
-                        {% if pending_discrepancies_count > 0 %}
-                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_discrepancies_count }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{{ url_for('teacher.leave_applications') }}" class="nav-link {% if request.endpoint == 'teacher.leave_applications' %}active{% endif %}">
-                        <i class="fa-solid fa-umbrella-beach me-2 text-warning"></i> Faculty Leave Portal
+                    <a href="{{ url_for('teacher.view_reports') }}" class="nav-link {% if request.endpoint == 'teacher.view_reports' %}active{% endif %}">
+                        <i class="fa-solid fa-file-csv me-2"></i> Subject Reports
                     </a>
                     <a href="{{ url_for('teacher.proxy_classes') }}" class="nav-link {% if request.endpoint == 'teacher.proxy_classes' %}active{% endif %} d-flex justify-content-between align-items-center">
                         <span><i class="fa-solid fa-user-clock me-2 text-info"></i> Proxy Classes</span>
@@ -187,28 +169,40 @@
                         <span class="badge bg-info text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ proxy_classes_count }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('teacher.view_reports') }}" class="nav-link {% if request.endpoint == 'teacher.view_reports' %}active{% endif %}">
-                        <i class="fa-solid fa-file-csv me-2"></i> Subject Reports
+                    <a href="{{ url_for('teacher.leave_applications') }}" class="nav-link {% if request.endpoint == 'teacher.leave_applications' %}active{% endif %}">
+                        <i class="fa-solid fa-umbrella-beach me-2 text-warning"></i> Faculty Leave Portal
+                    </a>
+                    <a href="{{ url_for('teacher.student_modifications') }}" class="nav-link {% if request.endpoint == 'teacher.student_modifications' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-file-signature me-2 text-warning"></i> Student Modification Requests</span>
+                        {% if pending_discrepancies_count > 0 %}
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_discrepancies_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('teacher.announcements') }}" class="nav-link {% if request.endpoint == 'teacher.announcements' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-bullhorn me-2 text-warning"></i> Notice Board</span>
+                        {% if teacher_notice_count and teacher_notice_count > 0 %}
+                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 shadow-xs notice-badge">{{ teacher_notice_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('teacher.teacher_id_card') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_id_card' %}active{% endif %}">
+                        <i class="fa-solid fa-id-badge me-2 text-warning"></i> My Digital ID Card
+                    </a>
+                    <a href="{{ url_for('teacher.edit_profile') }}" class="nav-link {% if request.endpoint == 'teacher.edit_profile' %}active{% endif %}">
+                        <i class="fa-solid fa-user-pen me-2 text-primary"></i> Edit Profile
                     </a>
                 {% elif current_user.role == 'student' %}
-                    <!-- Student Navigation -->
+                    <!-- Student Navigation: Prioritized & Grouped -->
                     <a href="{{ url_for('student.dashboard') }}" class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
                         <i class="fa-solid fa-chart-line me-2"></i> My Dashboard
                     </a>
-                    <a href="{{ url_for('student.feedback') }}" class="nav-link {% if request.endpoint == 'student.feedback' %}active{% endif %}">
-                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Rating
-                    </a>
                     <a href="{{ url_for('student.month_view') }}" class="nav-link {% if request.endpoint == 'student.month_view' %}active{% endif %}">
-                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i> Month View
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i> Monthly Attendance
                     </a>
                     <a href="{{ url_for('student.timetable') }}" class="nav-link {% if request.endpoint == 'student.timetable' %}active{% endif %}">
                         <i class="fa-solid fa-table-cells me-2 text-info"></i> Class Timetable
                     </a>
-                    <a href="{{ url_for('student.student_id_card') }}" class="nav-link {% if request.endpoint == 'student.student_id_card' %}active{% endif %}">
-                        <i class="fa-solid fa-id-badge me-2 text-success"></i> My Digital ID Card
-                    </a>
-                    <a href="{{ url_for('student.request_modification') }}" class="nav-link {% if request.endpoint == 'student.request_modification' %}active{% endif %}">
-                        <i class="fa-solid fa-file-signature me-2 text-warning"></i> Request Modifications
+                    <a href="{{ url_for('student.feedback') }}" class="nav-link {% if request.endpoint == 'student.feedback' %}active{% endif %}">
+                        <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Rating
                     </a>
                     <a href="{{ url_for('student.notices') }}" class="nav-link {% if request.endpoint == 'student.notices' %}active{% endif %} d-flex justify-content-between align-items-center">
                         <span><i class="fa-solid fa-bullhorn me-2 text-info"></i> Notice Board</span>
@@ -216,8 +210,14 @@
                         <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 shadow-xs notice-badge">{{ student_notice_count }}</span>
                         {% endif %}
                     </a>
+                    <a href="{{ url_for('student.student_id_card') }}" class="nav-link {% if request.endpoint == 'student.student_id_card' %}active{% endif %}">
+                        <i class="fa-solid fa-id-badge me-2 text-success"></i> My Digital ID Card
+                    </a>
+                    <a href="{{ url_for('student.request_modification') }}" class="nav-link {% if request.endpoint == 'student.request_modification' %}active{% endif %}">
+                        <i class="fa-solid fa-file-signature me-2 text-warning"></i> Request Profile Edit
+                    </a>
                     <a href="{{ url_for('student.edit_profile') }}" class="nav-link {% if request.endpoint == 'student.edit_profile' %}active{% endif %}">
-                        <i class="fa-solid fa-user-pen me-2"></i> Edit Profile
+                        <i class="fa-solid fa-user-pen me-2"></i> Profile Settings
                     </a>
                 {% endif %}
                 

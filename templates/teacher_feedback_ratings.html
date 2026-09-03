@@ -35,19 +35,19 @@
     <div class="row g-2.5 g-md-3 mb-3 mb-md-4">
         <!-- Overall Rating Card -->
         <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-warning" style="box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1.5">
-                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Overall Rating</span>
-                    <div class="badge bg-warning-subtle text-warning p-1.5 rounded-circle">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card" style="border: 1.5px solid rgba(245, 158, 11, 0.35) !important; background: linear-gradient(180deg, rgba(254, 243, 199, 0.3) 0%, #ffffff 100%);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-warning-emphasis fs-9 fw-bold text-uppercase tracking-wider">Overall Rating</span>
+                    <div class="badge bg-warning text-dark p-1.5 rounded-circle shadow-xs">
                         <i class="fa-solid fa-star fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-1.5">
-                    <h3 class="fw-bold text-dark mb-0">{{ avg_overall }}</h3>
+                <div class="d-flex align-items-baseline gap-1.5 my-1">
+                    <h2 class="fw-bold text-dark mb-0">{{ avg_overall }}</h2>
                     <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-1.5">
-                    <span class="badge bg-{{ status_color }}-subtle text-{{ status_color }} border border-{{ status_color }}-subtle rounded-pill px-2 py-0.5 fw-bold fs-9 text-truncate d-inline-block" style="max-width: 100%;">
+                <div>
+                    <span class="badge bg-{{ status_color }} text-white rounded-pill px-2.5 py-0.5 fw-bold fs-9 shadow-xs">
                         {{ performance_status }}
                     </span>
                 </div>
@@ -56,37 +56,37 @@
 
         <!-- Total Reviews -->
         <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-primary" style="box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1.5">
-                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Total Evaluations</span>
-                    <div class="badge bg-primary-subtle text-primary p-1.5 rounded-circle">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card" style="border: 1.5px solid rgba(59, 130, 246, 0.35) !important; background: linear-gradient(180deg, rgba(219, 234, 254, 0.3) 0%, #ffffff 100%);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-primary-emphasis fs-9 fw-bold text-uppercase tracking-wider">Evaluations</span>
+                    <div class="badge bg-primary text-white p-1.5 rounded-circle shadow-xs">
                         <i class="fa-solid fa-users fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-1.5">
-                    <h3 class="fw-bold text-dark mb-0">{{ total_ratings_count }}</h3>
+                <div class="d-flex align-items-baseline gap-1.5 my-1">
+                    <h2 class="fw-bold text-dark mb-0">{{ total_ratings_count }}</h2>
                     <span class="text-muted fs-8">students</span>
                 </div>
-                <div class="mt-1.5 text-muted fs-9">
-                    <i class="fa-solid fa-lock text-success me-1"></i> Anonymous
+                <div class="text-success fs-9 fw-semibold">
+                    <i class="fa-solid fa-lock me-1"></i> Anonymous
                 </div>
             </div>
         </div>
 
         <!-- Teaching Quality -->
         <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-success" style="box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1.5">
-                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Teaching Quality</span>
-                    <div class="badge bg-success-subtle text-success p-1.5 rounded-circle">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card" style="border: 1.5px solid rgba(16, 185, 129, 0.35) !important; background: linear-gradient(180deg, rgba(209, 250, 229, 0.3) 0%, #ffffff 100%);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-success-emphasis fs-9 fw-bold text-uppercase tracking-wider">Teaching Quality</span>
+                    <div class="badge bg-success text-white p-1.5 rounded-circle shadow-xs">
                         <i class="fa-solid fa-chalkboard-user fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-1.5">
-                    <h3 class="fw-bold text-dark mb-0">{{ avg_quality }}</h3>
+                <div class="d-flex align-items-baseline gap-1.5 my-1">
+                    <h2 class="fw-bold text-dark mb-0">{{ avg_quality }}</h2>
                     <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-1.5 text-muted fs-9 text-truncate">
+                <div class="text-muted fs-9">
                     Concept Delivery
                 </div>
             </div>
@@ -94,19 +94,19 @@
 
         <!-- Subject Knowledge -->
         <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card border-top border-4 border-info" style="box-shadow: 0 4px 12px rgba(6, 182, 212, 0.08) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1.5">
-                    <span class="text-muted fs-9 fw-bold text-uppercase tracking-wider">Knowledge</span>
-                    <div class="badge bg-info-subtle text-info p-1.5 rounded-circle">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 kpi-card" style="border: 1.5px solid rgba(6, 182, 212, 0.35) !important; background: linear-gradient(180deg, rgba(207, 250, 254, 0.3) 0%, #ffffff 100%);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-info-emphasis fs-9 fw-bold text-uppercase tracking-wider">Knowledge</span>
+                    <div class="badge bg-info text-white p-1.5 rounded-circle shadow-xs">
                         <i class="fa-solid fa-book-open fs-7"></i>
                     </div>
                 </div>
-                <div class="d-flex align-items-baseline gap-1.5">
-                    <h3 class="fw-bold text-dark mb-0">{{ avg_knowledge }}</h3>
+                <div class="d-flex align-items-baseline gap-1.5 my-1">
+                    <h2 class="fw-bold text-dark mb-0">{{ avg_knowledge }}</h2>
                     <span class="text-muted fs-8">/ 5.0</span>
                 </div>
-                <div class="mt-1.5 text-muted fs-9 text-truncate">
-                    Domain Accuracy
+                <div class="text-muted fs-9">
+                    Domain Mastery
                 </div>
             </div>
         </div>
@@ -116,60 +116,57 @@
     <div class="row g-3 mb-3 mb-md-4">
         <!-- 4 Parameters Matrix -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border" style="border-color: rgba(99, 102, 241, 0.12) !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <h5 class="fw-bold text-dark mb-0 fs-6">Evaluation Parameter Breakdown</h5>
-                    <span class="badge bg-light text-primary border rounded-pill px-2.5 py-0.5 fs-9 fw-bold">Scale: 1 – 5</span>
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white h-100 border" style="border: 1px solid rgba(99, 102, 241, 0.2) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0 fs-6">
+                        <i class="fa-solid fa-chart-column text-primary me-1.5"></i> Evaluation Parameters
+                    </h5>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fs-9 fw-bold">Scale: 1 – 5</span>
                 </div>
-                <p class="text-muted fs-9 mb-3">Granular performance metrics assessed across 4 fundamental pedagogical parameters.</p>
 
-                <div class="d-flex flex-column gap-3">
+                <div class="d-flex flex-column gap-2.5">
                     <!-- Param 1 -->
-                    <div class="p-2.5 rounded-3 bg-light-subtle border">
-                        <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
+                    <div class="p-2.5 rounded-3 bg-white border border-primary-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 fs-8">
                             <span class="fw-bold text-dark"><i class="fa-solid fa-chalkboard text-primary me-1.5"></i> 1. Teaching Quality</span>
-                            <span class="badge bg-primary text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_quality }} / 5.0</span>
+                            <span class="badge bg-primary text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">{{ avg_quality }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
+                        <div class="progress rounded-pill bg-light" style="height: 8px;">
                             <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (avg_quality / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
-                        <div class="fs-9 text-muted mt-1">Concept clarity, pace of explanation, and syllabus presentation</div>
                     </div>
 
                     <!-- Param 2 -->
-                    <div class="p-2.5 rounded-3 bg-light-subtle border">
-                        <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
+                    <div class="p-2.5 rounded-3 bg-white border border-success-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 fs-8">
                             <span class="fw-bold text-dark"><i class="fa-solid fa-brain text-success me-1.5"></i> 2. Subject Knowledge</span>
-                            <span class="badge bg-success text-white rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_knowledge }} / 5.0</span>
+                            <span class="badge bg-success text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">{{ avg_knowledge }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
+                        <div class="progress rounded-pill bg-light" style="height: 8px;">
                             <div class="progress-bar bg-success" role="progressbar" style="width: {{ (avg_knowledge / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
-                        <div class="fs-9 text-muted mt-1">Subject depth, real-world examples, and accuracy of academic material</div>
                     </div>
 
                     <!-- Param 3 -->
-                    <div class="p-2.5 rounded-3 bg-light-subtle border">
-                        <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
+                    <div class="p-2.5 rounded-3 bg-white border border-info-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 fs-8">
                             <span class="fw-bold text-dark"><i class="fa-solid fa-comments text-info me-1.5"></i> 3. Communication & Style</span>
-                            <span class="badge bg-info text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_communication }} / 5.0</span>
+                            <span class="badge bg-info text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">{{ avg_communication }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
+                        <div class="progress rounded-pill bg-light" style="height: 8px;">
                             <div class="progress-bar bg-info" role="progressbar" style="width: {{ (avg_communication / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
-                        <div class="fs-9 text-muted mt-1">Audibility, interactive style, and student engagement in class</div>
                     </div>
 
                     <!-- Param 4 -->
-                    <div class="p-2.5 rounded-3 bg-light-subtle border">
-                        <div class="d-flex justify-content-between align-items-center mb-1 fs-8">
+                    <div class="p-2.5 rounded-3 bg-white border border-warning-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 fs-8">
                             <span class="fw-bold text-dark"><i class="fa-solid fa-hand-holding-hand text-warning me-1.5"></i> 4. Student Support & Doubts</span>
-                            <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold">{{ avg_support }} / 5.0</span>
+                            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-0.5 fs-9 fw-bold">{{ avg_support }} / 5.0</span>
                         </div>
-                        <div class="progress rounded-pill bg-secondary-subtle" style="height: 8px;">
+                        <div class="progress rounded-pill bg-light" style="height: 8px;">
                             <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (avg_support / 5.0 * 100)|round(1) }}%;"></div>
                         </div>
-                        <div class="fs-9 text-muted mt-1">Patience in answering questions, accessibility, and doubt clearing</div>
                     </div>
                 </div>
             </div>

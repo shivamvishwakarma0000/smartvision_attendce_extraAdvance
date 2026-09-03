@@ -13,11 +13,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
             <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-lock text-danger me-2"></i>Institutional Suspension Desk</h4>
-            <p class="text-muted fs-8 mb-0">Review suspension removal appeals, teacher-initiated suspensions, and complete audit history.</p>
+            <p class="text-muted fs-8 mb-0">Review suspension removal appeals, manage active suspensions, and view complete audit history.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ url_for('main.admin_id_cards') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-2 fw-bold">
-                <i class="fa-solid fa-id-badge me-1.5"></i>All ID Cards Directory
+                <i class="fa-solid fa-id-badge me-1.5"></i>Back to ID Cards Portal
             </a>
         </div>
     </div>
@@ -55,7 +55,7 @@
     <ul class="nav nav-pills mb-3 gap-2" id="suspensionTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active rounded-pill px-4 py-2 fs-8 fw-bold" id="tab-requests" data-bs-toggle="pill" data-bs-target="#pane-requests" type="button" role="tab">
-                <i class="fa-solid fa-file-circle-question me-1.5 text-warning"></i>Removal Requests ({{ pending_reqs|length }} Pending)
+                <i class="fa-solid fa-file-circle-question me-1.5 text-warning"></i>Removal Requests ({{ pending_reqs|length }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -74,39 +74,65 @@
         <!-- ================= PANE 1: REMOVAL REQUESTS ================= -->
         <div class="tab-pane fade show active" id="pane-requests" role="tabpanel">
             <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 bg-white border">
-                <h5 class="fw-bold text-dark mb-1 fs-6">Formal Suspension Removal Requests</h5>
-                <p class="text-muted fs-9 mb-3">Review written explanations, uploaded evidence, and take administrative action to approve or reject.</p>
+                
+                <!-- Filter Bar: Toggle Student vs Teacher & Pending vs All History -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 fs-6">Suspension Removal Requests</h5>
+                        <span class="text-muted fs-9">Review written explanations and approve/reject appeals.</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <!-- Role Toggle: All / Students / Teachers -->
+                        <div class="btn-group btn-group-sm" role="group" id="appealRoleFilter">
+                            <button type="button" class="btn btn-outline-primary active fw-bold px-3 py-1.5 rounded-start-pill" onclick="filterAppeals('ALL', this)">
+                                All ({{ requests_list|length }})
+                            </button>
+                            <button type="button" class="btn btn-outline-primary fw-bold px-3 py-1.5" onclick="filterAppeals('STUDENT', this)">
+                                <i class="fa-solid fa-user-graduate me-1"></i>Students
+                            </button>
+                            <button type="button" class="btn btn-outline-primary fw-bold px-3 py-1.5 rounded-end-pill" onclick="filterAppeals('TEACHER', this)">
+                                <i class="fa-solid fa-user-tie me-1"></i>Faculty
+                            </button>
+                        </div>
+
+                        <!-- Status View Toggle: Pending vs Full History -->
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-bold" id="btnToggleHistory" onclick="toggleHistoryView()">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i>Show Resolved History
+                        </button>
+                    </div>
+                </div>
 
                 {% if requests_list %}
-                    <div class="row g-3">
+                    <div class="row g-3" id="appealsCardsContainer">
                         {% for req in requests_list %}
                         {% set is_stu = (req.target_type == 'STUDENT') %}
                         {% set person = req.student if is_stu else req.teacher %}
                         
-                        <div class="col-lg-6">
+                        <div class="col-lg-6 appeal-card-item" data-role="{{ req.target_type }}" data-status="{{ req.status }}" style="{% if req.status != 'Pending' %}display: none;{% endif %}">
                             <div class="card h-100 rounded-4 p-3.5 border shadow-xs {% if req.status == 'Pending' %}border-warning bg-warning bg-opacity-10{% elif req.status == 'Approved' %}border-success-subtle bg-light-subtle{% else %}border-secondary-subtle bg-light-subtle{% endif %}">
                                 <!-- Top Bar -->
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="badge {% if is_stu %}bg-primary{% else %}bg-info text-dark{% endif %} rounded-pill px-2.5 py-1 fs-9 fw-bold">
                                         {{ req.target_type }} APPEAL
                                     </span>
-                                    <span class="badge {% if req.status == 'Pending' %}bg-warning text-dark animate-pulse{% elif req.status == 'Approved' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3 py-1 fs-9 fw-bold">
+                                    <span class="badge {% if req.status == 'Pending' %}bg-warning text-dark{% elif req.status == 'Approved' %}bg-success{% else %}bg-secondary{% endif %} rounded-pill px-3 py-1 fs-9 fw-bold">
                                         {{ req.status }}
                                     </span>
                                 </div>
 
                                 <!-- Person Info -->
                                 <div class="d-flex align-items-center gap-2 mb-2.5">
-                                    <div class="rounded-circle bg-white border p-1 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                    <div class="rounded-circle bg-white border p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
                                         {% if person and person.image_filename %}
                                         <img src="{{ url_for('main.uploaded_face', filename=person.image_filename) }}" class="rounded-circle w-100 h-100" style="object-fit: cover;">
                                         {% else %}
                                         <i class="fa-solid fa-user text-muted"></i>
                                         {% endif %}
                                     </div>
-                                    <div>
-                                        <h6 class="fw-bold text-dark mb-0 fs-7">{{ person.name if person else 'User' }}</h6>
-                                        <span class="text-muted fs-9">
+                                    <div class="overflow-hidden">
+                                        <h6 class="fw-bold text-dark mb-0 fs-7 text-truncate">{{ person.name if person else 'User' }}</h6>
+                                        <span class="text-muted fs-9 d-block text-truncate">
                                             {% if is_stu %}Roll: <strong>{{ person.roll_no }}</strong> | Class: <strong>{{ person.class_assigned.name if person.class_assigned else 'N/A' }}</strong>{% else %}Emp ID: <strong>{{ person.emp_id }}</strong> | Dept: <strong>{{ person.department }}</strong>{% endif %}
                                         </span>
                                     </div>
@@ -115,9 +141,9 @@
                                 <!-- Explanation Box -->
                                 <div class="bg-white p-3 rounded-3 border mb-2.5 shadow-2xs">
                                     <span class="text-muted fs-9 fw-bold d-block mb-1">User's Written Explanation:</span>
-                                    <p class="text-dark fs-8 mb-0 font-monospace">"{{ req.explanation }}"</p>
+                                    <p class="text-dark fs-8 mb-0 font-monospace" style="word-break: break-word;">"{{ req.explanation }}"</p>
                                     {% if req.additional_comments %}
-                                    <span class="text-muted fs-9 d-block mt-1"><strong>Additional Comments:</strong> {{ req.additional_comments }}</span>
+                                    <span class="text-muted fs-9 d-block mt-1" style="word-break: break-word;"><strong>Additional Comments:</strong> {{ req.additional_comments }}</span>
                                     {% endif %}
                                 </div>
 
@@ -125,27 +151,27 @@
                                 {% if req.supporting_document %}
                                 <div class="mb-2.5">
                                     <a href="{{ url_for('main.uploaded_face', filename=req.supporting_document) }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill fs-9 py-1 px-3">
-                                        <i class="fa-solid fa-paperclip me-1"></i>View Uploaded Document / Proof
+                                        <i class="fa-solid fa-paperclip me-1"></i>View Supporting Document
                                     </a>
                                 </div>
                                 {% endif %}
 
-                                <!-- Action Buttons if Pending -->
+                                <!-- Clean, Simplified Action Buttons (Approve & Lift or Reject) -->
                                 {% if req.status == 'Pending' %}
                                 <div class="pt-2 border-top mt-auto">
-                                    <form method="POST" action="{{ url_for('main.review_suspension_request', req_id=req.id) }}" class="d-flex gap-2">
-                                        <input type="text" name="admin_notes" class="form-control form-control-sm rounded-pill px-3 fs-9" placeholder="Admin remarks / reason...">
-                                        <button type="submit" name="action" value="APPROVE" class="btn btn-sm btn-success rounded-pill px-3 fw-bold fs-9 text-nowrap">
-                                            <i class="fa-solid fa-check me-1"></i>Approve & Lift
+                                    <form method="POST" action="{{ url_for('main.review_suspension_request', req_id=req.id) }}" class="d-flex align-items-center justify-content-end gap-2">
+                                        <input type="hidden" name="admin_notes" value="Suspension removal appeal reviewed by Administrator.">
+                                        <button type="submit" name="action" value="APPROVE" class="btn btn-sm btn-success rounded-pill px-3.5 py-1.5 fw-bold fs-9 shadow-xs text-nowrap">
+                                            <i class="fa-solid fa-check me-1.5"></i>Approve & Lift
                                         </button>
-                                        <button type="submit" name="action" value="REJECT" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold fs-9 text-nowrap">
-                                            <i class="fa-solid fa-xmark me-1"></i>Reject
+                                        <button type="submit" name="action" value="REJECT" class="btn btn-sm btn-outline-danger rounded-pill px-3.5 py-1.5 fw-bold fs-9 text-nowrap">
+                                            <i class="fa-solid fa-xmark me-1.5"></i>Reject
                                         </button>
                                     </form>
                                 </div>
                                 {% else %}
                                 <div class="pt-2 border-top mt-auto fs-9 text-muted">
-                                    Reviewed by Admin on <strong>{{ req.reviewed_at|to_ist if req.reviewed_at else 'N/A' }}</strong>
+                                    Reviewed on <strong>{{ req.reviewed_at|to_ist if req.reviewed_at else 'N/A' }}</strong>
                                     {% if req.admin_notes %}
                                     <div class="text-dark mt-0.5">Remarks: <em>{{ req.admin_notes }}</em></div>
                                     {% endif %}
@@ -155,10 +181,17 @@
                         </div>
                         {% endfor %}
                     </div>
+
+                    <!-- No items placeholder for active filter -->
+                    <div id="noAppealsNotice" class="text-center py-5 text-muted d-none">
+                        <i class="fa-solid fa-clipboard-check fs-1 text-success opacity-50 mb-2"></i>
+                        <h6 class="fw-bold text-dark fs-7">No Pending Removal Appeals</h6>
+                        <p class="fs-8 text-muted mb-0">All suspension removal appeals for the selected filter are resolved.</p>
+                    </div>
                 {% else %}
                     <div class="text-center py-5 text-muted">
                         <i class="fa-solid fa-clipboard-check fs-1 text-success opacity-50 mb-2"></i>
-                        <h6 class="fw-bold text-dark fs-7">No Removal Requests Pending</h6>
+                        <h6 class="fw-bold text-dark fs-7">No Removal Requests Found</h6>
                         <p class="fs-8 text-muted mb-0">No students or faculty members have submitted suspension removal appeals.</p>
                     </div>
                 {% endif %}
@@ -297,4 +330,65 @@
         </div>
     </div>
 </div>
+
+<script>
+let currentRoleFilter = 'ALL';
+let showHistory = false;
+
+function filterAppeals(role, btnEl) {
+    currentRoleFilter = role;
+    const btnGroup = document.getElementById('appealRoleFilter');
+    btnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active', 'btn-primary', 'text-white'));
+    btnGroup.querySelectorAll('button').forEach(b => b.classList.add('btn-outline-primary'));
+    
+    btnEl.classList.remove('btn-outline-primary');
+    btnEl.classList.add('active', 'btn-primary', 'text-white');
+
+    applyAppealFilters();
+}
+
+function toggleHistoryView() {
+    showHistory = !showHistory;
+    const btn = document.getElementById('btnToggleHistory');
+    if (showHistory) {
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-secondary', 'text-white');
+        btn.innerHTML = '<i class="fa-solid fa-eye-slash me-1"></i>Hide Resolved History';
+    } else {
+        btn.classList.remove('btn-secondary', 'text-white');
+        btn.classList.add('btn-outline-secondary');
+        btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-1"></i>Show Resolved History';
+    }
+    applyAppealFilters();
+}
+
+function applyAppealFilters() {
+    const cards = document.querySelectorAll('.appeal-card-item');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const cardRole = card.getAttribute('data-role');
+        const cardStatus = card.getAttribute('data-status');
+
+        const roleMatches = (currentRoleFilter === 'ALL' || cardRole === currentRoleFilter);
+        const statusMatches = showHistory ? true : (cardStatus === 'Pending');
+
+        if (roleMatches && statusMatches) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    const notice = document.getElementById('noAppealsNotice');
+    if (notice) {
+        if (visibleCount === 0) {
+            notice.classList.remove('d-none');
+        } else {
+            notice.classList.add('d-none');
+        }
+    }
+}
+</script>
 {% endblock %}

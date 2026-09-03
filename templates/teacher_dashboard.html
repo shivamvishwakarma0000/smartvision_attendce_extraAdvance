@@ -15,6 +15,48 @@
 
 {% block content %}
 <div class="container-fluid py-4">
+
+    <!-- Suspended Faculty ID Card Prominent Warning Alert Banner -->
+    {% if teacher.is_suspended %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #fff5f5; border-left: 5px solid #ef4444 !important; border: 1px solid #fee2e2;">
+                <div class="card-body p-3.5 p-md-4">
+                    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <span class="rounded-circle bg-danger bg-opacity-10 text-danger p-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                                <i class="fa-solid fa-user-lock fs-4"></i>
+                            </span>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <h5 class="fw-bold text-danger mb-0 fs-6">🔒 Faculty ID Card Suspended</h5>
+                                    <span class="badge bg-danger text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">Check-In & Attendance Operations Blocked</span>
+                                </div>
+                                <p class="text-dark fs-8 mb-2">
+                                    Your faculty identity card has been suspended by Administration. You cannot record morning/evening check-in until the suspension is lifted.
+                                </p>
+                                <div class="p-2.5 bg-white rounded-3 border mb-0 fs-8.5 d-inline-block shadow-2xs">
+                                    <span class="text-muted fs-9 fw-bold d-block">REASON FOR SUSPENSION:</span>
+                                    <strong class="text-danger">{{ teacher.suspension_reason or 'Administrative Issue' }}</strong>
+                                    {% if teacher.custom_suspension_reason and teacher.custom_suspension_reason != teacher.suspension_reason %}
+                                    <span class="text-muted fs-9 d-block mt-0.5">"{{ teacher.custom_suspension_reason }}"</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column flex-sm-row gap-2 align-self-center align-self-md-start">
+                            <a href="{{ url_for('teacher.teacher_id_card') }}" class="btn btn-danger btn-sm rounded-pill px-4 py-2 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap">
+                                <i class="fa-solid fa-id-badge"></i> View ID Card & Submit Appeal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Header Welcome Banner with Faculty Image -->
     <div class="row mb-4">
         <div class="col-12">

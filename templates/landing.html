@@ -1788,6 +1788,10 @@
     // ==========================================
     let deferredPrompt;
 
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 991);
+    }
+
     function isAppAlreadyInstalled() {
         return window.matchMedia('(display-mode: standalone)').matches || 
                window.navigator.standalone === true || 
@@ -1795,42 +1799,42 @@
                localStorage.getItem('smartvision_app_installed') === 'true';
     }
 
-    // Only hide download button when app is ACTUALLY installed
+    // Show download button ONLY on mobile phones via browser; hide on laptops/desktops and hide if already installed
     function checkDownloadArrowVisibility() {
         const arrowBtn = document.getElementById('pwaDownloadArrowBtn');
         if (arrowBtn) {
-            if (isAppAlreadyInstalled()) {
-                arrowBtn.style.setProperty('display', 'none', 'important');
-            } else {
+            if (isMobileDevice() && !isAppAlreadyInstalled()) {
                 arrowBtn.style.setProperty('display', 'inline-flex', 'important');
+            } else {
+                arrowBtn.style.setProperty('display', 'none', 'important');
             }
         }
     }
 
     // Capture standard browser install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
-        if (isAppAlreadyInstalled()) return;
+        if (isAppAlreadyInstalled() || !isMobileDevice()) return;
         e.preventDefault();
         deferredPrompt = e;
-        console.log('SmartVision PWA ready for installation');
+        console.log('SmartVision PWA ready for installation on mobile');
 
         // Only show popup on first time landing on phone
         const seenFirstTime = localStorage.getItem('smartvision_first_visit_prompt_seen');
         if (!seenFirstTime) {
             setTimeout(() => {
-                if (!isAppAlreadyInstalled()) {
+                if (!isAppAlreadyInstalled() && isMobileDevice()) {
                     showAppInstallModal();
                 }
             }, 1200);
         }
     });
 
-    // Request notification permission right when app installs or opens
+    // Request notification permission smoothly
     function requestAppNotificationPermission() {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission().then((permission) => {
-                console.log('Notification permission granted on install:', permission);
-            });
+                console.log('SmartVision Notification permission status:', permission);
+            }).catch(err => console.debug(err));
         }
     }
 
@@ -1840,12 +1844,12 @@
         localStorage.setItem('smartvision_app_installed', 'true');
         closeAppInstallModal();
         checkDownloadArrowVisibility();
-        // Immediately ask for notifications on installation
-        setTimeout(requestAppNotificationPermission, 1000);
+        // Immediately ask for notification permission upon installation
+        setTimeout(requestAppNotificationPermission, 800);
     });
 
     function showAppInstallModal() {
-        if (isAppAlreadyInstalled()) return;
+        if (isAppAlreadyInstalled() || !isMobileDevice()) return;
         const modal = document.getElementById('appInstallModal');
         if (modal) {
             modal.style.display = 'flex';
@@ -1857,7 +1861,7 @@
         if (modal) {
             modal.style.display = 'none';
         }
-        // Remember that first-time popup was shown
+        // Remember that first-time popup was shown on this phone
         localStorage.setItem('smartvision_first_visit_prompt_seen', 'true');
     }
 
@@ -1887,18 +1891,20 @@
 
         // If user is running inside the downloaded app, ask for notification permission automatically
         if (isAppAlreadyInstalled()) {
-            setTimeout(requestAppNotificationPermission, 1500);
+            setTimeout(requestAppNotificationPermission, 1200);
             return;
         }
 
-        // First-time landing check (works on Chrome, Safari iOS, etc.)
-        const seenFirstTime = localStorage.getItem('smartvision_first_visit_prompt_seen');
-        if (!seenFirstTime) {
-            setTimeout(() => {
-                if (!isAppAlreadyInstalled()) {
-                    showAppInstallModal();
-                }
-            }, 1500);
+        // First-time landing check on mobile phone (Chrome, Safari iOS, etc.)
+        if (isMobileDevice()) {
+            const seenFirstTime = localStorage.getItem('smartvision_first_visit_prompt_seen');
+            if (!seenFirstTime) {
+                setTimeout(() => {
+                    if (!isAppAlreadyInstalled()) {
+                        showAppInstallModal();
+                    }
+                }, 1500);
+            }
         }
     });
 </script>

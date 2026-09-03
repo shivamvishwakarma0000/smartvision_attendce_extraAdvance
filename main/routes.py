@@ -3024,18 +3024,18 @@ def check_timetable_conflicts(class_id, teacher_id, day_of_week, start_time, end
     return False, None
 
 def get_or_create_period_settings():
-    from models import TimetablePeriodSetting
+    from models import TimetablePeriodSetting, Timetable
     settings = TimetablePeriodSetting.query.order_by(TimetablePeriodSetting.order_index).all()
+    default_periods = [
+        (1, 'Period 1', '09:30', '10:25', False, 1),
+        (2, 'Period 2', '10:25', '11:20', False, 2),
+        (0, 'Lunch Break', '11:20', '12:20', True, 3),
+        (3, 'Period 3', '12:20', '01:15', False, 4),
+        (4, 'Period 4', '01:15', '02:10', False, 5),
+        (5, 'Period 5', '02:30', '03:25', False, 6),
+        (6, 'Period 6', '03:25', '04:20', False, 7)
+    ]
     if not settings:
-        default_periods = [
-            (1, 'Period 1', '09:30', '10:25', False, 1),
-            (2, 'Period 2', '10:25', '11:20', False, 2),
-            (0, 'Lunch Break', '11:20', '12:20', True, 3),
-            (3, 'Period 3', '12:20', '01:15', False, 4),
-            (4, 'Period 4', '01:15', '02:10', False, 5),
-            (5, 'Period 5', '02:10', '03:05', False, 6),
-            (6, 'Period 6', '03:05', '04:00', False, 7)
-        ]
         for p_no, lbl, st, et, is_l, ord_idx in default_periods:
             ps = TimetablePeriodSetting(
                 period_no=p_no,
@@ -3048,6 +3048,32 @@ def get_or_create_period_settings():
             db.session.add(ps)
         db.session.commit()
         settings = TimetablePeriodSetting.query.order_by(TimetablePeriodSetting.order_index).all()
+    else:
+        # Check if Period 5 / Period 6 still have legacy timings and auto-upgrade them
+        changed = False
+        p5 = next((s for s in settings if s.period_no == 5), None)
+        p6 = next((s for s in settings if s.period_no == 6), None)
+        if p5 and p5.start_time == '02:10' and p5.end_time == '03:05':
+            p5.start_time = '02:30'
+            p5.end_time = '03:25'
+            Timetable.query.filter_by(period_no=5, start_time='02:10').update({
+                Timetable.start_time: '02:30',
+                Timetable.end_time: '03:25'
+            }, synchronize_session=False)
+            changed = True
+        if p6 and p6.start_time == '03:05' and p6.end_time == '04:00':
+            p6.start_time = '03:25'
+            p6.end_time = '04:20'
+            Timetable.query.filter_by(period_no=6, start_time='03:05').update({
+                Timetable.start_time: '03:25',
+                Timetable.end_time: '04:20'
+            }, synchronize_session=False)
+            changed = True
+        if changed:
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
     return settings
 
 

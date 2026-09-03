@@ -90,8 +90,8 @@
                             <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2" style="font-size: 0.75rem; min-width: 22px;">{{ a_count }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Faculty Feedback & Complaints</span>
+                    <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center text-nowrap">
+                        <span><i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Complaints</span>
                         {% if admin_threshold_complaints_count and admin_threshold_complaints_count > 0 %}
                             <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 animate-pulse" title="Threshold Reached Complaints">{{ admin_threshold_complaints_count }}</span>
                         {% endif %}
@@ -129,8 +129,14 @@
                     <a href="{{ url_for('main.recommend_teachers') }}" class="nav-link {% if request.endpoint == 'main.recommend_teachers' %}active{% endif %}">
                         <i class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i> Smart Recommender
                     </a>
-                    <a href="{{ url_for('main.admin_id_cards') }}" class="nav-link {% if request.endpoint in ['main.admin_id_cards', 'main.admin_suspension_requests'] %}active{% endif %}">
+                    <a href="{{ url_for('main.admin_id_cards') }}" class="nav-link {% if request.endpoint == 'main.admin_id_cards' %}active{% endif %}">
                         <i class="fa-solid fa-id-badge me-2 text-info"></i> ID Cards Portal
+                    </a>
+                    <a href="{{ url_for('main.admin_suspension_requests') }}" class="nav-link {% if request.endpoint == 'main.admin_suspension_requests' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-user-lock me-2 text-danger"></i> Suspension Desk</span>
+                        {% if pending_suspension_requests_count and pending_suspension_requests_count > 0 %}
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_suspension_requests_count }}</span>
+                        {% endif %}
                     </a>
                     <a href="{{ url_for('main.university_details') }}" class="nav-link {% if request.endpoint == 'main.university_details' %}active{% endif %}">
                         <i class="fa-solid fa-building-columns me-2 text-warning"></i> University Profile

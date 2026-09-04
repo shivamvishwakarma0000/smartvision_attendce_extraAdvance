@@ -332,6 +332,16 @@ def create_app():
             print(f"Error in inject_university_settings: {e}")
             return {'university': None}
 
+    @app.before_request
+    def auto_lift_expired_detentions():
+        """Automatically checks and releases completed student and teacher detentions across the portal."""
+        if request.endpoint and not request.endpoint.startswith('static'):
+            try:
+                from models import check_and_auto_lift_detentions
+                check_and_auto_lift_detentions()
+            except Exception:
+                pass
+
 
     # --------------------------------------------------------------------------
     # 6. DATABASE SCHEMA MIGRATION & SEEDING ON STARTUP
@@ -462,6 +472,8 @@ def ensure_postgresql_columns():
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_user_id INTEGER",
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_role VARCHAR(50)",
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_name VARCHAR(100)",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS detention_days INTEGER",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP WITHOUT TIME ZONE",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS id_card_status VARCHAR(30) DEFAULT 'Active'",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspension_reason VARCHAR(255)",
@@ -470,6 +482,8 @@ def ensure_postgresql_columns():
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_user_id INTEGER",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_role VARCHAR(50)",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_by_name VARCHAR(100)",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS detention_days INTEGER",
+            "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP WITHOUT TIME ZONE",
             """CREATE TABLE IF NOT EXISTS suspension_audits (
                 id SERIAL PRIMARY KEY,
                 target_type VARCHAR(20) NOT NULL,

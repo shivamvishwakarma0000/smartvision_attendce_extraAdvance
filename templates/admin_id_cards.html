@@ -165,12 +165,20 @@
                         {% if s.is_suspended %}
                         <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 text-start fs-9">
                             <div class="d-flex justify-content-between text-danger fw-bold">
-                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: Suspended</span>
-                                <span>{{ s.suspended_by_role|upper if s.suspended_by_role else 'ADMIN' }}</span>
+                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: {{ 'Detained' if s.suspension_reason == 'Detained' else 'Suspended' }}</span>
+                                <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5 rounded">{{ s.suspended_by_role|upper if s.suspended_by_role else 'ADMIN' }}</span>
                             </div>
                             <div class="text-muted mt-0.5 text-truncate" title="{{ s.custom_suspension_reason or s.suspension_reason }}">
                                 Reason: <strong class="text-dark">{{ s.suspension_reason or 'Disciplinary Issue' }}</strong>
                             </div>
+                            {% if s.suspension_reason == 'Detained' or s.detention_days %}
+                            <div class="mt-1 pt-1 border-top border-danger border-opacity-10 d-flex align-items-center justify-content-between text-danger fs-9">
+                                <span><i class="fa-solid fa-clock-rotate-left me-1"></i>Period: <strong>{{ s.detention_days or 2 }} Days</strong></span>
+                                {% if s.suspended_until %}
+                                <span class="font-monospace" title="Auto-releases after this date"><i class="fa-regular fa-clock me-0.5"></i>Until: {{ s.suspended_until.strftime('%d %b, %I:%M %p') }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -281,12 +289,20 @@
                         {% if t.is_suspended %}
                         <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 text-start fs-9">
                             <div class="d-flex justify-content-between text-danger fw-bold">
-                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: Suspended</span>
-                                <span>ADMIN</span>
+                                <span><i class="fa-solid fa-triangle-exclamation me-1"></i>Status: {{ 'Detained' if t.suspension_reason == 'Detained' else 'Suspended' }}</span>
+                                <span class="badge bg-danger text-white fs-9 py-0.5 px-1.5 rounded">ADMIN</span>
                             </div>
                             <div class="text-muted mt-0.5 text-truncate" title="{{ t.custom_suspension_reason or t.suspension_reason }}">
                                 Reason: <strong class="text-dark">{{ t.suspension_reason or 'Administrative Issue' }}</strong>
                             </div>
+                            {% if t.suspension_reason == 'Detained' or t.detention_days %}
+                            <div class="mt-1 pt-1 border-top border-danger border-opacity-10 d-flex align-items-center justify-content-between text-danger fs-9">
+                                <span><i class="fa-solid fa-clock-rotate-left me-1"></i>Period: <strong>{{ t.detention_days or 2 }} Days</strong></span>
+                                {% if t.suspended_until %}
+                                <span class="font-monospace" title="Auto-releases after this date"><i class="fa-regular fa-clock me-0.5"></i>Until: {{ t.suspended_until.strftime('%d %b, %I:%M %p') }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -378,7 +394,8 @@
                     <div id="newSuspensionFields">
                         <div class="mb-3">
                             <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Suspension Reason <span class="text-danger">*</span>:</label>
-                            <select name="reason" id="modalReasonSelect" class="form-select form-select-sm rounded-3 fw-bold" required>
+                            <select name="reason" id="modalReasonSelect" class="form-select form-select-sm rounded-3 fw-bold" required onchange="handleAdminReasonChange()">
+                                <option value="Detained" selected>Detained (Temporary Suspension with Auto-Release)</option>
                                 <option value="Disciplinary Issue">Disciplinary Issue</option>
                                 <option value="Attendance Issue">Attendance Issue</option>
                                 <option value="Administrative Issue">Administrative Issue</option>
@@ -388,6 +405,23 @@
                                 <option value="Pending Verification">Pending Verification</option>
                                 <option value="Other">Other (Specify Below)</option>
                             </select>
+                        </div>
+
+                        <!-- Detention Period Selector (Shown when Detained is chosen) -->
+                        <div id="adminDetentionDurationWrapper" class="mb-3">
+                            <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Detention Period (Days) <span class="text-danger">*</span>:</label>
+                            <div class="btn-group w-100 mb-2" role="group" id="adminDetentionBtnGroup">
+                                <button type="button" class="btn btn-outline-danger btn-sm active" onclick="setAdminDetentionDays(2, this)">2 Days</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="setAdminDetentionDays(5, this)">5 Days</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="setAdminDetentionDays(7, this)">7 Days</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="setAdminDetentionDays(10, this)">10 Days</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="setAdminDetentionDays('custom', this)">Custom</button>
+                            </div>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-days text-muted"></i></span>
+                                <input type="number" name="detention_days" id="modalAdminDetentionDaysInput" class="form-control rounded-end-3" value="2" min="1" max="90" placeholder="Number of days (e.g. 2)">
+                            </div>
+                            <small class="text-muted fs-9 mt-1 d-block"><i class="fa-solid fa-circle-info me-1"></i>Detention status will automatically expire and restore access after this period with no manual approval required.</small>
                         </div>
 
                         <div class="mb-3">
@@ -465,6 +499,34 @@
 </style>
 
 <script>
+function handleAdminReasonChange() {
+    const reasonSelect = document.getElementById('modalReasonSelect');
+    const detentionWrapper = document.getElementById('adminDetentionDurationWrapper');
+    if (reasonSelect && detentionWrapper) {
+        if (reasonSelect.value === 'Detained') {
+            detentionWrapper.classList.remove('d-none');
+        } else {
+            detentionWrapper.classList.add('d-none');
+        }
+    }
+}
+
+function setAdminDetentionDays(days, btn) {
+    const input = document.getElementById('modalAdminDetentionDaysInput');
+    const btnGroup = document.getElementById('adminDetentionBtnGroup');
+    if (btnGroup) {
+        btnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    }
+    if (btn) btn.classList.add('active');
+
+    if (days === 'custom') {
+        input.focus();
+        input.select();
+    } else {
+        input.value = days;
+    }
+}
+
 function openSuspendModal(targetType, targetId, name, personId, classStr, deptStr, currentStatus, isSuspended, reason, customReason) {
     document.getElementById('modalTargetType').value = targetType;
     document.getElementById('modalTargetId').value = targetId;
@@ -495,6 +557,14 @@ function openSuspendModal(targetType, targetId, name, personId, classStr, deptSt
         btnSuspend.classList.remove('d-none');
         btnRestore.classList.add('d-none');
         form.action = "{{ url_for('main.admin_suspend_id_card') }}";
+
+        // Reset reason to Detained
+        const reasonSelect = document.getElementById('modalReasonSelect');
+        if (reasonSelect) {
+            reasonSelect.value = 'Detained';
+            handleAdminReasonChange();
+        }
+        setAdminDetentionDays(2, document.querySelector('#adminDetentionBtnGroup button:first-child'));
     }
 
     const modal = new bootstrap.Modal(document.getElementById('suspendIdCardModal'));

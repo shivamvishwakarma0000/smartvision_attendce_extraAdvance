@@ -35,20 +35,48 @@
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <div class="d-flex align-items-center gap-2">
                         <i class="fa-solid fa-triangle-exclamation text-danger fs-4"></i>
-                        <h6 class="fw-bold text-danger mb-0">🔒 ID Card & Campus Access Suspended</h6>
+                        <h6 class="fw-bold text-danger mb-0">
+                            {% if student.suspension_reason == 'Detained' %}
+                            ⏱️ ID Card & Campus Access Detained (Temporary)
+                            {% else %}
+                            🔒 ID Card & Campus Access Suspended
+                            {% endif %}
+                        </h6>
                     </div>
-                    <span class="badge bg-danger rounded-pill px-2.5 py-1 fs-9 fw-bold">SUSPENDED</span>
+                    <span class="badge bg-danger rounded-pill px-2.5 py-1 fs-9 fw-bold">
+                        {{ 'DETAINED' if student.suspension_reason == 'Detained' else 'SUSPENDED' }}
+                    </span>
                 </div>
                 <p class="fs-8 text-dark mb-2">
-                    Your institutional ID card has been suspended by <strong>{{ student.suspended_by_role|upper if student.suspended_by_role else 'ADMIN' }}</strong> ({{ student.suspended_by_name or 'Faculty/Admin' }}).
+                    Your institutional ID card has been {{ 'detained' if student.suspension_reason == 'Detained' else 'suspended' }} by <strong>{{ student.suspended_by_role|upper if student.suspended_by_role else 'ADMIN' }}</strong> ({{ student.suspended_by_name or 'Faculty/Admin' }}).
                 </p>
+                
                 <div class="p-2.5 bg-white rounded-3 border mb-3 fs-8.5">
-                    <span class="text-muted d-block fs-9 fw-bold">REASON FOR SUSPENSION:</span>
-                    <strong class="text-danger">{{ student.suspension_reason or 'Disciplinary Issue' }}</strong>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted fs-9 fw-bold">REASON FOR {{ 'DETENTION' if student.suspension_reason == 'Detained' else 'SUSPENSION' }}:</span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger fs-9">{{ student.suspension_reason or 'Disciplinary Issue' }}</span>
+                    </div>
                     {% if student.custom_suspension_reason and student.custom_suspension_reason != student.suspension_reason %}
-                    <p class="mb-0 text-muted fs-9 mt-1">"{{ student.custom_suspension_reason }}"</p>
+                    <p class="mb-1 text-muted fs-9">"{{ student.custom_suspension_reason }}"</p>
+                    {% endif %}
+
+                    {% if student.suspension_reason == 'Detained' or student.detention_days %}
+                    <div class="mt-2 pt-2 border-top d-flex flex-wrap justify-content-between align-items-center gap-2 text-danger fs-8.5">
+                        <div>
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i>Detention Duration: <strong>{{ student.detention_days or 2 }} Days</strong>
+                        </div>
+                        {% if student.suspended_until %}
+                        <div class="font-monospace">
+                            <i class="fa-regular fa-calendar-check me-1"></i>Auto-Release: <strong>{{ student.suspended_until.strftime('%d %B %Y, %I:%M %p') }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-1 fs-9 text-success fw-semibold">
+                        <i class="fa-solid fa-circle-check me-1"></i>Zero-action required: Your ID card will automatically reactivate after this period without requiring teacher or admin approval.
+                    </div>
                     {% endif %}
                 </div>
+
                 <div class="d-flex justify-content-between align-items-center">
                     {% if pending_request %}
                     <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fs-8 fw-bold">
@@ -56,7 +84,7 @@
                     </span>
                     {% else %}
                     <button type="button" class="btn btn-danger btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-2xs" data-bs-toggle="modal" data-bs-target="#removalRequestModal">
-                        <i class="fa-solid fa-paper-plane me-1.5"></i>Request Removal of Suspension
+                        <i class="fa-solid fa-paper-plane me-1.5"></i>Request Early Removal / Submit Appeal
                     </button>
                     {% endif %}
                 </div>

@@ -132,6 +132,33 @@
                     </span>
 
                     {% if s.is_suspended %}
+                    {% if s.suspension_reason == 'Detained' %}
+                    <div class="p-2 mb-2 bg-warning bg-opacity-15 border border-warning border-opacity-30 rounded-3 text-start fs-9">
+                        <div class="d-flex justify-content-between text-dark fw-bold">
+                            <span><i class="fa-solid fa-clock-rotate-left text-warning me-1"></i>Status: Detained</span>
+                            <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fs-9 fw-bold">{{ s.detention_days or 2 }} Days</span>
+                        </div>
+                        {% if s.suspended_until %}
+                        <div class="text-dark mt-0.5 fs-9">
+                            Auto-releases: <strong class="text-primary">{{ s.suspended_until.strftime('%d %b %Y, %I:%M %p') }}</strong>
+                        </div>
+                        {% endif %}
+                        <div class="text-muted mt-0.5 text-truncate" title="{{ s.custom_suspension_reason or s.suspension_reason }}">
+                            By: <strong>{{ s.suspended_by_name or s.suspended_by_role|upper }}</strong>
+                        </div>
+                        {% if s.suspended_by_role == 'teacher' %}
+                        <div class="mt-1.5 pt-1 border-top border-warning border-opacity-25 text-end">
+                            <button type="button" class="btn btn-xs btn-success rounded-pill px-2.5 py-0.5 fs-9 fw-bold shadow-2xs" onclick="openTeacherRestoreModal('{{ s.id }}', '{{ s.name|e }}', '{{ s.roll_no }}')">
+                                <i class="fa-solid fa-lock-open me-1"></i>Lift Early
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="mt-1 text-muted fs-9 fst-italic">
+                            <i class="fa-solid fa-shield-halved me-1 text-danger"></i>Admin detention (Admin lift only)
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
                     <div class="p-2 mb-2 bg-danger bg-opacity-10 border border-danger border-opacity-20 rounded-3 text-start fs-9">
                         <div class="d-flex justify-content-between text-danger fw-bold">
                             <span><i class="fa-solid fa-ban me-1"></i>Status: Suspended</span>
@@ -140,7 +167,19 @@
                         <div class="text-muted mt-0.5 text-truncate" title="{{ s.custom_suspension_reason or s.suspension_reason }}">
                             Reason: <strong class="text-dark">{{ s.suspension_reason or 'Disciplinary Issue' }}</strong>
                         </div>
+                        {% if s.suspended_by_role == 'teacher' %}
+                        <div class="mt-1.5 pt-1 border-top border-danger border-opacity-25 text-end">
+                            <button type="button" class="btn btn-xs btn-success rounded-pill px-2.5 py-0.5 fs-9 fw-bold shadow-2xs" onclick="openTeacherRestoreModal('{{ s.id }}', '{{ s.name|e }}', '{{ s.roll_no }}')">
+                                <i class="fa-solid fa-lock-open me-1"></i>Lift Suspension
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="mt-1 text-muted fs-9 fst-italic">
+                            <i class="fa-solid fa-shield-halved me-1 text-danger"></i>Admin suspension (Admin lift only)
+                        </div>
+                        {% endif %}
                     </div>
+                    {% endif %}
                     {% endif %}
 
                     <div class="p-2.5 bg-light rounded-3 border text-start fs-8.5 mb-2.5 shadow-2xs">
@@ -185,13 +224,13 @@
     </div>
 </div>
 
-<!-- ================= TEACHER SUSPEND STUDENT MODAL ================= -->
+<!-- ================= TEACHER SUSPEND / DETAIN STUDENT MODAL ================= -->
 <div class="modal fade" id="teacherSuspendModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg">
             <div class="modal-header bg-danger text-white border-0 py-3 px-4 rounded-top-4">
                 <h5 class="modal-title fs-6 fw-bold">
-                    <i class="fa-solid fa-user-lock me-2"></i>Suspend Student ID Card
+                    <i class="fa-solid fa-user-lock me-2"></i>Suspend / Detain Student ID Card
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -207,9 +246,10 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Suspension Reason <span class="text-danger">*</span>:</label>
-                        <select name="reason" class="form-select form-select-sm rounded-3 fw-bold" required>
-                            <option value="Disciplinary Issue">Disciplinary Issue</option>
+                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Action Type & Reason <span class="text-danger">*</span>:</label>
+                        <select name="reason" id="tReasonSelect" class="form-select form-select-sm rounded-3 fw-bold" onchange="toggleTeacherDetentionDays(this.value)" required>
+                            <option value="Detained" selected>⚠️ Detained (Auto-Releases After Selected Days)</option>
+                            <option value="Disciplinary Issue">Disciplinary Issue (Manual Lift Required)</option>
                             <option value="Attendance Issue">Attendance Issue</option>
                             <option value="Misconduct">Misconduct</option>
                             <option value="Rule Violation">Rule Violation</option>
@@ -218,20 +258,90 @@
                         </select>
                     </div>
 
+                    <!-- Detention Duration Selector (Shown when Detained is selected) -->
+                    <div class="mb-3 p-3 rounded-3 border" id="tDetentionDaysGroup" style="background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.3) !important;">
+                        <label class="form-label fs-9 fw-bold text-dark mb-1 text-uppercase d-flex justify-content-between">
+                            <span><i class="fa-solid fa-clock-rotate-left text-warning me-1"></i> Detention Period:</span>
+                            <span class="badge bg-warning text-dark" id="tDetentionBadge">2 Days</span>
+                        </label>
+                        <div class="btn-group btn-group-sm w-100 mb-2" role="group">
+                            <input type="radio" class="btn-check" name="det_preset" id="tDet2" value="2" checked onchange="setTeacherDetDays(2)">
+                            <label class="btn btn-outline-warning fw-bold fs-9" for="tDet2">2 Days</label>
+
+                            <input type="radio" class="btn-check" name="det_preset" id="tDet5" value="5" onchange="setTeacherDetDays(5)">
+                            <label class="btn btn-outline-warning fw-bold fs-9" for="tDet5">5 Days</label>
+
+                            <input type="radio" class="btn-check" name="det_preset" id="tDet7" value="7" onchange="setTeacherDetDays(7)">
+                            <label class="btn btn-outline-warning fw-bold fs-9" for="tDet7">7 Days</label>
+
+                            <input type="radio" class="btn-check" name="det_preset" id="tDet10" value="10" onchange="setTeacherDetDays(10)">
+                            <label class="btn btn-outline-warning fw-bold fs-9" for="tDet10">10 Days</label>
+
+                            <input type="radio" class="btn-check" name="det_preset" id="tDetCustom" value="custom" onchange="setTeacherDetDays('custom')">
+                            <label class="btn btn-outline-warning fw-bold fs-9" for="tDetCustom">Custom</label>
+                        </div>
+                        <input type="number" name="detention_days" id="tDetentionDaysInput" class="form-control form-control-sm rounded-3 fw-bold" min="1" max="90" value="2" placeholder="Enter number of days (e.g. 2)">
+                        <span class="fs-9 text-dark text-opacity-75 mt-1.5 d-block">
+                            <i class="fa-solid fa-wand-magic-sparkles text-warning me-1"></i> <strong>Automatic Release:</strong> The student's ID card suspension will automatically expire and restore when this period completes without requiring manual approval.
+                        </span>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Explanation / Comments:</label>
-                        <textarea name="custom_reason" class="form-control form-control-sm rounded-3" rows="3" placeholder="Provide context regarding the disciplinary suspension..." required></textarea>
+                        <textarea name="custom_reason" class="form-control form-control-sm rounded-3" rows="2" placeholder="Provide context regarding the detention or disciplinary suspension..." required></textarea>
                     </div>
 
                     <div class="alert alert-danger py-2 px-3 fs-9 mb-0">
-                        <strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Important:</strong> This suspension will be tracked administratively with your name. The student will be restricted from marking attendance and accessing campus until reviewed.
+                        <strong><i class="fa-solid fa-triangle-exclamation me-1"></i> Note:</strong> This suspension will be tracked administratively under your faculty profile.
                     </div>
                 </div>
 
                 <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
                     <button type="button" class="btn btn-light rounded-pill px-4 fs-8 fw-bold" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger rounded-pill px-4 fs-8 fw-bold">
-                        <i class="fa-solid fa-lock me-1"></i>Confirm Student Suspension
+                        <i class="fa-solid fa-lock me-1"></i>Confirm Suspension
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ================= TEACHER RESTORE / LIFT MODAL ================= -->
+<div class="modal fade" id="teacherRestoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0 py-3 px-4 rounded-top-4">
+                <h5 class="modal-title fs-6 fw-bold">
+                    <i class="fa-solid fa-lock-open me-2"></i>Lift Student ID Card Suspension
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form method="POST" action="{{ url_for('teacher.teacher_restore_student_id') }}">
+                <input type="hidden" name="student_id" id="tRestoreModalStudentId" value="">
+
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <span class="text-muted fs-9 text-uppercase fw-bold d-block mb-1">Student Details:</span>
+                        <h6 class="fw-bold text-dark mb-1" id="tRestoreModalStudentName">Student Name</h6>
+                        <span class="text-muted fs-9">Roll Number: <strong class="text-dark" id="tRestoreModalStudentRoll">67</strong></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fs-9 fw-bold text-muted mb-1 text-uppercase">Resolution / Restoration Note:</label>
+                        <textarea name="restore_note" class="form-control form-control-sm rounded-3" rows="2" placeholder="e.g. Issue resolved in meeting, student warned and suspension lifted early."></textarea>
+                    </div>
+
+                    <div class="alert alert-success py-2 px-3 fs-9 mb-0">
+                        <i class="fa-solid fa-circle-check me-1"></i> Lifting this suspension will immediately restore the student's campus access and attendance eligibility.
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fs-8 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fs-8 fw-bold">
+                        <i class="fa-solid fa-check me-1"></i>Confirm Restoration
                     </button>
                 </div>
             </form>
@@ -269,8 +379,43 @@ function openTeacherSuspendModal(id, name, roll, cls) {
     document.getElementById('tModalStudentRoll').innerText = roll;
     document.getElementById('tModalStudentClass').innerText = cls;
     
+    // Reset to Detained default
+    document.getElementById('tReasonSelect').value = 'Detained';
+    toggleTeacherDetentionDays('Detained');
+    setTeacherDetDays(2);
+    document.getElementById('tDet2').checked = true;
+
     const modal = new bootstrap.Modal(document.getElementById('teacherSuspendModal'));
     modal.show();
+}
+
+function openTeacherRestoreModal(id, name, roll) {
+    document.getElementById('tRestoreModalStudentId').value = id;
+    document.getElementById('tRestoreModalStudentName').innerText = name;
+    document.getElementById('tRestoreModalStudentRoll').innerText = roll;
+
+    const modal = new bootstrap.Modal(document.getElementById('teacherRestoreModal'));
+    modal.show();
+}
+
+function toggleTeacherDetentionDays(val) {
+    const group = document.getElementById('tDetentionDaysGroup');
+    if (group) {
+        group.style.display = (val === 'Detained') ? 'block' : 'none';
+    }
+}
+
+function setTeacherDetDays(days) {
+    const input = document.getElementById('tDetentionDaysInput');
+    const badge = document.getElementById('tDetentionBadge');
+    if (days === 'custom') {
+        input.value = '';
+        input.focus();
+        if (badge) badge.innerText = 'Custom Duration';
+    } else {
+        input.value = days;
+        if (badge) badge.innerText = days + ' Days';
+    }
 }
 </script>
 {% endblock %}

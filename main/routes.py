@@ -4382,12 +4382,23 @@ def admin_suspend_id_card():
         flash("Invalid target ID specified for suspension.", "danger")
         return redirect(url_for('main.admin_id_cards'))
 
-    full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+    from models import SuspensionAudit, ClassAnnouncement
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+
+    detention_days_raw = request.form.get('detention_days', '').strip()
+    detention_days = int(detention_days_raw) if (detention_days_raw and detention_days_raw.isdigit() and int(detention_days_raw) > 0) else (2 if reason == 'Detained' else None)
+    suspended_until = (now + timedelta(days=detention_days)) if (reason == 'Detained' and detention_days) else None
+
+    if reason == 'Detained' and detention_days:
+        full_reason = f"Detained for {detention_days} Days (Auto-releases on {suspended_until.strftime('%d %b %Y, %I:%M %p')})"
+        if custom_reason:
+            full_reason += f" - {custom_reason}"
+    else:
+        full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+
     if not full_reason:
         full_reason = "Administrative suspension of ID Card and Campus Access."
-
-    from models import SuspensionAudit, ClassAnnouncement
-    now = datetime.utcnow()
 
     if target_type == 'STUDENT':
         student = Student.query.get_or_404(int(target_id))
@@ -4399,6 +4410,8 @@ def admin_suspend_id_card():
         student.suspended_by_user_id = current_user.id
         student.suspended_by_role = 'admin'
         student.suspended_by_name = current_user.name or 'Administrator'
+        student.detention_days = detention_days
+        student.suspended_until = suspended_until
 
         # Record in audit log
         audit = SuspensionAudit(
@@ -4415,9 +4428,10 @@ def admin_suspend_id_card():
         db.session.add(audit)
 
         # Send official notification
+        notice_detail = f"\n\nNote: Your detention will automatically expire and restore on {suspended_until.strftime('%d %b %Y, %I:%M %p')}." if suspended_until else "\n\nPlease visit the Admin Office or submit a suspension removal request via your portal."
         ann = ClassAnnouncement(
-            title="🔒 Your ID Card Has Been Suspended",
-            content=f"Dear {student.name}, your institutional ID card and campus access have been SUSPENDED by Administration.\n\nReason: {full_reason}\n\nYour attendance permissions and campus entry are blocked while active. Please visit the Admin Office or submit a suspension removal request via your portal.",
+            title="🔒 Your ID Card Has Been Suspended" if reason != 'Detained' else "⚠️ ID Card Detained by Administration",
+            content=f"Dear {student.name}, your institutional ID card and campus access have been {'DETAINED' if reason == 'Detained' else 'SUSPENDED'} by Administration.\n\nReason: {full_reason}\n\nYour attendance permissions and campus entry are blocked while active.{notice_detail}",
             target_role='STUDENTS',
             class_id=student.class_id,
             admin_id=current_user.id,
@@ -4426,7 +4440,8 @@ def admin_suspend_id_card():
         )
         db.session.add(ann)
         db.session.commit()
-        flash(f"✓ ID Card for student {student.name} ({student.roll_no}) has been SUSPENDED. Campus access & attendance permissions are blocked.", "warning")
+        status_msg = f"DETAINED for {detention_days} days (Auto-releases on {suspended_until.strftime('%d %b %Y')})" if suspended_until else "SUSPENDED"
+        flash(f"✓ ID Card for student {student.name} ({student.roll_no}) has been {status_msg}. Campus access & attendance permissions are blocked.", "warning")
         return redirect(url_for('main.admin_id_cards', type='students', class_id=student.class_id or ''))
 
     elif target_type == 'TEACHER':
@@ -4494,6 +4509,11 @@ def admin_restore_id_card():
         student.suspension_reason = None
         student.custom_suspension_reason = None
         student.suspended_at = None
+        student.detention_days = None
+        student.suspended_until = None
+        student.suspended_by_user_id = None
+        student.suspended_by_role = None
+        student.suspended_by_name = None
 
         audit = SuspensionAudit(
             target_type='STUDENT',
@@ -4602,6 +4622,11 @@ def review_suspension_request(req_id):
             req_obj.student.suspension_reason = None
             req_obj.student.custom_suspension_reason = None
             req_obj.student.suspended_at = None
+            req_obj.student.detention_days = None
+            req_obj.student.suspended_until = None
+            req_obj.student.suspended_by_user_id = None
+            req_obj.student.suspended_by_role = None
+            req_obj.student.suspended_by_name = None
 
             audit = SuspensionAudit(
                 target_type='STUDENT',

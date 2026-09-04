@@ -22,18 +22,36 @@
                             </span>
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                    <h5 class="fw-bold text-danger mb-0 fs-6">🔒 Your Institutional ID Card is Suspended</h5>
-                                    <span class="badge bg-danger text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">Campus Access & Attendance Blocked</span>
+                                    <h5 class="fw-bold text-danger mb-0 fs-6">
+                                        {% if student.suspension_reason == 'Detained' %}
+                                        ⏱️ Your Institutional ID Card is Detained (Temporary)
+                                        {% else %}
+                                        🔒 Your Institutional ID Card is Suspended
+                                        {% endif %}
+                                    </h5>
+                                    <span class="badge bg-danger text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                                        {{ 'DETAINED' if student.suspension_reason == 'Detained' else 'Campus Access & Attendance Blocked' }}
+                                    </span>
                                 </div>
                                 <p class="text-dark fs-8 mb-2">
-                                    Your student ID card has been suspended by <strong>{{ student.suspended_by_role|upper if student.suspended_by_role else 'ADMIN' }}</strong> ({{ student.suspended_by_name or 'Faculty/Admin' }}).
+                                    Your student ID card has been {{ 'detained' if student.suspension_reason == 'Detained' else 'suspended' }} by <strong>{{ student.suspended_by_role|upper if student.suspended_by_role else 'ADMIN' }}</strong> ({{ student.suspended_by_name or 'Faculty/Admin' }}).
                                     You cannot mark attendance and your campus entry is restricted.
                                 </p>
                                 <div class="p-2.5 bg-white rounded-3 border mb-0 fs-8.5 d-inline-block shadow-2xs">
-                                    <span class="text-muted fs-9 fw-bold d-block">REASON FOR SUSPENSION:</span>
-                                    <strong class="text-danger">{{ student.suspension_reason or 'Disciplinary Issue' }}</strong>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="text-muted fs-9 fw-bold me-3">REASON FOR {{ 'DETENTION' if student.suspension_reason == 'Detained' else 'SUSPENSION' }}:</span>
+                                        <strong class="text-danger">{{ student.suspension_reason or 'Disciplinary Issue' }}</strong>
+                                    </div>
                                     {% if student.custom_suspension_reason and student.custom_suspension_reason != student.suspension_reason %}
                                     <span class="text-muted fs-9 d-block mt-0.5">"{{ student.custom_suspension_reason }}"</span>
+                                    {% endif %}
+                                    {% if student.suspension_reason == 'Detained' or student.detention_days %}
+                                    <div class="mt-1 pt-1 border-top d-flex gap-3 text-danger fs-9">
+                                        <span><i class="fa-solid fa-clock-rotate-left me-1"></i>Duration: <strong>{{ student.detention_days or 2 }} Days</strong></span>
+                                        {% if student.suspended_until %}
+                                        <span><i class="fa-regular fa-calendar-check me-1"></i>Auto-Release: <strong>{{ student.suspended_until.strftime('%d %b %Y, %I:%M %p') }}</strong></span>
+                                        {% endif %}
+                                    </div>
                                     {% endif %}
                                 </div>
                             </div>

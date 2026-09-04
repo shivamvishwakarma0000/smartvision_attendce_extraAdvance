@@ -2564,11 +2564,12 @@ def teacher_student_id_cards():
 @login_required
 @teacher_required
 def teacher_suspend_student_id():
-    """Allows authorized teacher to suspend student ID card for disciplinary issues with administrative tracking."""
+    """Allows authorized teacher to suspend student ID card for disciplinary issues or detention with administrative tracking."""
     teacher = get_current_teacher()
     student_id = request.form.get('student_id')
     reason = request.form.get('reason', '').strip()
     custom_reason = request.form.get('custom_reason', '').strip()
+    detention_days_raw = request.form.get('detention_days', '').strip()
 
     if not student_id or not str(student_id).isdigit():
         flash("Invalid student specified for suspension.", "danger")
@@ -2587,12 +2588,22 @@ def teacher_suspend_student_id():
         flash("Unauthorized: You can only manage student suspensions for classes you are assigned to teach.", "danger")
         return redirect(url_for('teacher.teacher_student_id_cards'))
 
-    full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+    from models import SuspensionAudit, ClassAnnouncement
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+
+    detention_days = int(detention_days_raw) if (detention_days_raw and detention_days_raw.isdigit() and int(detention_days_raw) > 0) else (2 if reason == 'Detained' else None)
+    suspended_until = (now + timedelta(days=detention_days)) if (reason == 'Detained' and detention_days) else None
+
+    if reason == 'Detained' and detention_days:
+        full_reason = f"Detained for {detention_days} Days (Auto-releases on {suspended_until.strftime('%d %b %Y, %I:%M %p')})"
+        if custom_reason:
+            full_reason += f" - {custom_reason}"
+    else:
+        full_reason = custom_reason if (reason == 'Other' or not reason) else f"{reason}: {custom_reason}" if custom_reason else reason
+
     if not full_reason:
         full_reason = f"Disciplinary suspension initiated by Faculty {teacher.name}."
-
-    from models import SuspensionAudit, ClassAnnouncement
-    now = datetime.utcnow()
 
     student.is_suspended = True
     student.id_card_status = 'Suspended'
@@ -2602,6 +2613,8 @@ def teacher_suspend_student_id():
     student.suspended_by_user_id = current_user.id
     student.suspended_by_role = 'teacher'
     student.suspended_by_name = teacher.name
+    student.detention_days = detention_days
+    student.suspended_until = suspended_until
 
     audit = SuspensionAudit(
         target_type='STUDENT',
@@ -2616,9 +2629,10 @@ def teacher_suspend_student_id():
     )
     db.session.add(audit)
 
+    notice_detail = f"\n\nNote: Your detention will automatically expire and restore on {suspended_until.strftime('%d %b %Y, %I:%M %p')}." if suspended_until else "\n\nCampus access & attendance are restricted. Please meet your faculty or submit a suspension removal request via your portal."
     ann = ClassAnnouncement(
-        title="🔒 ID Card Suspended by Faculty",
-        content=f"Dear {student.name}, your student ID card has been suspended by Faculty {teacher.name}.\n\nReason: {full_reason}\n\nCampus access & attendance are restricted. Please meet your faculty/Admin or submit a suspension removal request via your portal.",
+        title="🔒 ID Card Suspended by Faculty" if reason != 'Detained' else "⚠️ ID Card Detained by Faculty",
+        content=f"Dear {student.name}, your student ID card has been {'DETAINED' if reason == 'Detained' else 'SUSPENDED'} by Faculty {teacher.name}.\n\nReason: {full_reason}{notice_detail}",
         target_role='STUDENTS',
         class_id=student.class_id,
         admin_id=None,
@@ -2628,7 +2642,83 @@ def teacher_suspend_student_id():
     db.session.add(ann)
     db.session.commit()
 
-    flash(f"✓ Student ID Card for {student.name} ({student.roll_no}) has been SUSPENDED. Action recorded in audit logs with administrative tracking.", "warning")
+    status_msg = f"DETAINED for {detention_days} days (Auto-releases on {suspended_until.strftime('%d %b %Y')})" if suspended_until else "SUSPENDED"
+    flash(f"✓ Student ID Card for {student.name} ({student.roll_no}) has been {status_msg}. Action recorded in audit logs with administrative tracking.", "warning")
+    return redirect(url_for('teacher.teacher_student_id_cards', class_id=student.class_id or ''))
+
+
+@teacher_bp.route('/teacher/restore_student_id', methods=['POST'])
+@login_required
+@teacher_required
+def teacher_restore_student_id():
+    """Allows authorized teacher to lift student suspension ONLY IF the student was suspended by a teacher."""
+    teacher = get_current_teacher()
+    student_id = request.form.get('student_id')
+    restore_note = request.form.get('restore_note', '').strip() or f"Suspension revoked early by Faculty {teacher.name}."
+
+    if not student_id or not str(student_id).isdigit():
+        flash("Invalid student specified.", "danger")
+        return redirect(url_for('teacher.teacher_student_id_cards'))
+
+    student = Student.query.get_or_404(int(student_id))
+
+    # Strict Role-Based Check: If Admin suspended this student, Teacher CANNOT lift it!
+    if student.suspended_by_role == 'admin':
+        flash(f"🔒 Action Blocked: Student {student.name} was suspended by Administration ({student.suspended_by_name or 'Admin'}). Only an Administrator can lift this suspension.", "danger")
+        return redirect(url_for('teacher.teacher_student_id_cards', class_id=student.class_id or ''))
+
+    # Verify authorization: Teacher must teach this student's class
+    subjects = Subject.query.filter_by(teacher_id=teacher.id).all()
+    assigned_sub_ids = [asn.subject_id for asn in TeacherAssignment.query.filter_by(teacher_id=teacher.id).all()]
+    all_teacher_subs = Subject.query.filter((Subject.teacher_id == teacher.id) | (Subject.id.in_(assigned_sub_ids) if assigned_sub_ids else False)).all()
+    directed_classes = Class.query.filter_by(class_teacher_id=teacher.id).all()
+    authorized_class_ids = set([s.class_id for s in all_teacher_subs if s.class_id] + [c.id for c in directed_classes])
+
+    if student.class_id not in authorized_class_ids:
+        flash("Unauthorized: You can only manage student suspensions for classes you are assigned to teach.", "danger")
+        return redirect(url_for('teacher.teacher_student_id_cards'))
+
+    from models import SuspensionAudit, ClassAnnouncement
+    from datetime import datetime
+    now = datetime.utcnow()
+
+    student.is_suspended = False
+    student.id_card_status = 'Active'
+    student.suspension_reason = None
+    student.custom_suspension_reason = None
+    student.suspended_at = None
+    student.detention_days = None
+    student.suspended_until = None
+    student.suspended_by_user_id = None
+    student.suspended_by_role = None
+    student.suspended_by_name = None
+
+    audit = SuspensionAudit(
+        target_type='STUDENT',
+        student_id=student.id,
+        action='RESTORED',
+        reason='Suspension Revoked by Faculty',
+        custom_reason=restore_note,
+        performed_by_user_id=current_user.id,
+        performed_by_role='teacher',
+        performed_by_name=teacher.name,
+        created_at=now
+    )
+    db.session.add(audit)
+
+    ann = ClassAnnouncement(
+        title="✓ ID Card Suspension Revoked by Faculty",
+        content=f"Dear {student.name}, your ID card suspension has been revoked by Faculty {teacher.name}.\n\nYour campus access and attendance recording permissions have been fully restored.",
+        target_role='STUDENTS',
+        class_id=student.class_id,
+        admin_id=None,
+        posted_by_role='teacher',
+        created_at=now
+    )
+    db.session.add(ann)
+    db.session.commit()
+
+    flash(f"✓ Student ID Card for {student.name} ({student.roll_no}) has been RESTORED to Active status by Faculty {teacher.name}!", "success")
     return redirect(url_for('teacher.teacher_student_id_cards', class_id=student.class_id or ''))
 
 

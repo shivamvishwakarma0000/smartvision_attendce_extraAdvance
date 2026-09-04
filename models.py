@@ -159,6 +159,8 @@ class Teacher(db.Model):
     suspended_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     suspended_by_role = db.Column(db.String(50), nullable=True) # 'admin'
     suspended_by_name = db.Column(db.String(100), nullable=True)
+    detention_days = db.Column(db.Integer, nullable=True)
+    suspended_until = db.Column(db.DateTime, nullable=True)
     
     # Teaching Preferences & Subject Expertise
     primary_subject = db.Column(db.String(100), nullable=True)
@@ -262,6 +264,8 @@ class Student(db.Model):
     suspended_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     suspended_by_role = db.Column(db.String(50), nullable=True) # 'admin' or 'teacher'
     suspended_by_name = db.Column(db.String(100), nullable=True)
+    detention_days = db.Column(db.Integer, nullable=True)
+    suspended_until = db.Column(db.DateTime, nullable=True)
 
     def __init__(self, **kwargs):
         if 'roll_no' in kwargs and 'roll_number' not in kwargs:
@@ -958,9 +962,115 @@ class SuspensionRemovalRequest(db.Model):
 
 
 # ==============================================================================
-# SECTION 9: FLASK-LOGIN USER LOADER CALLBACK
+# SECTION 9: FLASK-LOGIN USER LOADER CALLBACK & DETENTION AUTO-RELEASE ENGINE
 # ==============================================================================
 @login_manager.user_loader
 def load_user(user_id):
     """Flask-Login user loader retrieving User object by primary key."""
     return User.query.get(int(user_id))
+
+
+def check_and_auto_lift_detentions():
+    """
+    Checks for all students and teachers with 'Detained' status whose detention period
+    has elapsed (now >= suspended_until). Automatically revokes suspension, restores
+    campus access, logs an audit trail, and creates an official notification.
+    """
+    try:
+        from datetime import datetime
+        now = datetime.utcnow()
+        lifted_any = False
+
+        # 1. Process Expired Student Detentions
+        expired_students = Student.query.filter(
+            Student.is_suspended == True,
+            Student.suspension_reason == 'Detained',
+            Student.suspended_until != None,
+            Student.suspended_until <= now
+        ).all()
+
+        for st in expired_students:
+            st.is_suspended = False
+            st.id_card_status = 'Active'
+            prev_reason = st.custom_suspension_reason or f"Detained for {st.detention_days or 0} days"
+            st.suspension_reason = None
+            st.custom_suspension_reason = None
+            st.suspended_at = None
+            st.detention_days = None
+            st.suspended_until = None
+            st.suspended_by_user_id = None
+            st.suspended_by_role = None
+            st.suspended_by_name = None
+
+            # Add audit entry
+            audit = SuspensionAudit(
+                target_type='STUDENT',
+                student_id=st.id,
+                action='AUTO_RESTORED',
+                reason='Detention Period Expired',
+                custom_reason=f"Automatic restoration: Completed detention duration ({prev_reason}).",
+                performed_by_user_id=None,
+                performed_by_role='system',
+                performed_by_name='SmartVision Auto-Release Engine',
+                created_at=now
+            )
+            db.session.add(audit)
+
+            # Add notification
+            ann = ClassAnnouncement(
+                title="✓ Detention Completed - ID Card Restored",
+                content=f"Dear {st.name}, your detention period has completed. Your institutional ID card, campus access, and attendance eligibility have been AUTOMATICALLY RESTORED to Active status.",
+                target_role='STUDENTS',
+                class_id=st.class_id,
+                admin_id=None,
+                posted_by_role='system',
+                created_at=now
+            )
+            db.session.add(ann)
+            lifted_any = True
+
+        # 2. Process Expired Teacher Detentions
+        expired_teachers = Teacher.query.filter(
+            Teacher.is_suspended == True,
+            Teacher.suspension_reason == 'Detained',
+            Teacher.suspended_until != None,
+            Teacher.suspended_until <= now
+        ).all()
+
+        for t in expired_teachers:
+            t.is_suspended = False
+            t.id_card_status = 'Active'
+            t.suspension_reason = None
+            t.custom_suspension_reason = None
+            t.suspended_at = None
+            t.detention_days = None
+            t.suspended_until = None
+            t.suspended_by_user_id = None
+            t.suspended_by_role = None
+            t.suspended_by_name = None
+
+            audit = SuspensionAudit(
+                target_type='TEACHER',
+                teacher_id=t.id,
+                action='AUTO_RESTORED',
+                reason='Detention Period Expired',
+                custom_reason="Automatic restoration: Completed detention duration.",
+                performed_by_user_id=None,
+                performed_by_role='system',
+                performed_by_name='SmartVision Auto-Release Engine',
+                created_at=now
+            )
+            db.session.add(audit)
+            lifted_any = True
+
+        restored_count = len(expired_students) + len(expired_teachers)
+        if lifted_any:
+            db.session.commit()
+        return restored_count
+    except Exception as e:
+        print(f"[Auto-Lift Detentions Notice] {e}")
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return 0

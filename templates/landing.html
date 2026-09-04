@@ -369,24 +369,23 @@
             <!-- MODE A: EXACT REFERENCE SCREENSHOT HERO PRESENTATION -->
             <div id="left-hero-default" style="position: relative; z-index: 1;">
 
-                <h1 class="hero-main-title">
-                    AI–Powered <span class="highlight">Facial Recognition</span> Attendance
+                <h1 class="hero-main-title" style="font-size: 2.5rem; line-height: 1.2;">
+                    Instant Face Recognition <br>
+                    <span class="highlight" style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Attendance</span>
                 </h1>
                 
-                <p class="hero-subtitle">
-                    Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure platform.
+                <p class="hero-subtitle mb-4" style="max-width: 520px; font-size: 0.95rem;">
+                    Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure AI platform.
                 </p>
 
-
-
-                <!-- Geometric Globe Wireframe Graphic SVG Backdrop -->
-                <svg class="globe-bg-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="120" cy="120" r="110" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
-                    <ellipse cx="120" cy="120" rx="110" ry="45" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
-                    <ellipse cx="120" cy="120" rx="45" ry="110" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
-                    <line x1="10" y1="120" x2="230" y2="120" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
-                    <line x1="120" y1="10" x2="120" y2="230" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2"/>
-                </svg>
+                <!-- Desktop Classroom AI Image Feature Card -->
+                <div class="position-relative overflow-hidden shadow-lg mb-3" 
+                     style="max-width: 460px; border-radius: 19px; border: 2.5px solid rgba(99, 102, 241, 0.45); box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.35); background: #0f172a;">
+                    <img src="{{ url_for('static', filename='images/mobile_hero_classroom.jpg') }}" 
+                         alt="SmartVision AI Classroom Attendance" 
+                         class="w-100 d-block" 
+                         style="border-radius: 16.5px; object-fit: cover;">
+                </div>
             </div>
 
             <!-- MODE B: LEFT PANEL DEDICATED LIVE HD CAMERA VIEWPORT -->
@@ -456,6 +455,7 @@
                     </div>
 
                     <!-- Flash Messages -->
+                    <div id="auth-flash-messages">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
@@ -466,6 +466,7 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
+                    </div>
 
                     <!-- Clean Header Title -->
                     <div class="text-center mb-4">
@@ -1089,7 +1090,8 @@
 
     // Check if error or flash exists on load to reveal form immediately
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.querySelector('.alert-danger, .alert-warning, .alert-success') || window.location.search.includes('view=')) {
+        const hasFlashMessage = document.querySelector('#auth-flash-messages .alert');
+        if (hasFlashMessage || window.location.search.includes('view=')) {
             const authContainer = document.getElementById('auth-card-anchor');
             const heroSection = document.getElementById('mobile-hero-section');
             if (authContainer && window.innerWidth < 992) {

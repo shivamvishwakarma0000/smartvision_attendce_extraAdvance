@@ -18,7 +18,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from functools import wraps
 
-from extensions import db, get_current_date
+from extensions import db, get_current_date, get_current_24h_time_str
 from models import (
     User, Student, Class, Subject, Teacher, Attendance, StudentEditRequest, ClassAnnouncement, StudentDismissedNotice,
     StudentReadNotice, Timetable, DailySchedule, AttendanceSession, AttendanceRecord, AttendanceDiscrepancyRequest, Holiday, Department,
@@ -26,6 +26,21 @@ from models import (
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
 from auth.routes import save_base64_image
+
+def convert_to_24h(time_str):
+    if not time_str:
+        return "00:00"
+    t_clean = time_str.strip()
+    for fmt in ("%I:%M %p", "%I:%M%p", "%H:%M", "%I:%M"):
+        try:
+            dt_val = datetime.strptime(t_clean, fmt)
+            if fmt in ("%I:%M", "%H:%M") and ('AM' not in t_clean.upper() and 'PM' not in t_clean.upper()):
+                if 1 <= dt_val.hour <= 6:
+                    dt_val = dt_val.replace(hour=dt_val.hour + 12)
+            return dt_val.strftime('%H:%M')
+        except ValueError:
+            pass
+    return "00:00"
 
 student_bp = Blueprint('student', __name__)
 
@@ -247,18 +262,26 @@ def dashboard():
                     status_icon = 'fa-user-shield'
                     marked_time = f'Proxy: Prof. {proxy_teacher_name}'
 
+            cur_24h = get_current_24h_time_str()
+            slot_start_24h = convert_to_24h(tt.start_time)
+            is_future_today = (d_date == today and cur_24h < slot_start_24h)
+
             if not is_cancelled:
-                if rec:
-                    if rec.status == 'PRESENT':
-                        status_label = 'Present'
-                        status_class = 'success'
-                        status_icon = 'fa-circle-check'
-                        marked_time = (rec.marked_at + timedelta(hours=5, minutes=30)).strftime("%I:%M %p") if rec.marked_at else 'Marked'
-                    else:
-                        status_label = 'Absent'
-                        status_class = 'danger'
-                        status_icon = 'fa-circle-xmark'
-                        marked_time = 'Absent'
+                if rec and rec.status == 'PRESENT':
+                    status_label = 'Present'
+                    status_class = 'success'
+                    status_icon = 'fa-circle-check'
+                    marked_time = (rec.marked_at + timedelta(hours=5, minutes=30)).strftime("%I:%M %p") if rec.marked_at else 'Marked'
+                elif is_future_today:
+                    status_label = 'Scheduled'
+                    status_class = 'warning'
+                    status_icon = 'fa-clock'
+                    marked_time = f'Starts at {tt.start_time}'
+                elif rec and rec.status != 'PRESENT':
+                    status_label = 'Absent'
+                    status_class = 'danger'
+                    status_icon = 'fa-circle-xmark'
+                    marked_time = 'Absent'
                 elif sess and sess.status == 'COMPLETED':
                     status_label = 'Absent'
                     status_class = 'danger'
@@ -270,11 +293,10 @@ def dashboard():
                     status_icon = 'fa-clock-rotate-left'
                     marked_time = 'Not Conducted'
                 elif d_date == today:
-                    if not is_proxy:
-                        status_label = 'Scheduled'
-                        status_class = 'warning'
-                        status_icon = 'fa-clock'
-                        marked_time = 'Upcoming Today'
+                    status_label = 'Scheduled'
+                    status_class = 'warning'
+                    status_icon = 'fa-clock'
+                    marked_time = f'Starts at {tt.start_time}'
                 else:
                     status_label = 'Upcoming'
                     status_class = 'info'

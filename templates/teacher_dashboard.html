@@ -610,8 +610,8 @@
                                             </span>
                                             {% endif %}
                                             <span
-                                                class="badge {% if item.is_today and item.is_cancelled %}bg-secondary{% else %}bg-indigo-600{% endif %} text-white px-2 py-0.5 rounded-pill fs-9 fw-bold">
-                                                Period {{ item.period }}
+                                                class="badge {% if item.is_today and item.is_cancelled %}bg-secondary text-white{% else %}bg-primary text-primary bg-opacity-10 border border-primary border-opacity-25{% endif %} px-2.5 py-1 rounded-pill fs-9 fw-bold">
+                                                <i class="fa-solid fa-layer-group me-1"></i>Period {{ item.period }}
                                             </span>
                                         </div>
                                     </div>

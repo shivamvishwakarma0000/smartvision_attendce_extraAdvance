@@ -638,24 +638,24 @@
                                             Reason: {{ item.cancellation_reason or 'Faculty Absent & No Proxy Available' }}
                                         </div>
                                     </div>
-                                    {% elif item.is_today and item.can_take_attendance %}
-                                        {% if item.is_proxy %}
-                                        <a href="{{ item.proxy_take_url or url_for('teacher.proxy_classes') }}"
-                                            class="btn btn-sm btn-warning text-dark w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs border border-warning">
-                                            <i class="fa-solid fa-camera me-1"></i>Take Proxy Attendance
-                                        </a>
-                                        {% else %}
-                                        <a href="{{ url_for('teacher.take_attendance', subject_id=item.slot.subject_id, slot_id=item.slot.id) }}"
-                                            class="btn btn-sm btn-primary w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs">
-                                            <i class="fa-solid fa-camera me-1"></i>Take Attendance Now
-                                        </a>
-                                        {% endif %}
+                                    {% elif item.is_today and item.not_started_yet %}
+                                    <button
+                                        class="btn btn-sm btn-warning bg-opacity-10 text-dark w-100 py-1.5 fs-8 rounded-2 border border-warning border-opacity-25 fw-semibold"
+                                        disabled title="Attendance opens strictly at {{ item.start_time }} (or after)">
+                                        <i class="fa-solid fa-clock me-1 text-warning"></i>Starts at {{ item.start_time }}
+                                    </button>
+                                    {% elif item.is_today and item.is_after_cutoff %}
+                                    <button
+                                        class="btn btn-sm btn-secondary bg-opacity-10 text-muted w-100 py-1.5 fs-8 rounded-2 border border-secondary border-opacity-25 fw-semibold"
+                                        disabled title="Attendance closed for today at 11:00 PM IST">
+                                        <i class="fa-solid fa-lock me-1"></i>Closed (Past 11 PM)
+                                    </button>
                                     {% elif item.is_today and item.attendance_marked %}
                                     <div
                                         class="d-flex align-items-center justify-content-between px-2 py-1.5 rounded-3 bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-8 fw-bold gap-1 w-100 overflow-hidden" style="min-width: 0;">
                                         <span class="d-flex align-items-center text-truncate fs-9" style="min-width: 0;" title="Attendance Marked Today">
                                             <i class="fa-solid fa-circle-check me-1 flex-shrink-0"></i>
-                                            <span class="text-truncate">Marked Today</span>
+                                            <span class="text-truncate">{% if item.is_proxy %}Proxy Shared ✓{% else %}Marked Today{% endif %}</span>
                                         </span>
                                         {% if item.completed_session_id %}
                                         <a href="{{ url_for('teacher.take_attendance', session_id=item.completed_session_id) }}" class="btn btn-xs btn-success text-white rounded-pill px-2.5 py-0.5 fs-9 fw-bold text-nowrap flex-shrink-0 shadow-xs" title="Edit Session Attendance (Before 11 PM)">
@@ -669,18 +669,18 @@
                                         disabled title="Check in via faculty attendance or merge proxy to enable student attendance">
                                         <i class="fa-solid fa-user-xmark me-1 text-danger"></i>Faculty Unverified / Absent
                                     </button>
-                                    {% elif item.is_today and item.not_started_yet %}
-                                    <button
-                                        class="btn btn-sm btn-warning bg-opacity-10 text-dark w-100 py-1.5 fs-8 rounded-2 border border-warning border-opacity-25 fw-semibold"
-                                        disabled title="Attendance opens strictly at {{ item.start_time }} (or after)">
-                                        <i class="fa-solid fa-clock me-1 text-warning"></i>Starts at {{ item.start_time }}
-                                    </button>
-                                    {% elif item.is_today and item.is_after_cutoff %}
-                                    <button
-                                        class="btn btn-sm btn-secondary bg-opacity-10 text-muted w-100 py-1.5 fs-8 rounded-2 border border-secondary border-opacity-25 fw-semibold"
-                                        disabled title="Attendance closed for today at 11:00 PM IST">
-                                        <i class="fa-solid fa-lock me-1"></i>Closed (Past 11 PM)
-                                    </button>
+                                    {% elif item.is_today and item.can_take_attendance %}
+                                        {% if item.is_proxy %}
+                                        <a href="{{ item.proxy_take_url or url_for('teacher.proxy_classes') }}"
+                                            class="btn btn-sm btn-warning text-dark w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs border border-warning">
+                                            <i class="fa-solid fa-camera me-1"></i>Take Proxy Attendance
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('teacher.take_attendance', subject_id=item.slot.subject_id, slot_id=item.slot.id) }}"
+                                            class="btn btn-sm btn-primary w-100 py-1.5 fw-bold fs-8 rounded-2 shadow-xs">
+                                            <i class="fa-solid fa-camera me-1"></i>Take Attendance Now
+                                        </a>
+                                        {% endif %}
                                     {% else %}
                                     <button class="btn btn-sm btn-light text-muted w-100 py-1.5 fs-8 rounded-2 border"
                                         disabled>

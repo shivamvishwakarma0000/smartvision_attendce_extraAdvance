@@ -307,16 +307,15 @@ def dashboard():
         ).all()
         for p_slot in orig_slots:
             proxy_slot_ids_seen.add(p_slot.id)
-            # Check if proxy attendance already taken and shared/saved
             saved_proxy_tr = ProxyAttendanceTransfer.query.filter_by(
                 timetable_id=p_slot.id,
                 date=today
             ).first()
-            proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls))
             
             p_start_24h = convert_to_24h(p_slot.start_time)
             p_not_started = (current_time_24h < p_start_24h)
             p_after_cutoff = (current_time_24h >= "23:00")
+            proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls) and saved_proxy_tr.status in ['SHARED', 'APPLIED', 'DISMISSED'] and not p_not_started)
             p_can_take = (not proxy_marked and not p_not_started and not p_after_cutoff)
 
             weekly_timetable_schedule.append({
@@ -361,11 +360,11 @@ def dashboard():
             timetable_id=dp_slot.id,
             date=today
         ).first()
-        proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls))
 
         p_start_24h = convert_to_24h(dp_slot.start_time)
         p_not_started = (current_time_24h < p_start_24h)
         p_after_cutoff = (current_time_24h >= "23:00")
+        proxy_marked = (saved_proxy_tr is not None and bool(saved_proxy_tr.present_rolls) and saved_proxy_tr.status in ['SHARED', 'APPLIED', 'DISMISSED'] and not p_not_started)
         p_can_take = (not proxy_marked and not p_not_started and not p_after_cutoff)
 
         weekly_timetable_schedule.append({
@@ -893,6 +892,25 @@ def share_proxy_rolls():
         duty_date = datetime.strptime(duty_date_str, '%Y-%m-%d').date() if duty_date_str else get_current_date()
     except Exception:
         duty_date = get_current_date()
+
+    # Strict Time Window Validation for Sharing Proxy Attendance
+    today = get_current_date()
+    current_time_24h = get_current_24h_time_str()
+
+    if timetable_id and str(timetable_id).isdigit():
+        slot_obj = Timetable.query.get(int(timetable_id))
+        if slot_obj:
+            slot_start_24h = convert_to_24h(slot_obj.start_time)
+            if duty_date == today:
+                if current_time_24h < slot_start_24h:
+                    flash(f"⚠️ Proxy Attendance Locked: This substituted lecture is scheduled at {slot_obj.start_time}. Proxy attendance opens strictly at {slot_obj.start_time} (or after) and stays open until 11:00 PM IST.", "warning")
+                    return redirect(url_for('teacher.proxy_classes'))
+                if current_time_24h >= "23:00":
+                    flash("⚠️ Proxy Attendance Window Closed: Today's proxy attendance window closed at 11:00 PM IST.", "warning")
+                    return redirect(url_for('teacher.proxy_classes'))
+            elif duty_date > today:
+                flash(f"⚠️ Proxy Duty Scheduled for Future: This proxy lecture is scheduled for {duty_date.strftime('%b %d, %Y')}. Attendance can only be taken and shared on the duty date.", "warning")
+                return redirect(url_for('teacher.proxy_classes'))
 
     orig_teacher = Teacher.query.get(int(original_teacher_id)) if original_teacher_id else None
 

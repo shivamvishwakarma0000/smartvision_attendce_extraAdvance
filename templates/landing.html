@@ -217,6 +217,9 @@
                 overflow: visible !important;
                 padding-right: 0 !important;
             }
+            .auth-card-container.mobile-auth-hidden {
+                display: none !important;
+            }
             .auth-card {
                 padding: 1.5rem !important;
                 border-radius: 1.25rem !important;
@@ -415,69 +418,42 @@
 
             <!-- MOBILE-ONLY HERO SHOWCASE (Phone Landing View) -->
             <div class="d-block d-lg-none mb-4 mobile-landing-hero text-center" id="mobile-hero-section">
-                <!-- Top Header -->
-                <div class="mb-2">
-                    <span class="badge rounded-pill px-3 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm" 
-                          style="background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); font-size: 0.78rem;">
-                        <i class="fa-solid fa-wand-magic-sparkles text-warning"></i> AI–Powered Smart Attendance
-                    </span>
-                    <h2 class="fw-extrabold text-white mt-2.5 mb-1.5 tracking-tight" style="font-size: 1.65rem; line-height: 1.25; letter-spacing: -0.5px;">
+                <!-- Top Header: Instant Face Recognition Class Attendance -->
+                <div class="mb-3">
+                    <h2 class="fw-extrabold text-white mt-1 mb-0 tracking-tight" style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; line-height: 1.25; letter-spacing: -0.5px;">
                         Instant Face Recognition <br>
-                        <span style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Attendance</span>
+                        <span style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Attendance</span>
                     </h2>
-                    <p class="fs-8 text-white-50 mb-3 mx-auto" style="max-width: 330px; line-height: 1.45;">
-                        Multi-student face detection & real-time automated verification straight from any mobile or laptop camera.
-                    </p>
                 </div>
 
-                <!-- Center Classroom AI Image with 19% / 19px Rounded Glowing Border -->
+                <!-- Center Classroom AI Image with 19px Rounded Glowing Border (Clean without badges) -->
                 <div class="position-relative mx-auto my-3 overflow-hidden shadow-lg mobile-hero-img-container" 
                      style="max-width: 360px; width: 100%; border-radius: 19px; border: 2.5px solid rgba(99, 102, 241, 0.45); box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.35); background: #0f172a;">
                     <img src="{{ url_for('static', filename='images/mobile_hero_classroom.jpg') }}" 
                          alt="SmartVision AI Classroom Attendance" 
                          class="w-100 d-block" 
                          style="border-radius: 16.5px; object-fit: cover; aspect-ratio: 1/1;">
-
-                    <!-- Top-Left Floating Live Status Pill -->
-                    <div class="position-absolute top-0 start-0 m-2.5 badge rounded-pill px-2.5 py-1.5 d-flex align-items-center gap-1.5 shadow-sm" 
-                         style="background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.72rem; color: #ffffff;">
-                        <span class="rounded-circle bg-success d-inline-block" style="width: 7px; height: 7px; box-shadow: 0 0 8px #10b981;"></span>
-                        <span class="fw-bold">AI Scanner Active</span>
-                    </div>
-
-                    <!-- Bottom Gradient Overlay with Badges -->
-                    <div class="position-absolute bottom-0 start-0 end-0 p-2.5 d-flex justify-content-between align-items-center" 
-                         style="background: linear-gradient(to top, rgba(12, 16, 33, 0.92) 0%, rgba(12, 16, 33, 0) 100%);">
-                        <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-bold text-white shadow-xs" style="background: rgba(99, 102, 241, 0.85); backdrop-filter: blur(4px);">
-                            <i class="fa-solid fa-camera me-1"></i> Multi-Face AI
-                        </span>
-                        <span class="badge rounded-pill px-2.5 py-1 fs-9 fw-bold text-white shadow-xs" style="background: rgba(16, 185, 129, 0.85); backdrop-filter: blur(4px);">
-                            <i class="fa-solid fa-circle-check me-1"></i> 99.8% Accuracy
-                        </span>
-                    </div>
                 </div>
 
-                <!-- Start Action Button Below Image -->
-                <div class="mx-auto mt-3 mb-2.5" style="max-width: 360px; width: 100%;">
-                    <a href="#auth-card-anchor" onclick="scrollToAuthSection('login')" 
-                       class="btn btn-primary-auth w-100 py-3 rounded-pill fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-lg text-decoration-none" 
-                       style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.45); font-size: 0.95rem;">
-                        <i class="fa-solid fa-bolt text-warning"></i> Get Started / Sign In <i class="fa-solid fa-arrow-down ms-1"></i>
-                    </a>
-                </div>
-
-                <!-- Footer Feature Badges -->
-                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 text-white-50 fs-9 mb-3 mx-auto" style="max-width: 360px;">
-                    <span><i class="fa-solid fa-shield-halved text-success me-1"></i> Anti-Spoofing</span>
-                    <span class="opacity-40">•</span>
-                    <span><i class="fa-solid fa-gauge-high text-info me-1"></i> 0.2s Check-In</span>
-                    <span class="opacity-40">•</span>
-                    <span><i class="fa-solid fa-mobile-screen text-warning me-1"></i> Mobile Ready</span>
+                <!-- Start Action Button Below Image (Clean without yellow bolt icon) -->
+                <div class="mx-auto mt-3 mb-2" style="max-width: 360px; width: 100%;">
+                    <button type="button" onclick="openMobileAuthForm('login')" 
+                            class="btn btn-primary-auth w-100 py-3 rounded-pill fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-lg" 
+                            style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.45); font-size: 0.95rem;">
+                        <span>Get Started / Sign In</span> <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="auth-card-container" id="auth-card-anchor">
+            <div class="auth-card-container mobile-auth-hidden" id="auth-card-anchor">
                 <div class="auth-card">
+
+                    <!-- Mobile-Only Back to Overview Button -->
+                    <div class="d-block d-lg-none mb-3">
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0 d-inline-flex align-items-center gap-1.5 fw-semibold fs-8" onclick="backToMobileHero()" style="color: var(--text-muted) !important;">
+                            <i class="fa-solid fa-arrow-left"></i> <span>Back to Overview</span>
+                        </button>
+                    </div>
 
                     <!-- Flash Messages -->
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -1082,14 +1058,49 @@
         }
     }
 
-    // Smooth Scroll Helper for Mobile Landing Page Hero
-    function scrollToAuthSection(view) {
+    // Direct View Switching Helper for Mobile Landing Page Hero
+    function openMobileAuthForm(view) {
         if (view) showView(view);
-        const target = document.getElementById('auth-card-anchor') || document.querySelector('.auth-card-container');
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const heroSection = document.getElementById('mobile-hero-section');
+        const authContainer = document.getElementById('auth-card-anchor');
+        if (heroSection) {
+            heroSection.classList.add('d-none');
+            heroSection.classList.remove('d-block');
+        }
+        if (authContainer) {
+            authContainer.classList.remove('mobile-auth-hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
+
+    // Return to Mobile Hero from Auth Form
+    function backToMobileHero() {
+        const heroSection = document.getElementById('mobile-hero-section');
+        const authContainer = document.getElementById('auth-card-anchor');
+        if (authContainer) {
+            authContainer.classList.add('mobile-auth-hidden');
+        }
+        if (heroSection) {
+            heroSection.classList.remove('d-none');
+            heroSection.classList.add('d-block');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    // Check if error or flash exists on load to reveal form immediately
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.querySelector('.alert-danger, .alert-warning, .alert-success') || window.location.search.includes('view=')) {
+            const authContainer = document.getElementById('auth-card-anchor');
+            const heroSection = document.getElementById('mobile-hero-section');
+            if (authContainer && window.innerWidth < 992) {
+                authContainer.classList.remove('mobile-auth-hidden');
+                if (heroSection) {
+                    heroSection.classList.add('d-none');
+                    heroSection.classList.remove('d-block');
+                }
+            }
+        }
+    });
 
     // FORGOT PASSWORD STEP CONTROLLER & AJAX ENGINE
     let forgotEmailState = '';

@@ -217,8 +217,8 @@ def dashboard():
             })
 
     # All timetable slots assigned to teacher
-    all_teacher_slots = Timetable.query.filter(
-        (Timetable.teacher_id == teacher.id) | (Timetable.subject_id.in_(assigned_sub_ids) if assigned_sub_ids else False)
+    all_teacher_slots = Timetable.query.filter_by(
+        teacher_id=teacher.id
     ).order_by(Timetable.day_of_week, Timetable.start_time).all()
 
     current_time_24h = get_current_24h_time_str()

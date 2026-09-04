@@ -357,24 +357,54 @@
     </div>
 </nav>
 
-<div class="container-fluid px-3 px-lg-5 py-4 my-auto">
+<div class="container-fluid px-3 px-lg-5 py-3 py-lg-4 my-auto">
     <div class="row w-100 align-items-center g-4 mx-0">
         
-        <!-- LEFT COLUMN: Permanent Cosmic Dark Hero Presentation -->
+        <!-- LEFT COLUMN: Permanent Cosmic Dark Hero Presentation (Desktop >= 992px) -->
         <div class="col-lg-6 hero-left-wrapper d-none d-lg-block" id="left-panel-container">
             
             <!-- MODE A: EXACT REFERENCE SCREENSHOT HERO PRESENTATION -->
             <div id="left-hero-default" style="position: relative; z-index: 1;">
 
-                <h1 class="hero-main-title">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-3 shadow-sm" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35);">
+                    <span class="rounded-circle bg-primary d-inline-block" style="width: 8px; height: 8px; box-shadow: 0 0 8px #6366f1;"></span>
+                    <span class="fs-8 fw-bold text-white tracking-wide">Next-Gen AI Biometrics</span>
+                </div>
+
+                <h1 class="hero-main-title mb-2">
                     AI–Powered <span class="highlight">Facial Recognition</span> Attendance
                 </h1>
                 
-                <p class="hero-subtitle">
-                    Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure platform.
+                <p class="hero-subtitle mb-4">
+                    Automate classroom check-ins, eliminate proxy attendance, and access real-time institutional analytics in a single ultra-secure platform.
                 </p>
 
+                <!-- Desktop Showcase Visual Card -->
+                <div class="position-relative rounded-4 overflow-hidden mb-4 shadow-lg border" style="max-width: 520px; border: 1.5px solid rgba(99, 102, 241, 0.4) !important; background: #0b0f19;">
+                    <img src="{{ url_for('static', filename='images/mobile_hero_ai.jpg') }}" alt="SmartVision AI Attendance" class="w-100 d-block" style="height: 250px; object-fit: cover; object-position: center top;">
+                    
+                    <div class="position-absolute top-0 end-0 m-3 px-3 py-1.5 rounded-pill backdrop-blur d-flex align-items-center gap-2 shadow-sm" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.78rem; color: #38bdf8;">
+                        <i class="fa-solid fa-circle text-success" style="font-size: 0.5rem;"></i>
+                        <span class="fw-bold text-white">99.8% AI Face Match</span>
+                    </div>
 
+                    <div class="position-absolute bottom-0 start-0 end-0 p-2.5 px-3.5 backdrop-blur d-flex align-items-center justify-content-between" style="background: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.95) 80%);">
+                        <span class="fs-8 text-white fw-semibold"><i class="fa-solid fa-bolt text-warning me-1.5"></i>0.3s Instant Verification</span>
+                        <span class="badge bg-success bg-opacity-90 rounded-pill px-2.5 py-1 fs-9 fw-bold"><i class="fa-solid fa-shield-check me-1"></i>Anti-Proxy System</span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-2 flex-wrap">
+                    <div class="hero-check-pill">
+                        <i class="fa-solid fa-circle-check text-success"></i> Instant Face Scanning
+                    </div>
+                    <div class="hero-check-pill">
+                        <i class="fa-solid fa-circle-check text-success"></i> Real-Time Timetable Sync
+                    </div>
+                    <div class="hero-check-pill">
+                        <i class="fa-solid fa-circle-check text-success"></i> Smart Reports
+                    </div>
+                </div>
 
                 <!-- Geometric Globe Wireframe Graphic SVG Backdrop -->
                 <svg class="globe-bg-svg" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -410,8 +440,86 @@
 
         </div>
 
+        <!-- MOBILE-ONLY HERO LANDING SHOWCASE (Visible on Phone/Mobile < 992px) -->
+        <div class="col-12 d-lg-none mb-2" id="mobile-hero-section">
+            <div class="text-center px-1 py-1">
+                
+                <!-- Badge Pill -->
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-2.5 shadow-sm" style="background: rgba(99, 102, 241, 0.18); border: 1px solid rgba(99, 102, 241, 0.4);">
+                    <span class="rounded-circle bg-primary d-inline-block" style="width: 8px; height: 8px; box-shadow: 0 0 8px #6366f1;"></span>
+                    <span class="fs-8 fw-bold text-white tracking-wide">Next-Gen AI Attendance</span>
+                </div>
+
+                <!-- Main Mobile Title -->
+                <h1 class="fw-extrabold text-white mb-2" style="font-size: 1.85rem; line-height: 1.25; letter-spacing: -0.5px;">
+                    AI–Powered <span style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Facial Recognition</span> Portal
+                </h1>
+                <p class="fs-8 mb-3" style="color: #cbd5e1; max-width: 360px; margin: 0 auto; line-height: 1.45;">
+                    Automate classroom check-ins, eliminate proxy attendance, and access real-time analytics on any phone.
+                </p>
+
+                <!-- Modern Rectangular Showcase Card with AI Visual (Reference Image 2) -->
+                <div class="position-relative mx-auto rounded-4 overflow-hidden mb-3 shadow-lg border" style="max-width: 380px; border: 1.5px solid rgba(99, 102, 241, 0.45) !important; background: #0b0f19;">
+                    <img src="{{ url_for('static', filename='images/mobile_hero_ai.jpg') }}" alt="SmartVision AI Attendance" class="w-100 d-block" style="height: 220px; object-fit: cover; object-position: center top;">
+                    
+                    <!-- Top Floating Live Status Badge -->
+                    <div class="position-absolute top-0 end-0 m-2.5 px-2.5 py-1 rounded-pill backdrop-blur d-flex align-items-center gap-1.5 shadow-sm" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.25); font-size: 0.72rem; color: #38bdf8;">
+                        <i class="fa-solid fa-circle text-success" style="font-size: 0.45rem;"></i>
+                        <span class="fw-bold text-white">99.8% AI Match</span>
+                    </div>
+
+                    <!-- Bottom Overlay Banner inside the card -->
+                    <div class="position-absolute bottom-0 start-0 end-0 p-2 px-3 backdrop-blur d-flex align-items-center justify-content-between" style="background: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.95) 80%);">
+                        <span class="fs-9 text-white fw-semibold"><i class="fa-solid fa-bolt text-warning me-1"></i>0.3s Verification</span>
+                        <span class="badge bg-success bg-opacity-90 rounded-pill px-2 py-0.5 fs-9 fw-bold"><i class="fa-solid fa-shield-check me-1"></i>Anti-Proxy</span>
+                    </div>
+                </div>
+
+                <!-- 3 Feature Badges in 1 Row -->
+                <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
+                    <span class="badge px-2.5 py-1.5 rounded-pill fs-9 fw-semibold shadow-xs" style="background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.12);">
+                        <i class="fa-solid fa-face-smile text-primary me-1"></i> Face Scan
+                    </span>
+                    <span class="badge px-2.5 py-1.5 rounded-pill fs-9 fw-semibold shadow-xs" style="background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.12);">
+                        <i class="fa-solid fa-id-card text-info me-1"></i> Digital ID
+                    </span>
+                    <span class="badge px-2.5 py-1.5 rounded-pill fs-9 fw-semibold shadow-xs" style="background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.12);">
+                        <i class="fa-solid fa-chart-pie text-success me-1"></i> Analytics
+                    </span>
+                </div>
+
+                <!-- Primary CTA Button ("Start for Free / Sign In") -->
+                <div class="d-flex flex-column gap-2 mb-2" style="max-width: 380px; margin: 0 auto;">
+                    <button type="button" class="btn btn-lg w-100 py-2.5 fw-extrabold rounded-pill shadow-lg d-flex align-items-center justify-content-center gap-2" 
+                            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; font-size: 1rem; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);"
+                            onclick="scrollToAuthCard('login')">
+                        <span>Start for Free / Sign In</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm w-100 py-2 fw-bold rounded-pill" 
+                            style="border-color: rgba(255, 255, 255, 0.25); font-size: 0.85rem;"
+                            onclick="scrollToAuthCard('signup')">
+                        <i class="fa-solid fa-user-plus me-1.5 text-primary"></i> Register New Account
+                    </button>
+                </div>
+
+                <div class="text-center mt-2 mb-2">
+                    <a href="#auth-card-section" onclick="scrollToAuthCard('login')" class="text-decoration-none fs-9 fw-semibold" style="color: #94a3b8;">
+                        <span>Sign in below</span> <i class="fa-solid fa-chevron-down ms-1 animate-bounce"></i>
+                    </a>
+                </div>
+
+            </div>
+            
+            <div class="d-flex align-items-center gap-3 my-2" style="max-width: 380px; margin: 0 auto;">
+                <hr class="flex-grow-1 my-0 opacity-20" style="border-color: rgba(255, 255, 255, 0.2);">
+                <span class="fs-9 text-uppercase tracking-wider fw-bold text-muted">Portal Login</span>
+                <hr class="flex-grow-1 my-0 opacity-20" style="border-color: rgba(255, 255, 255, 0.2);">
+            </div>
+        </div>
+
         <!-- RIGHT COLUMN: Floating Boxed Auth Form Card -->
-        <div class="col-lg-6 col-12 ms-auto ps-lg-4">
+        <div class="col-lg-6 col-12 ms-auto ps-lg-4" id="auth-card-section">
             <div class="auth-card-container">
                 <div class="auth-card">
 
@@ -1015,6 +1123,17 @@
             if (formTitle) formTitle.innerText = 'Account Recovery';
             switchForgotStep(1);
             stopWebcam();
+        }
+    }
+
+    // Smooth Scroll Helper to Auth Section on Phone
+    function scrollToAuthCard(view) {
+        if (view) {
+            showView(view);
+        }
+        const card = document.getElementById('auth-card-section') || document.querySelector('.auth-card-container');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 

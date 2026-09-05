@@ -32,6 +32,7 @@ class User(UserMixin, db.Model):
     status = db.Column(db.String(20), default='Approved') # 'Pending', 'Approved', 'Rejected', 'Email_Unverified'
     google_id = db.Column(db.String(100), nullable=True)
     is_email_verified = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
     def mobile(self):
@@ -266,6 +267,7 @@ class Student(db.Model):
     suspended_by_name = db.Column(db.String(100), nullable=True)
     detention_days = db.Column(db.Integer, nullable=True)
     suspended_until = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __init__(self, **kwargs):
         if 'roll_no' in kwargs and 'roll_number' not in kwargs:

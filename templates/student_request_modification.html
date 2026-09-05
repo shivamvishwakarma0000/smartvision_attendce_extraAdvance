@@ -107,71 +107,101 @@
                 </form>
             </div>
 
-            <!-- Existing Requests List -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 mt-4" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
-                <h6 class="fw-bold mb-3 fs-7" style="color: var(--text-primary);">
-                    <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Modification Request History
-                </h6>
+            <!-- Existing Requests List (Collapsible + Paginated) -->
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 mt-4" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
+                <div class="d-flex justify-content-between align-items-center" onclick="toggleRequestHistory()" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px;">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 fs-7" style="color: var(--text-primary);">
+                                My Modification Request History
+                            </h6>
+                            <span class="fs-9 text-muted">{{ my_requests|length }} request(s) on record</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 fs-9 fw-bold d-flex align-items-center gap-1.5 shadow-xs" id="historyToggleBtn">
+                        <span id="historyToggleText">Show History</span>
+                        <i class="fa-solid fa-chevron-down" id="historyToggleIcon" style="transition: transform 0.2s ease;"></i>
+                    </button>
+                </div>
 
-                {% if my_requests %}
-                <div class="table-responsive rounded-3 border">
-                    <table class="table table-hover align-middle mb-0 fs-8">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Subject & Session</th>
-                                <th>Reason Given</th>
-                                <th>Proof</th>
-                                <th>Submitted On</th>
-                                <th class="text-end">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for r in my_requests %}
-                            <tr>
-                                <td class="fw-bold text-primary">
-                                    {{ r.session.subject.name if (r.session and r.session.subject) else (r.class_name or 'Lecture') }}
-                                    <span class="fs-9 text-muted d-block">{{ r.lecture_time or (r.session.date.strftime('%b %d, %Y') if r.session else '') }}</span>
-                                </td>
-                                <td>
-                                    <span class="fst-italic text-secondary">"{{ r.reason }}"</span>
-                                </td>
-                                <td>
-                                    {% if r.image_proof %}
-                                    <a href="{{ url_for('static', filename='../' ~ r.image_proof) }}" target="_blank" class="badge bg-light text-primary border">
-                                        <i class="fa-solid fa-image me-1"></i>View Image
-                                    </a>
-                                    {% else %}
-                                    <span class="text-muted fs-9">None</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-muted fs-9">
-                                    {{ r.created_at.strftime('%b %d, %Y %I:%M %p') }}
-                                </td>
-                                <td class="text-end">
-                                    {% if r.status == 'APPROVED' %}
-                                    <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-9">
-                                        <i class="fa-solid fa-check me-1"></i>APPROVED
-                                    </span>
-                                    {% elif r.status == 'REJECTED' %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-9">
-                                        <i class="fa-solid fa-xmark me-1"></i>REJECTED
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-warning bg-opacity-15 text-dark px-2.5 py-1 rounded-pill fw-bold border border-warning border-opacity-30 fs-9">
-                                        <i class="fa-solid fa-clock me-1"></i>PENDING
-                                    </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <!-- Hidden Collapsible Section -->
+                <div id="historyContentSection" class="mt-3 pt-3 border-top" style="display: none;">
+                    {% if my_requests %}
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-hover align-middle mb-0 fs-8" id="modHistoryTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject & Session</th>
+                                    <th>Reason Given</th>
+                                    <th>Proof</th>
+                                    <th>Submitted On</th>
+                                    <th class="text-end">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modHistoryTbody">
+                                {% for r in my_requests %}
+                                <tr class="mod-history-row">
+                                    <td class="fw-bold text-primary">
+                                        {{ r.session.subject.name if (r.session and r.session.subject) else (r.class_name or 'Lecture') }}
+                                        <span class="fs-9 text-muted d-block">{{ r.lecture_time or (r.session.date.strftime('%b %d, %Y') if r.session else '') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fst-italic text-secondary">"{{ r.reason }}"</span>
+                                    </td>
+                                    <td>
+                                        {% if r.image_proof %}
+                                        <a href="{{ url_for('static', filename='../' ~ r.image_proof) }}" target="_blank" class="badge bg-light text-primary border">
+                                            <i class="fa-solid fa-image me-1"></i>View Image
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted fs-9">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted fs-9">
+                                        {{ r.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if r.status == 'APPROVED' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 rounded-pill fw-bold border border-success border-opacity-25 fs-9">
+                                            <i class="fa-solid fa-check me-1"></i>APPROVED
+                                        </span>
+                                        {% elif r.status == 'REJECTED' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-2.5 py-1 rounded-pill fw-bold border border-danger border-opacity-25 fs-9">
+                                            <i class="fa-solid fa-xmark me-1"></i>REJECTED
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning bg-opacity-15 text-dark px-2.5 py-1 rounded-pill fw-bold border border-warning border-opacity-30 fs-9">
+                                            <i class="fa-solid fa-clock me-1"></i>PENDING
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-3 pt-2" id="historyPaginationWrapper">
+                        <div class="fs-9 text-muted" id="historyCountSummary">
+                            Showing <strong id="startEntryNum">1</strong> to <strong id="endEntryNum">10</strong> of <strong id="totalEntryNum">{{ my_requests|length }}</strong> requests
+                        </div>
+                        <nav aria-label="Request history pagination" id="historyPaginationNav">
+                            <ul class="pagination pagination-sm mb-0 gap-1" id="historyPaginationList">
+                                <!-- Generated by JS -->
+                            </ul>
+                        </nav>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted fs-8">
+                        <i class="fa-solid fa-clock-rotate-left text-muted fs-3 mb-2 opacity-50 d-block"></i>
+                        No modification requests submitted yet.
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-4 text-muted fs-8">
-                    No requests submitted yet.
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -185,6 +215,100 @@
             if (selected.dataset.teacher) document.getElementById('teacher_name').value = selected.dataset.teacher;
             if (selected.dataset.timing) document.getElementById('lecture_time').value = selected.dataset.timing;
         }
+    }
+
+    // Toggle History Section
+    let historyExpanded = false;
+    function toggleRequestHistory() {
+        const section = document.getElementById('historyContentSection');
+        const icon = document.getElementById('historyToggleIcon');
+        const text = document.getElementById('historyToggleText');
+        if (!section) return;
+
+        historyExpanded = !historyExpanded;
+        if (historyExpanded) {
+            section.style.display = 'block';
+            if (text) text.textContent = 'Hide History';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+            initHistoryPagination();
+        } else {
+            section.style.display = 'none';
+            if (text) text.textContent = 'Show History';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // 10-per-page Pagination for Modification Requests
+    let currentHistoryPage = 1;
+    const HISTORY_PAGE_SIZE = 10;
+
+    function initHistoryPagination() {
+        const rows = document.querySelectorAll('.mod-history-row');
+        const totalRows = rows.length;
+        const totalPages = Math.ceil(totalRows / HISTORY_PAGE_SIZE) || 1;
+        const nav = document.getElementById('historyPaginationNav');
+        const summary = document.getElementById('historyCountSummary');
+        const list = document.getElementById('historyPaginationList');
+
+        if (totalRows === 0) {
+            if (summary) summary.style.display = 'none';
+            if (nav) nav.style.display = 'none';
+            return;
+        }
+
+        renderHistoryPage(currentHistoryPage, totalRows, totalPages);
+    }
+
+    function renderHistoryPage(page, totalRows, totalPages) {
+        currentHistoryPage = page;
+        const rows = document.querySelectorAll('.mod-history-row');
+        const start = (page - 1) * HISTORY_PAGE_SIZE;
+        const end = Math.min(start + HISTORY_PAGE_SIZE, totalRows);
+
+        rows.forEach((row, idx) => {
+            row.style.display = (idx >= start && idx < end) ? '' : 'none';
+        });
+
+        // Update counts
+        const startElem = document.getElementById('startEntryNum');
+        const endElem = document.getElementById('endEntryNum');
+        const totalElem = document.getElementById('totalEntryNum');
+        if (startElem) startElem.textContent = totalRows > 0 ? (start + 1) : 0;
+        if (endElem) endElem.textContent = end;
+        if (totalElem) totalElem.textContent = totalRows;
+
+        // Build pagination buttons
+        const list = document.getElementById('historyPaginationList');
+        const nav = document.getElementById('historyPaginationNav');
+        if (!list) return;
+        list.innerHTML = '';
+
+        if (totalPages <= 1) {
+            if (nav) nav.style.display = 'none';
+            return;
+        } else {
+            if (nav) nav.style.display = 'block';
+        }
+
+        // Previous button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${page === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<button class="page-link rounded-pill px-2.5 py-1 fs-9" onclick="event.stopPropagation(); renderHistoryPage(${page - 1}, ${totalRows}, ${totalPages})" ${page === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left"></i> Prev</button>`;
+        list.appendChild(prevLi);
+
+        // Page numbers
+        for (let p = 1; p <= totalPages; p++) {
+            const pageLi = document.createElement('li');
+            pageLi.className = `page-item ${p === page ? 'active' : ''}`;
+            pageLi.innerHTML = `<button class="page-link rounded-pill px-2.5 py-1 fs-9 fw-bold" onclick="event.stopPropagation(); renderHistoryPage(${p}, ${totalRows}, ${totalPages})">${p}</button>`;
+            list.appendChild(pageLi);
+        }
+
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${page === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<button class="page-link rounded-pill px-2.5 py-1 fs-9" onclick="event.stopPropagation(); renderHistoryPage(${page + 1}, ${totalRows}, ${totalPages})" ${page === totalPages ? 'disabled' : ''}>Next <i class="fa-solid fa-chevron-right"></i></button>`;
+        list.appendChild(nextLi);
     }
 </script>
 {% endblock %}

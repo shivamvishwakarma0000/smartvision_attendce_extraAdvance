@@ -118,6 +118,8 @@ def run_migrations(db_path="smartvision.db"):
             ("students", "suspended_by_user_id", "INTEGER"),
             ("students", "suspended_by_role", "VARCHAR(50)"),
             ("students", "suspended_by_name", "VARCHAR(100)"),
+            ("students", "created_at", "DATETIME"),
+            ("users", "created_at", "DATETIME"),
             ("student_edit_requests", "new_image_data", "TEXT")
         ]
 

@@ -993,12 +993,19 @@ def get_user_notifications():
 
                 # 2. Class Announcements & Notices
                 from models import StudentReadNotice
+                from datetime import datetime
+                stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
+                stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+
                 read_notice_ids = [r.announcement_id for r in StudentReadNotice.query.filter_by(student_id=student.id).all()]
-                unread_notices = ClassAnnouncement.query.filter(
+                unread_notices_q = ClassAnnouncement.query.filter(
                     (ClassAnnouncement.class_id == student.class_id) | (ClassAnnouncement.class_id == None),
                     ClassAnnouncement.target_role.in_(['STUDENTS', 'ALL']),
                     ~ClassAnnouncement.id.in_(read_notice_ids) if read_notice_ids else True
-                ).order_by(ClassAnnouncement.created_at.desc()).limit(3).all()
+                )
+                if stu_reg_cutoff:
+                    unread_notices_q = unread_notices_q.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
+                unread_notices = unread_notices_q.order_by(ClassAnnouncement.created_at.desc()).limit(3).all()
 
                 for notice in unread_notices:
                     notifications.append({

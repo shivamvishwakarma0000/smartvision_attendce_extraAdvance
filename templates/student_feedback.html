@@ -412,10 +412,24 @@
                                                     Replacement
                                                 </span>
                                             {% endif %}
+                                            {% if c.student_id == student.id %}
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5 fs-9 fw-bold">
+                                                    <i class="fa-solid fa-user-pen me-1"></i>Started by You
+                                                </span>
+                                            {% endif %}
                                         </div>
-                                        <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Closed' %}bg-secondary{% elif c.status == 'Rejected' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
-                                            {{ c.status }}
-                                        </span>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <span class="badge {% if c.status == 'Threshold Reached' %}bg-danger animate-pulse{% elif c.status == 'Resolved' %}bg-success{% elif c.status == 'Under Review' %}bg-info text-dark{% elif c.status == 'Closed' %}bg-secondary{% elif c.status == 'Rejected' %}bg-danger-subtle text-danger border border-danger-subtle{% else %}bg-light text-muted border{% endif %} rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                                                {{ c.status }}
+                                            </span>
+                                            {% if c.student_id == student.id and not is_res %}
+                                                <form action="{{ url_for('student.delete_complaint', complaint_id=c.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to withdraw and delete this complaint? All student votes on this issue will also be removed.');">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2 py-0.5 fs-9 fw-bold d-flex align-items-center gap-1 shadow-xs" title="Withdraw and delete your complaint">
+                                                        <i class="fa-solid fa-trash-can"></i> Delete
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
                                     </div>
 
                                     <!-- Teacher & Subject -->

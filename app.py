@@ -281,6 +281,10 @@ def create_app():
                 if student:
                     from models import ClassAnnouncement, StudentDismissedNotice, StudentReadNotice
                     from sqlalchemy import or_
+                    from datetime import datetime
+                    stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
+                    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+
                     dismissed_ids = [d.announcement_id for d in StudentDismissedNotice.query.filter_by(student_id=student.id).all()]
                     read_ids = [r.announcement_id for r in StudentReadNotice.query.filter_by(student_id=student.id).all()]
                     excluded_ids = set(dismissed_ids + read_ids)
@@ -288,6 +292,8 @@ def create_app():
                         ClassAnnouncement.target_role.in_(['STUDENTS', 'ALL']),
                         or_(ClassAnnouncement.class_id == None, ClassAnnouncement.class_id == student.class_id)
                     )
+                    if stu_reg_cutoff:
+                        q = q.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
                     if excluded_ids:
                         q = q.filter(~ClassAnnouncement.id.in_(list(excluded_ids)))
                     return {'student_notice_count': q.count()}
@@ -476,6 +482,8 @@ def ensure_postgresql_columns():
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_by_name VARCHAR(100)",
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS detention_days INTEGER",
             "ALTER TABLE students ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP WITHOUT TIME ZONE",
+            "ALTER TABLE students ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS id_card_status VARCHAR(30) DEFAULT 'Active'",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE",
             "ALTER TABLE teachers ADD COLUMN IF NOT EXISTS suspension_reason VARCHAR(255)",

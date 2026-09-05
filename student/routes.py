@@ -359,7 +359,13 @@ def dashboard():
             records.append(r)
 
     pending_request = StudentEditRequest.query.filter_by(student_id=student.id, status='Pending').first()
-    class_notices = ClassAnnouncement.query.filter_by(class_id=student.class_id).order_by(ClassAnnouncement.created_at.desc()).all() if student.class_id else []
+    stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
+    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+    
+    class_notices_query = ClassAnnouncement.query.filter_by(class_id=student.class_id) if student.class_id else None
+    if class_notices_query and stu_reg_cutoff:
+        class_notices_query = class_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
+    class_notices = class_notices_query.order_by(ClassAnnouncement.created_at.desc()).all() if class_notices_query else []
 
     return render_template(
         'student_dashboard.html',
@@ -654,6 +660,8 @@ def notices():
 
     # Get dismissed notice IDs for this specific student
     dismissed_ids = [d.announcement_id for d in StudentDismissedNotice.query.filter_by(student_id=student.id).all()]
+    stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
+    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
 
     # 1. Admin Notices for Students
     admin_notices_query = ClassAnnouncement.query.filter(
@@ -661,6 +669,8 @@ def notices():
         ClassAnnouncement.target_role.in_(['STUDENTS', 'ALL']),
         (ClassAnnouncement.class_id == None) | (ClassAnnouncement.class_id == student.class_id)
     )
+    if stu_reg_cutoff:
+        admin_notices_query = admin_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
     if dismissed_ids:
         admin_notices_query = admin_notices_query.filter(~ClassAnnouncement.id.in_(dismissed_ids))
     admin_notices = admin_notices_query.order_by(ClassAnnouncement.created_at.desc()).all()
@@ -680,6 +690,8 @@ def notices():
         ClassAnnouncement.posted_by_role == 'teacher',
         (ClassAnnouncement.class_id == student.class_id) | (ClassAnnouncement.class_id == None)
     )
+    if stu_reg_cutoff:
+        class_notices_query = class_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
     if dismissed_ids:
         class_notices_query = class_notices_query.filter(~ClassAnnouncement.id.in_(dismissed_ids))
     class_notices = class_notices_query.order_by(ClassAnnouncement.created_at.desc()).all()
@@ -701,10 +713,15 @@ def mark_class_notices_read():
         return jsonify({'success': False}), 403
 
     dismissed_ids = [d.announcement_id for d in StudentDismissedNotice.query.filter_by(student_id=student.id).all()]
+    stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
+    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+
     class_notices_query = ClassAnnouncement.query.filter(
         ClassAnnouncement.posted_by_role == 'teacher',
         (ClassAnnouncement.class_id == student.class_id) | (ClassAnnouncement.class_id == None)
     )
+    if stu_reg_cutoff:
+        class_notices_query = class_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
     if dismissed_ids:
         class_notices_query = class_notices_query.filter(~ClassAnnouncement.id.in_(dismissed_ids))
     class_notices = class_notices_query.all()
@@ -1224,6 +1241,32 @@ def submit_complaint():
     except Exception as e:
         db.session.rollback()
         flash(f"Error submitting complaint: {e}", "danger")
+
+    return redirect(url_for('student.feedback', tab='voting'))
+
+
+@student_bp.route('/student/delete_complaint/<int:complaint_id>', methods=['POST'])
+@login_required
+@student_required
+def delete_complaint(complaint_id):
+    """Allows a student to delete/withdraw their own submitted complaint."""
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student.dashboard'))
+
+    complaint = FacultyComplaint.query.get_or_404(complaint_id)
+    if complaint.student_id != student.id:
+        flash("You are not authorized to delete this complaint. Only the initiator can withdraw it.", "danger")
+        return redirect(url_for('student.feedback', tab='voting'))
+
+    try:
+        db.session.delete(complaint)
+        db.session.commit()
+        flash("✓ Your complaint and associated votes have been successfully withdrawn and deleted.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting complaint: {e}", "danger")
 
     return redirect(url_for('student.feedback', tab='voting'))
 

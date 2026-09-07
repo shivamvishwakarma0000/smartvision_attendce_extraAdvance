@@ -225,102 +225,196 @@
                 border-radius: 1.25rem !important;
             }
             .navbar {
-                padding: 0.6rem 1rem !important;
+                padding: clamp(0.5rem, 1.5vh, 0.85rem) clamp(0.85rem, 3.5vw, 1.75rem) !important;
             }
 
-            /* Dedicated Phone Landing Hero View: 30% Text, 30% Image, 10% Button, 10% Copyright Space, Equal Spacing */
+            /* Dedicated Phone Landing Hero View - Proportional, Centered, No Dead Space */
             body.mobile-hero-active {
-                height: 100vh;
-                height: 100dvh;
-                overflow-y: hidden !important;
+                min-height: 100vh;
+                min-height: 100svh;
+                min-height: 100dvh;
+                display: flex;
+                flex-direction: column;
+                overflow-x: hidden;
+                overflow-y: auto !important;
             }
             body.mobile-hero-active .landing-main-container {
-                height: calc(100dvh - 58px);
-                max-height: calc(100dvh - 58px);
-                padding: 0.5rem 1rem !important;
-                margin: 0 !important;
+                flex: 1 0 auto;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: clamp(0.65rem, 2vh, 1.5rem) clamp(0.75rem, 3.5vw, 1.5rem) !important;
+                margin: auto 0 !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: center;
                 align-items: center;
-                overflow: hidden !important;
+                overflow: visible !important;
+            }
+            body.mobile-hero-active .landing-main-container > .row {
+                margin: 0 !important;
+                width: 100% !important;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            body.mobile-hero-active .landing-main-container > .row > [class*="col-"] {
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
             body.mobile-hero-active .mobile-landing-hero {
-                display: flex;
+                display: flex !important;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: center;
                 align-items: center;
                 width: 100%;
-                flex: 1 1 auto;
-                max-height: 87%;
-                margin-bottom: 0 !important;
-            }
-            /* Text section: covers ~30% */
-            body.mobile-hero-active .mobile-hero-header-wrap {
-                min-height: 26%;
-                max-height: 32%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
+                max-width: min(94vw, 560px);
                 margin: 0 auto !important;
-                padding: 0 0.5rem;
+                gap: clamp(0.65rem, 1.8vh, 1.25rem);
             }
-            body.mobile-hero-active .mobile-hero-title {
-                font-size: clamp(1.45rem, 5.2vw, 1.8rem) !important;
+            /* 2. Hero Heading */
+            .mobile-hero-header-wrap {
+                width: 100%;
+                max-width: min(92vw, 520px);
+                margin: 0 auto;
+                padding: 0 0.25rem;
+            }
+            .mobile-hero-title {
+                font-family: 'Outfit', sans-serif !important;
+                font-size: clamp(1.45rem, 5.2vw, 2.35rem) !important;
                 font-weight: 800 !important;
-                line-height: 1.2 !important;
-                margin-bottom: 0.35rem !important;
+                line-height: 1.18 !important;
                 letter-spacing: -0.5px;
+                color: #ffffff !important;
+                margin: 0 !important;
+                text-align: center;
             }
-            body.mobile-hero-active .mobile-hero-subtitle {
-                font-size: clamp(0.72rem, 2.4vw, 0.82rem) !important;
-                line-height: 1.35 !important;
+            .mobile-hero-highlight {
+                background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #38bdf8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                display: inline-block;
+            }
+            /* 3. Description */
+            .mobile-hero-desc-wrap {
+                width: 100%;
+                max-width: min(92vw, 480px);
+                margin: 0 auto;
+                padding: 0 0.25rem;
+            }
+            .mobile-hero-subtitle {
+                font-size: clamp(0.8rem, 2.5vw, 0.95rem) !important;
+                line-height: 1.45 !important;
                 color: #cbd5e1 !important;
-                max-width: 330px !important;
                 margin: 0 auto !important;
+                text-align: center;
             }
-            /* Image section: covers ~30% */
-            body.mobile-hero-active .mobile-hero-img-container {
-                width: min(88vw, 340px) !important;
-                height: clamp(160px, 28vh, 230px) !important;
-                max-height: 32vh !important;
+            /* 4. Main Image */
+            .mobile-hero-img-container {
+                width: min(92vw, 540px) !important;
+                aspect-ratio: 16 / 9.5;
+                max-height: clamp(180px, 32vh, 320px);
                 margin: 0 auto !important;
-                border-radius: 18px !important;
+                border-radius: clamp(14px, 3.5vw, 22px) !important;
                 border: 2px solid rgba(99, 102, 241, 0.45) !important;
-                box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.3) !important;
+                box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.3) !important;
+                background: #0f172a;
+                overflow: hidden;
+                position: relative;
             }
-            body.mobile-hero-active .mobile-hero-img-container img {
-                height: 100% !important;
+            .mobile-hero-img {
                 width: 100% !important;
+                height: 100% !important;
                 object-fit: cover !important;
-                border-radius: 16px !important;
+                display: block;
+                border-radius: inherit;
             }
-            /* Button section: covers ~10% */
-            body.mobile-hero-active .mobile-hero-btn-wrap {
-                width: min(88vw, 340px) !important;
-                margin: 0 auto !important;
+            /* 5. Feature Highlights */
+            .mobile-hero-features {
                 display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+                gap: clamp(0.4rem, 1.6vw, 0.75rem);
+                width: 100%;
+                max-width: min(92vw, 540px);
+                margin: 0 auto;
+            }
+            .hero-feature-pill {
+                font-size: clamp(0.72rem, 2.2vw, 0.85rem);
+                color: #e2e8f0;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.07);
+                border: 1px solid rgba(255, 255, 255, 0.14);
+                border-radius: 9999px;
+                padding: clamp(0.2rem, 0.6vh, 0.35rem) clamp(0.55rem, 1.8vw, 0.85rem);
+                backdrop-filter: blur(8px);
+                letter-spacing: 0.2px;
+                white-space: nowrap;
+            }
+            .hero-feature-pill i {
+                color: #38bdf8 !important;
+                font-size: 0.78rem;
+            }
+            [data-theme="light"] .hero-feature-pill {
+                background: rgba(15, 23, 42, 0.05);
+                border-color: rgba(15, 23, 42, 0.12);
+                color: #1e293b;
+            }
+            [data-theme="light"] .hero-feature-pill i {
+                color: #0284c7 !important;
+            }
+            /* 6. CTA Button */
+            .mobile-hero-btn-wrap {
+                width: min(88vw, 400px) !important;
+                margin: 0 auto !important;
+            }
+            .mobile-cta-btn {
+                width: 100%;
+                min-height: clamp(46px, 5.8vh, 52px);
+                padding: clamp(0.65rem, 1.6vh, 0.85rem) 1.5rem;
+                border-radius: 9999px;
+                font-weight: 700;
+                font-size: clamp(0.92rem, 2.6vw, 1.05rem);
+                display: inline-flex;
                 align-items: center;
                 justify-content: center;
+                gap: 0.5rem;
+                color: #ffffff !important;
+                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+                border: none;
+                box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+                cursor: pointer;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                letter-spacing: 0.2px;
             }
-            body.mobile-hero-active .mobile-hero-btn-wrap button {
-                padding: 0.75rem 1.4rem !important;
-                font-size: 0.95rem !important;
-                height: 48px;
+            .mobile-cta-btn:active {
+                transform: scale(0.98);
+                box-shadow: 0 4px 14px rgba(79, 70, 229, 0.5);
             }
-            /* Bottom copyright space: covers ~10% */
+            /* 8. Footer */
             body.mobile-hero-active .landing-footer {
-                padding-top: 0.25rem !important;
-                padding-bottom: 0.75rem !important;
+                padding: clamp(0.5rem, 1.5vh, 1rem) 1rem max(0.75rem, env(safe-area-inset-bottom)) !important;
                 margin-top: auto !important;
-                min-height: 42px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
             }
             body.mobile-hero-active .landing-footer .divider-line {
-                margin-bottom: 0.35rem !important;
+                margin-bottom: clamp(0.35rem, 1vh, 0.5rem) !important;
+                max-width: 420px;
+                width: 80%;
+                height: 1px;
+                background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+                opacity: 0.7;
+            }
+            body.mobile-hero-active .landing-footer .copyright-text {
+                font-size: clamp(0.74rem, 2.1vw, 0.84rem) !important;
             }
         }
 
@@ -511,32 +605,39 @@
         <div class="col-lg-6 col-12 ms-auto ps-lg-4">
 
             <!-- MOBILE-ONLY HERO SHOWCASE (Phone Landing View) -->
-            <div class="d-block d-lg-none mb-4 mobile-landing-hero text-center" id="mobile-hero-section">
-                <!-- Top Header: Instant Face Recognition Class Attendance + Subtitle -->
+            <div class="d-block d-lg-none mobile-landing-hero text-center" id="mobile-hero-section">
+                <!-- 2. Hero Heading -->
                 <div class="mobile-hero-header-wrap">
-                    <h2 class="fw-extrabold text-white mt-0 mb-1 tracking-tight mobile-hero-title" style="font-family: 'Outfit', sans-serif; font-size: 1.55rem; line-height: 1.2; letter-spacing: -0.5px;">
-                        Instant Face Recognition <br>
-                        <span style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Attendance</span>
-                    </h2>
-                    <p class="mobile-hero-subtitle text-muted mb-0 mx-auto" style="font-size: 0.78rem; line-height: 1.35; color: #cbd5e1 !important; max-width: 330px;">
+                    <h1 class="mobile-hero-title">
+                        Instant Face Recognition<br>
+                        <span class="mobile-hero-highlight">Class Attendance</span>
+                    </h1>
+                </div>
+
+                <!-- 3. Description -->
+                <div class="mobile-hero-desc-wrap">
+                    <p class="mobile-hero-subtitle">
                         Automate classroom check-ins, eliminate paperwork, and access real-time analytics in a single secure AI platform.
                     </p>
                 </div>
 
-                <!-- Center Classroom AI Image with 18px Rounded Glowing Border -->
-                <div class="position-relative mx-auto overflow-hidden shadow-lg mobile-hero-img-container" 
-                     style="max-width: 340px; width: 100%; border-radius: 18px; border: 2px solid rgba(99, 102, 241, 0.45); box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.3); background: #0f172a;">
+                <!-- 4. Main Image Focus -->
+                <div class="mobile-hero-img-container">
                     <img src="{{ url_for('static', filename='images/mobile_hero_classroom.jpg') }}" 
                          alt="SmartVision AI Classroom Attendance" 
-                         class="w-100 d-block" 
-                         style="border-radius: 16px; object-fit: cover;">
+                         class="mobile-hero-img">
                 </div>
 
-                <!-- Start Action Button Below Image (With explicit space separating from image) -->
-                <div class="mx-auto mobile-hero-btn-wrap" style="max-width: 340px; width: 100%;">
-                    <button type="button" onclick="openMobileAuthForm('login')" 
-                            class="btn btn-primary-auth w-100 py-2.5 rounded-pill fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-lg" 
-                            style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.45); font-size: 0.95rem;">
+                <!-- 5. Feature Highlights Row -->
+                <div class="mobile-hero-features">
+                    <span class="hero-feature-pill"><i class="fa-solid fa-check me-1.5"></i>Fast Recognition</span>
+                    <span class="hero-feature-pill"><i class="fa-solid fa-check me-1.5"></i>Secure</span>
+                    <span class="hero-feature-pill"><i class="fa-solid fa-check me-1.5"></i>Real-Time AI Analytics</span>
+                </div>
+
+                <!-- 6. CTA Action Button -->
+                <div class="mobile-hero-btn-wrap">
+                    <button type="button" onclick="openMobileAuthForm('login')" class="mobile-cta-btn">
                         <span>Get Started / Sign In</span> <i class="fa-solid fa-arrow-right ms-1"></i>
                     </button>
                 </div>
@@ -973,7 +1074,7 @@
         <div class="mx-auto mb-2 divider-line" style="max-width: 460px; width: 85%; height: 1px; background: linear-gradient(90deg, transparent, var(--card-border), transparent); opacity: 0.75;"></div>
         <!-- Copyright Text -->
         <p class="mb-0 fs-8 fw-semibold copyright-text" style="color: var(--text-muted); letter-spacing: 0.4px;">
-            &copy; 2026 Copyright SmartVision
+            &copy; 2026 SmartVision &bull; All Rights Reserved
         </p>
     </div>
 </footer>

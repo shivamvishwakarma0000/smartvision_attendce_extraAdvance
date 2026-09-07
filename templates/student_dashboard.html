@@ -803,7 +803,6 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
-</div>
 
 <script>
     function dismissCancellationBanner() {
@@ -826,10 +825,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('DOMContentLoaded', function () {
         const cancelAlert = document.getElementById('todayClassCancelledAlert');
         if (cancelAlert) {
-            // Once student opens/sees the dashboard, after 1 second it smoothly disappears
+            // Once student opens/sees the dashboard, it remains visible for 3 seconds then smoothly disappears
             setTimeout(function () {
                 dismissCancellationBanner();
-            }, 1000);
+            }, 3000);
         }
     });
 

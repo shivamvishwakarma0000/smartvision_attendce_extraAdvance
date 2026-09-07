@@ -143,13 +143,6 @@
     }
 }
 
-html, body {
-    overscroll-behavior-y: none !important;
-    overscroll-behavior-x: none !important;
-    overscroll-behavior: none !important;
-    -webkit-overscroll-behavior-y: none !important;
-}
-
 body {
     background-color: var(--bg-main);
     color: var(--text-primary);

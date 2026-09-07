@@ -41,12 +41,6 @@
         })();
     </script>
     <style>
-        html, body {
-            overscroll-behavior-y: none !important;
-            overscroll-behavior-x: none !important;
-            overscroll-behavior: none !important;
-            -webkit-overscroll-behavior-y: none !important;
-        }
         .fullscreen-content {
             margin-left: 0 !important;
             padding: 0 !important;
@@ -54,38 +48,8 @@
             max-width: 100vw !important;
             min-height: 100dvh;
             overflow-x: clip !important;
-            overscroll-behavior-y: none !important;
-            overscroll-behavior: none !important;
-        }
-        .main-content {
-            overscroll-behavior-y: none !important;
-            overscroll-behavior: none !important;
         }
     </style>
-    <script>
-        // Completely eliminate native mobile browser pull-to-refresh circular loader and horizontal progress line
-        (function() {
-            let startTouchY = 0;
-            window.addEventListener('touchstart', function(e) {
-                if (e.touches && e.touches.length === 1) {
-                    startTouchY = e.touches[0].clientY;
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchmove', function(e) {
-                if (e.touches && e.touches.length === 1) {
-                    const moveY = e.touches[0].clientY;
-                    const diffY = moveY - startTouchY;
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-                    if (scrollTop <= 0 && diffY > 0) {
-                        if (e.cancelable) {
-                            e.preventDefault();
-                        }
-                    }
-                }
-            }, { passive: false });
-        })();
-    </script>
 </head>
 <body>
     {% if current_user.is_authenticated %}

@@ -7,7 +7,7 @@
 {% block title %}Student Portal | Attendance Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-2 px-md-3 py-3 student-portal-container">
+<div class="container-fluid py-3 student-portal-container">
 
     <!-- Suspended ID Card Prominent Warning Alert Banner -->
     {% if student.is_suspended %}
@@ -124,6 +124,8 @@
                 </div>
             </div>
         </div>
+    </div>
+
     <!-- Cancelled Classes Today Notice Banner (Auto-dismisses smoothly after student sees it) -->
     {% if today_cancelled_classes %}
     <div class="row mb-4" id="todayClassCancelledAlert" style="transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;">

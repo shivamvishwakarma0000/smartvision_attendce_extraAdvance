@@ -850,6 +850,35 @@ hr {
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
     }
+
+    /* Student Portal Centering & Equal Left/Right Spacing on Mobile */
+    .student-portal-container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        overflow-x: hidden;
+    }
+
+    .student-portal-container > .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+    }
+
+    .student-portal-container > .row > .col-12 {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+    }
+
+    .student-portal-container .card {
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
 }
 
 /* Utility Spacing Tokens (Fixing Bootstrap 5 gaps) */

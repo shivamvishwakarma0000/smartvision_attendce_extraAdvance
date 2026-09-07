@@ -99,7 +99,7 @@
                             {% else %}
                             <!-- 6 Day Columns -->
                             {% for d in days %}
-                                {% set ns = namespace(found=false, slot=None) %}
+                                {% set ns = namespace(found=false, slot=None, is_continuation_span=false, parent_lab_slot=None) %}
                                 {% for entry in timetable_entries %}
                                     {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
                                         {% set ns.found = true %}
@@ -107,11 +107,30 @@
                                     {% endif %}
                                 {% endfor %}
 
+                                {# Check if this period is occupied by a 2-period Lab starting in previous period #}
+                                {% if not ns.found and ps.period_no > 1 %}
+                                    {% for entry in timetable_entries %}
+                                        {% if entry.day_of_week == d and entry.slot_type == 'LAB' and not entry.is_lab_continuation and (entry.period_no == (ps.period_no - 1) or (entry.start_time < ps.end_time and entry.end_time > ps.start_time)) %}
+                                            {% set ns.is_continuation_span = true %}
+                                            {% set ns.parent_lab_slot = entry %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+
                                 <td class="align-middle p-1" style="min-width: 110px;">
                                     {% if ns.found %}
-                                        <div class="p-1.5 rounded-3 border {% if ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30{% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30{% else %}bg-primary bg-opacity-10 border-primary border-opacity-25{% endif %} shadow-2xs text-start">
+                                        <div class="p-1.5 rounded-3 border 
+                                            {% if ns.slot.slot_type == 'LAB' %}bg-warning bg-opacity-15 border-warning border-opacity-40
+                                            {% elif ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30
+                                            {% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30
+                                            {% else %}bg-primary bg-opacity-10 border-primary border-opacity-25{% endif %} shadow-2xs text-start"
+                                            {% if ns.slot.is_lab_continuation %}style="border-left: 3px solid #f59e0b !important;"{% endif %}>
                                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                                {% if ns.slot.slot_type == 'LIBRARY' %}
+                                                {% if ns.slot.slot_type == 'LAB' %}
+                                                <span class="badge bg-warning text-dark border border-warning text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}">
+                                                    <i class="fa-solid fa-flask me-0.5"></i>{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}
+                                                </span>
+                                                {% elif ns.slot.slot_type == 'LIBRARY' %}
                                                 <span class="badge bg-info text-dark text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ ns.slot.custom_title or 'Library & Self Study' }}">
                                                     <i class="fa-solid fa-book-bookmark me-0.5"></i>{{ ns.slot.custom_title or 'Library' }}
                                                 </span>
@@ -125,11 +144,21 @@
                                                 </span>
                                                 {% endif %}
 
-                                                <span class="badge bg-dark bg-opacity-75 text-white font-monospace" style="font-size: 0.6rem;">P{{ ns.slot.period_no or ps.period_no }}</span>
+                                                <span class="badge {% if ns.slot.slot_type == 'LAB' %}bg-warning text-dark border border-dark border-opacity-25{% else %}bg-dark bg-opacity-75 text-white{% endif %} font-monospace" style="font-size: 0.6rem;">
+                                                    {% if ns.slot.slot_type == 'LAB' and not ns.slot.is_lab_continuation %}
+                                                    P{{ ns.slot.period_no or ps.period_no }}-{{ (ns.slot.period_no or ps.period_no) + 1 }}
+                                                    {% elif ns.slot.is_lab_continuation %}
+                                                    P{{ ns.slot.period_no or ps.period_no }} (Pt 2)
+                                                    {% else %}
+                                                    P{{ ns.slot.period_no or ps.period_no }}
+                                                    {% endif %}
+                                                </span>
                                             </div>
 
                                             <div class="text-dark fw-bold text-truncate" style="font-size: 0.72rem;">
-                                                {% if ns.slot.slot_type == 'LIBRARY' %}
+                                                {% if ns.slot.slot_type == 'LAB' %}
+                                                <i class="fa-solid fa-chalkboard-user text-warning me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else (ns.slot.teacher.name if ns.slot.teacher else 'Lab Faculty') }}
+                                                {% elif ns.slot.slot_type == 'LIBRARY' %}
                                                 <i class="fa-solid fa-book-open-reader text-info me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else 'Library In-charge' }}
                                                 {% elif ns.slot.slot_type == 'OTHER' %}
                                                 <i class="fa-solid fa-shapes text-secondary me-1"></i>{{ ns.slot.teacher_assigned.name if ns.slot.teacher_assigned else 'Coordinator' }}
@@ -139,10 +168,34 @@
                                             </div>
 
                                             <div class="text-muted text-truncate mt-0.5" style="font-size: 0.65rem;">
-                                                {% if ns.slot.room %}
-                                                <i class="fa-solid fa-location-dot me-1 text-primary"></i>{{ ns.slot.room }}
+                                                {% if ns.slot.room or ns.slot.room_number %}
+                                                <i class="fa-solid fa-location-dot me-1 text-primary"></i>{{ ns.slot.room or ns.slot.room_number }}
                                                 {% elif ns.slot.slot_type == 'LIBRARY' %}
                                                 <i class="fa-solid fa-book me-1 text-info"></i>Central Library
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% elif ns.is_continuation_span and ns.parent_lab_slot %}
+                                        {# Display Occupied Lab Continuation (Part 2) #}
+                                        {% set parent = ns.parent_lab_slot %}
+                                        <div class="p-1.5 rounded-3 border bg-warning bg-opacity-15 border-warning border-opacity-40 shadow-2xs text-start"
+                                            style="border-left: 3px solid #f59e0b !important; background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 235, 179, 0.22) 100%) !important;">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="badge bg-warning text-dark border border-warning text-truncate fw-bold" style="max-width: 80px; font-size: 0.68rem;" title="{{ parent.custom_title or (parent.subject_assigned.name if parent.subject_assigned else 'Lab') }} (Part 2)">
+                                                    <i class="fa-solid fa-flask me-0.5"></i>{{ parent.custom_title or (parent.subject_assigned.name if parent.subject_assigned else 'Lab') }}
+                                                </span>
+                                                <span class="badge bg-warning text-dark border border-dark border-opacity-25 font-monospace fw-bold" style="font-size: 0.6rem;">
+                                                    P{{ ps.period_no }} (Pt 2)
+                                                </span>
+                                            </div>
+
+                                            <div class="text-dark fw-bold text-truncate" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-chalkboard-user text-warning me-1"></i>{{ parent.teacher_assigned.name if parent.teacher_assigned else (parent.teacher.name if parent.teacher else 'Lab Faculty') }}
+                                            </div>
+
+                                            <div class="text-muted text-truncate mt-0.5" style="font-size: 0.65rem;">
+                                                {% if parent.room or parent.room_number %}
+                                                <i class="fa-solid fa-location-dot me-1 text-primary"></i>{{ parent.room or parent.room_number }}
                                                 {% endif %}
                                             </div>
                                         </div>

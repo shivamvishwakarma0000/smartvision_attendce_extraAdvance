@@ -213,7 +213,7 @@
                         {% else %}
                         <!-- 6 Day Columns -->
                         {% for d in days %}
-                        {% set ns = namespace(found=false, slot=None) %}
+                        {% set ns = namespace(found=false, slot=None, is_continuation_span=false, parent_lab_slot=None) %}
                         {% for entry in timetable_entries %}
                         {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
                         {% set ns.found = true %}
@@ -221,13 +221,24 @@
                         {% endif %}
                         {% endfor %}
 
+                        {# Check if this period is occupied by a 2-period Lab starting in previous period #}
+                        {% if not ns.found and ps.period_no > 1 %}
+                        {% for entry in timetable_entries %}
+                        {% if entry.day_of_week == d and entry.slot_type == 'LAB' and not entry.is_lab_continuation and (entry.period_no == (ps.period_no - 1) or (entry.start_time < ps.end_time and entry.end_time > ps.start_time)) %}
+                        {% set ns.is_continuation_span = true %}
+                        {% set ns.parent_lab_slot = entry %}
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+
                         <td class="align-middle p-0.5" style="min-width: 105px;">
                             {% if ns.found %}
                             <div class="p-1 rounded-2 border position-relative group-hover shadow-xs 
                                 {% if ns.slot.slot_type == 'LAB' %}bg-warning bg-opacity-15 border-warning border-opacity-40
                                 {% elif ns.slot.slot_type == 'LIBRARY' %}bg-info bg-opacity-10 border-info border-opacity-30
                                 {% elif ns.slot.slot_type == 'OTHER' %}bg-secondary bg-opacity-10 border-secondary border-opacity-30
-                                {% else %}bg-primary bg-opacity-10 border-primary border-opacity-20{% endif %}">
+                                {% else %}bg-primary bg-opacity-10 border-primary border-opacity-20{% endif %}"
+                                {% if ns.slot.is_lab_continuation %}style="border-left: 3px solid #f59e0b !important;"{% endif %}>
                                 <div>
                                     <div class="d-flex justify-content-between align-items-center mb-0.5">
                                         {% if ns.slot.slot_type == 'LAB' %}
@@ -293,6 +304,54 @@
                                         <button type="submit"
                                             class="btn btn-outline-danger btn-xs rounded-circle d-flex align-items-center justify-content-center"
                                             style="width: 20px; height: 20px; padding: 0;" title="Remove Slot">
+                                            <i class="fa-solid fa-trash" style="font-size: 0.6rem;"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% elif ns.is_continuation_span and ns.parent_lab_slot %}
+                            {# Display Occupied Lab Continuation (Part 2) when no separate DB row exists #}
+                            {% set parent = ns.parent_lab_slot %}
+                            <div class="p-1 rounded-2 border position-relative group-hover shadow-xs bg-warning bg-opacity-15 border-warning border-opacity-40"
+                                style="border-left: 3px solid #f59e0b !important; background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 235, 179, 0.22) 100%) !important;">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-0.5">
+                                        <span class="badge bg-warning text-dark border border-warning text-truncate fw-bold"
+                                            style="max-width: 85px; font-size: 0.65rem;"
+                                            title="{{ parent.custom_title or (parent.subject_assigned.name if parent.subject_assigned else 'Lab') }} (Continuation Part 2)">
+                                            <i class="fa-solid fa-flask me-0.5"></i>{{ parent.custom_title or (parent.subject_assigned.name if parent.subject_assigned else 'Lab') }}
+                                        </span>
+
+                                        <span class="badge bg-warning text-dark border border-dark border-opacity-25 font-monospace fw-bold"
+                                            style="font-size: 0.58rem;" title="Lab Part 2 (Period {{ ps.period_no }})">
+                                            P{{ ps.period_no }} (Pt 2)
+                                        </span>
+                                    </div>
+                                    <div class="text-dark fw-semibold text-truncate" style="max-width: 95px; font-size: 0.68rem;">
+                                        <i class="fa-solid fa-chalkboard-user text-muted me-1"></i>{{
+                                        parent.teacher_assigned.name if parent.teacher_assigned else
+                                        (parent.teacher.name if parent.teacher else 'Unassigned') }}
+                                    </div>
+                                    {% if parent.room_number %}
+                                    <div class="text-muted text-truncate" style="font-size: 0.62rem;"><i
+                                            class="fa-solid fa-location-dot me-1 text-primary"></i>{{ parent.room_number }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-center gap-1 mt-0.5">
+                                    <button type="button"
+                                        class="btn btn-outline-primary btn-xs rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 20px; height: 20px; padding: 0;"
+                                        onclick="prepareEditModal('{{ parent.id }}', '{{ parent.class_id }}', '{{ parent.subject_id or '' }}', '{{ parent.teacher_id or '' }}', '{{ parent.day_of_week }}', '{{ parent.start_time }}', '{{ parent.end_time }}', '{{ parent.room_number or '' }}', '{{ parent.period_no }}', '{{ parent.slot_type or 'CLASS' }}', '{{ (parent.custom_title or '')|replace('\'', '\\\'') }}')"
+                                        data-bs-toggle="modal" data-bs-target="#editSlotModal" title="Edit 2-Period Lab">
+                                        <i class="fa-solid fa-pencil" style="font-size: 0.6rem;"></i>
+                                    </button>
+                                    <form method="POST"
+                                        action="{{ url_for('main.delete_timetable_slot', slot_id=parent.id) }}"
+                                        class="d-inline" onsubmit="return confirm('Remove this 2-period lab slot (both periods will be cleared)?');">
+                                        <button type="submit"
+                                            class="btn btn-outline-danger btn-xs rounded-circle d-flex align-items-center justify-content-center"
+                                            style="width: 20px; height: 20px; padding: 0;" title="Remove 2-Period Lab">
                                             <i class="fa-solid fa-trash" style="font-size: 0.6rem;"></i>
                                         </button>
                                     </form>

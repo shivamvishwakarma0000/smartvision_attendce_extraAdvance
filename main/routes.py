@@ -3660,6 +3660,45 @@ def manage_timetable():
         selected_department = selected_class.department
 
     if selected_class_id:
+        # Auto-heal legacy or single-period Lab records so second slot is guaranteed in DB and UI
+        try:
+            p_map = {ps.period_no: ps for ps in period_settings if getattr(ps, 'period_no', None)}
+            all_slots = Timetable.query.filter_by(class_id=selected_class_id).all()
+            existing_keys = {(s.day_of_week, s.period_no) for s in all_slots if s.period_no}
+            modified_db = False
+            for s in all_slots:
+                if s.slot_type == 'LAB' and not s.is_lab_continuation and s.period_no:
+                    next_p = s.period_no + 1
+                    if next_p in p_map and (s.day_of_week, next_p) not in existing_keys:
+                        next_ps = p_map[next_p]
+                        slot2 = Timetable(
+                            class_id=s.class_id,
+                            subject_id=s.subject_id,
+                            teacher_id=s.teacher_id,
+                            day_of_week=s.day_of_week,
+                            period_no=next_p,
+                            start_time=next_ps.start_time,
+                            end_time=next_ps.end_time,
+                            slot_type='LAB',
+                            custom_title=s.custom_title,
+                            room=s.room,
+                            effective_from=s.effective_from,
+                            effective_to=s.effective_to,
+                            admin_id=s.admin_id,
+                            is_lab_continuation=True,
+                            linked_slot_id=s.id
+                        )
+                        db.session.add(slot2)
+                        db.session.flush()
+                        s.linked_slot_id = slot2.id
+                        existing_keys.add((s.day_of_week, next_p))
+                        modified_db = True
+            if modified_db:
+                db.session.commit()
+        except Exception as heal_err:
+            db.session.rollback()
+            current_app.logger.warning(f"Lab auto-heal skipped: {heal_err}")
+
         timetable_entries = Timetable.query.filter_by(class_id=selected_class_id).order_by(Timetable.day_of_week, Timetable.start_time).all()
     else:
         timetable_entries = []

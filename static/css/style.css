@@ -687,6 +687,7 @@ hr {
     margin-left: 280px;
     padding: 30px;
     transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
 }
 
 /* ============================================================================== */
@@ -761,9 +762,10 @@ hr {
 
     .main-content {
         margin-left: 0 !important;
-        padding: clamp(10px, 2.5vw, 18px) !important;
+        padding: clamp(10px, 2.5vw, 16px) !important;
         width: 100% !important;
         max-width: 100vw !important;
+        overflow-x: hidden !important;
     }
 
     .sidebar-toggle {

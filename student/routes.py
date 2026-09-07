@@ -703,7 +703,7 @@ def notices():
     # Get dismissed notice IDs for this specific student
     dismissed_ids = [d.announcement_id for d in StudentDismissedNotice.query.filter_by(student_id=student.id).all()]
     stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
-    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+    stu_reg_cutoff = stu_reg_date
 
     # 1. Admin Notices for Students
     admin_notices_query = ClassAnnouncement.query.filter(
@@ -712,7 +712,7 @@ def notices():
         (ClassAnnouncement.class_id == None) | (ClassAnnouncement.class_id == student.class_id)
     )
     if stu_reg_cutoff:
-        admin_notices_query = admin_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
+        admin_notices_query = admin_notices_query.filter(ClassAnnouncement.created_at > stu_reg_cutoff)
     if dismissed_ids:
         admin_notices_query = admin_notices_query.filter(~ClassAnnouncement.id.in_(dismissed_ids))
     admin_notices = admin_notices_query.order_by(ClassAnnouncement.created_at.desc()).all()
@@ -733,7 +733,7 @@ def notices():
         (ClassAnnouncement.class_id == student.class_id) | (ClassAnnouncement.class_id == None)
     )
     if stu_reg_cutoff:
-        class_notices_query = class_notices_query.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
+        class_notices_query = class_notices_query.filter(ClassAnnouncement.created_at > stu_reg_cutoff)
     if dismissed_ids:
         class_notices_query = class_notices_query.filter(~ClassAnnouncement.id.in_(dismissed_ids))
     class_notices = class_notices_query.order_by(ClassAnnouncement.created_at.desc()).all()

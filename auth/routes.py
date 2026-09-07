@@ -667,6 +667,17 @@ def register():
                 )
 
                 db.session.add(new_student)
+                db.session.flush()
+
+                # Mark all pre-existing announcements as read so newly registered students start with 0 unread notices
+                try:
+                    from models import ClassAnnouncement, StudentReadNotice
+                    existing_announcements = ClassAnnouncement.query.all()
+                    for ann in existing_announcements:
+                        db.session.add(StudentReadNotice(student_id=new_student.id, announcement_id=ann.id))
+                except Exception as ex_ann:
+                    print(f"Notice auto-read seeding note: {ex_ann}")
+
                 db.session.commit()
 
                 if google_data and google_data.get('email', '').strip().lower() == email.strip().lower():

@@ -283,7 +283,7 @@ def create_app():
                     from sqlalchemy import or_
                     from datetime import datetime
                     stu_reg_date = student.created_at or (student.user_account.created_at if (student.user_account and hasattr(student.user_account, 'created_at')) else None)
-                    stu_reg_cutoff = datetime.combine(stu_reg_date.date(), datetime.min.time()) if stu_reg_date else None
+                    stu_reg_cutoff = stu_reg_date
 
                     dismissed_ids = [d.announcement_id for d in StudentDismissedNotice.query.filter_by(student_id=student.id).all()]
                     read_ids = [r.announcement_id for r in StudentReadNotice.query.filter_by(student_id=student.id).all()]
@@ -293,7 +293,7 @@ def create_app():
                         or_(ClassAnnouncement.class_id == None, ClassAnnouncement.class_id == student.class_id)
                     )
                     if stu_reg_cutoff:
-                        q = q.filter(ClassAnnouncement.created_at >= stu_reg_cutoff)
+                        q = q.filter(ClassAnnouncement.created_at > stu_reg_cutoff)
                     if excluded_ids:
                         q = q.filter(~ClassAnnouncement.id.in_(list(excluded_ids)))
                     return {'student_notice_count': q.count()}

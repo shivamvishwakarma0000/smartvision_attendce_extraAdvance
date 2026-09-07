@@ -228,52 +228,66 @@
                 padding: 0.6rem 1rem !important;
             }
 
-            /* Dedicated Phone Landing Hero View (Covers Entire Phone Screen Proportionally, No Scrolling Needed) */
+            /* Dedicated Phone Landing Hero View: 30% Text, 30% Image, 10% Button, 10% Copyright Space, Equal Spacing */
             body.mobile-hero-active {
                 height: 100vh;
                 height: 100dvh;
                 overflow-y: hidden !important;
             }
             body.mobile-hero-active .landing-main-container {
-                padding-top: 0.35rem !important;
-                padding-bottom: 0.35rem !important;
-                margin-top: auto !important;
-                margin-bottom: auto !important;
-                flex: 1 1 auto;
+                height: calc(100dvh - 58px);
+                max-height: calc(100dvh - 58px);
+                padding: 0.5rem 1rem !important;
+                margin: 0 !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-evenly;
+                justify-content: space-between;
+                align-items: center;
+                overflow: hidden !important;
             }
             body.mobile-hero-active .mobile-landing-hero {
-                margin-bottom: 0 !important;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-evenly;
+                justify-content: space-between;
                 align-items: center;
-                flex: 1;
-                gap: 0.5rem;
-            }
-            body.mobile-hero-active .mobile-hero-header-wrap {
+                width: 100%;
+                flex: 1 1 auto;
+                max-height: 87%;
                 margin-bottom: 0 !important;
             }
+            /* Text section: covers ~30% */
+            body.mobile-hero-active .mobile-hero-header-wrap {
+                min-height: 26%;
+                max-height: 32%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                margin: 0 auto !important;
+                padding: 0 0.5rem;
+            }
             body.mobile-hero-active .mobile-hero-title {
-                font-size: clamp(1.3rem, 4.6vw, 1.6rem) !important;
+                font-size: clamp(1.45rem, 5.2vw, 1.8rem) !important;
+                font-weight: 800 !important;
                 line-height: 1.2 !important;
-                margin-bottom: 0.25rem !important;
+                margin-bottom: 0.35rem !important;
+                letter-spacing: -0.5px;
             }
             body.mobile-hero-active .mobile-hero-subtitle {
-                font-size: clamp(0.72rem, 2.4vw, 0.8rem) !important;
+                font-size: clamp(0.72rem, 2.4vw, 0.82rem) !important;
                 line-height: 1.35 !important;
                 color: #cbd5e1 !important;
                 max-width: 330px !important;
                 margin: 0 auto !important;
             }
+            /* Image section: covers ~30% */
             body.mobile-hero-active .mobile-hero-img-container {
-                max-width: min(88vw, 340px) !important;
-                height: clamp(140px, 22vh, 195px) !important;
-                max-height: clamp(140px, 22vh, 195px) !important;
+                width: min(88vw, 340px) !important;
+                height: clamp(160px, 28vh, 230px) !important;
+                max-height: 32vh !important;
                 margin: 0 auto !important;
                 border-radius: 18px !important;
+                border: 2px solid rgba(99, 102, 241, 0.45) !important;
                 box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.3) !important;
             }
             body.mobile-hero-active .mobile-hero-img-container img {
@@ -281,24 +295,32 @@
                 width: 100% !important;
                 object-fit: cover !important;
                 border-radius: 16px !important;
-                aspect-ratio: auto !important;
             }
+            /* Button section: covers ~10% */
             body.mobile-hero-active .mobile-hero-btn-wrap {
-                max-width: min(88vw, 340px) !important;
-                margin-top: 0.75rem !important;
-                margin-bottom: 0 !important;
+                width: min(88vw, 340px) !important;
+                margin: 0 auto !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             body.mobile-hero-active .mobile-hero-btn-wrap button {
                 padding: 0.75rem 1.4rem !important;
                 font-size: 0.95rem !important;
+                height: 48px;
             }
+            /* Bottom copyright space: covers ~10% */
             body.mobile-hero-active .landing-footer {
                 padding-top: 0.25rem !important;
-                padding-bottom: 0.65rem !important;
+                padding-bottom: 0.75rem !important;
                 margin-top: auto !important;
+                min-height: 42px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
             body.mobile-hero-active .landing-footer .divider-line {
-                margin-bottom: 0.3rem !important;
+                margin-bottom: 0.35rem !important;
             }
         }
 

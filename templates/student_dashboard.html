@@ -7,7 +7,7 @@
 {% block title %}Student Portal | Attendance Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid px-2 px-md-3 py-3 student-portal-container">
 
     <!-- Suspended ID Card Prominent Warning Alert Banner -->
     {% if student.is_suspended %}
@@ -124,16 +124,21 @@
                 </div>
             </div>
         </div>
-    <!-- Cancelled Classes Today Notice Banner -->
+    <!-- Cancelled Classes Today Notice Banner (Auto-dismisses smoothly after student sees it) -->
     {% if today_cancelled_classes %}
-    <div class="row mb-4">
+    <div class="row mb-4" id="todayClassCancelledAlert" style="transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;">
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: var(--surface); border-left: 5px solid #ef4444 !important;">
                 <div class="card-header bg-danger bg-opacity-10 border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="fw-bold text-danger fs-7 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-ban fs-5"></i> Academic Notice: Class Cancellation for Today ({{ today_cancelled_classes|length }})
                     </span>
-                    <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9">Notice from Administration</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-danger text-white rounded-pill px-3 py-1 fw-bold fs-9">Notice from Administration</span>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 text-decoration-none" onclick="dismissCancellationBanner()" title="Dismiss">
+                            <i class="fa-solid fa-xmark fs-6"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-3">
                     <div class="row g-2">
@@ -252,9 +257,9 @@
     </div>
 
     <!-- Charts Row: Overall Gauge + Subject Attendance Bar Chart -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 g-md-4 mb-4">
         <!-- Chart 1: Overall Attendance Doughnut -->
-        <div class="col-lg-4">
+        <div class="col-lg-4 col-12 mb-3 mb-lg-0" style="min-width: 0; max-width: 100%;">
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3.5" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="fw-bold mb-0 fs-7" style="color: var(--text-primary);"><i class="fas fa-chart-pie text-primary me-2"></i>Overall Attendance Status</h6>
@@ -262,8 +267,8 @@
                         {{ overall_attendance_pct }}% Ratio
                     </span>
                 </div>
-                <div class="d-flex align-items-center justify-content-center flex-grow-1 position-relative" style="min-height: 220px;">
-                    <canvas id="overallGaugeChart" style="max-height: 210px; max-width: 210px;"></canvas>
+                <div class="d-flex align-items-center justify-content-center flex-grow-1 position-relative" style="min-height: 220px; min-width: 0; max-width: 100%; overflow: hidden;">
+                    <canvas id="overallGaugeChart" style="max-height: 210px; max-width: 210px; width: 100%;"></canvas>
                 </div>
                 <div class="d-flex justify-content-center gap-3 mt-2 fs-8 pt-2 border-top" style="border-color: var(--border-card) !important;">
                     <span class="fw-semibold text-success"><i class="fas fa-circle me-1"></i>Attended ({{ total_classes_attended }})</span>
@@ -273,14 +278,14 @@
         </div>
 
         <!-- Chart 2: Subject-Wise Attendance Bar Chart -->
-        <div class="col-lg-8">
+        <div class="col-lg-8 col-12" style="min-width: 0; max-width: 100%;">
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3.5" style="background: var(--surface); border: 1px solid var(--border-card) !important;">
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <h6 class="fw-bold mb-0 fs-7" style="color: var(--text-primary);"><i class="fas fa-chart-bar text-primary me-2"></i>Subject-Wise Attendance Breakdown (%)</h6>
                     <span class="fs-9 text-muted fw-semibold">Goal: 75%+</span>
                 </div>
-                <div class="flex-grow-1" style="min-height: 220px;">
-                    <canvas id="subjectBarChart" style="max-height: 230px; width: 100%;"></canvas>
+                <div class="flex-grow-1 position-relative" style="min-height: 220px; min-width: 0; max-width: 100%; overflow: hidden;">
+                    <canvas id="subjectBarChart" style="max-height: 230px; width: 100%; max-width: 100%;"></canvas>
                 </div>
             </div>
         </div>
@@ -796,8 +801,36 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+</div>
 
 <script>
+    function dismissCancellationBanner() {
+        const banner = document.getElementById('todayClassCancelledAlert');
+        if (!banner) return;
+        banner.style.opacity = '0';
+        banner.style.transform = 'translateY(-10px)';
+        banner.style.maxHeight = banner.scrollHeight + 'px';
+        setTimeout(function () {
+            banner.style.maxHeight = '0px';
+            banner.style.marginBottom = '0px';
+            banner.style.paddingTop = '0px';
+            banner.style.paddingBottom = '0px';
+            setTimeout(function () {
+                banner.remove();
+            }, 600);
+        }, 50);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const cancelAlert = document.getElementById('todayClassCancelledAlert');
+        if (cancelAlert) {
+            // Once student opens/sees the dashboard, after 1 second it smoothly disappears
+            setTimeout(function () {
+                dismissCancellationBanner();
+            }, 1000);
+        }
+    });
+
     function openDiscrepancyModal(sessionId, subjectName) {
         document.getElementById('discrepancySessionId').value = sessionId;
         document.getElementById('discrepancySubjectName').value = subjectName;

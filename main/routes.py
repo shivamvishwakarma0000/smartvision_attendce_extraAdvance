@@ -2594,10 +2594,23 @@ def handle_approval(request_id, action):
         try:
             # Delete old face photo from disk if new photo was uploaded
             if req.new_image_filename and req.new_image_filename != student.image_filename:
-                # Rename the new image from pending_ to clean name
                 old_path = os.path.join(FACES_FOLDER, student.image_filename) if student.image_filename else None
                 if old_path and os.path.exists(old_path):
-                    os.remove(old_path)
+                    try:
+                        os.remove(old_path)
+                    except Exception:
+                        pass
+
+                # Rename the pending photo to permanent active filename
+                pending_path = os.path.join(FACES_FOLDER, req.new_image_filename)
+                clean_filename = f"{secure_filename(str(req.new_roll_no))}_{secure_filename(str(req.new_name))}_{int(datetime.utcnow().timestamp())}.jpg"
+                clean_path = os.path.join(FACES_FOLDER, clean_filename)
+                if os.path.exists(pending_path):
+                    try:
+                        os.rename(pending_path, clean_path)
+                        req.new_image_filename = clean_filename
+                    except Exception:
+                        pass
 
             # Update student record
             student.name = req.new_name

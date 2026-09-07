@@ -739,20 +739,22 @@
                 
                 <div class="mt-4 text-center">
                     <span class="text-muted fs-8 d-block mb-2">Requested Face Photo:</span>
-                    {% if req.new_image_data %}
+                    {% if req.new_image_data and req.new_image_data != req.student.image_data %}
                         <div class="scan-box-wrapper mx-auto shadow-sm border border-2 border-success rounded-3 overflow-hidden" style="width: 130px; height: 130px;">
                             <img src="{% if req.new_image_data.startswith('data:image/') %}{{ req.new_image_data }}{% else %}data:image/jpeg;base64,{{ req.new_image_data }}{% endif %}" 
                                  style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                    {% elif req.new_image_filename %}
-                        <div class="scan-box-wrapper mx-auto shadow-sm border border-2 {% if req.new_image_filename != req.student.image_filename %}border-success{% endif %} rounded-3 overflow-hidden" style="width: 130px; height: 130px;">
+                        <span class="badge bg-success text-white d-block mt-2 mx-auto fs-9" style="width: fit-content;">New Face Biometrics Attached</span>
+                    {% elif req.new_image_filename and req.new_image_filename != req.student.image_filename %}
+                        <div class="scan-box-wrapper mx-auto shadow-sm border border-2 border-success rounded-3 overflow-hidden" style="width: 130px; height: 130px;">
                             <img src="{{ url_for('main.uploaded_face', filename=req.new_image_filename) }}" 
                                  onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ req.new_name|urlencode }}&background=10b981&color=fff&size=128&bold=true';"
                                  style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
+                        <span class="badge bg-success text-white d-block mt-2 mx-auto fs-9" style="width: fit-content;">New Face Biometrics Attached</span>
                     {% else %}
                         <div class="rounded-3 bg-white border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 130px; height: 130px; font-size: 0.85rem;">
-                            <span class="text-muted px-2">No photo change requested</span>
+                            <span class="text-muted px-2">No photo change requested (Keeps active photo)</span>
                         </div>
                     {% endif %}
                 </div>

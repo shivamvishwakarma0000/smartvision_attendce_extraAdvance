@@ -12,6 +12,7 @@ try:
 except ImportError:
     face_recognition = None
 import numpy as np
+import time
 from datetime import date, datetime, timedelta
 from flask import render_template, redirect, url_for, flash, request, Blueprint, current_app, jsonify
 from flask_login import login_required, current_user
@@ -423,13 +424,19 @@ def edit_profile():
         if chosen_class and chosen_class.department:
             department = chosen_class.department
 
-        new_filename = student.image_filename
-        new_encoding_bytes = student.face_encoding or student.face_embedding
-        new_image_data = student.image_data
+        new_filename = None
+        new_encoding_bytes = None
+        new_image_data = None
+        photo_changed = False
+
+        safe_roll = secure_filename(str(roll_no)) or 'id'
+        safe_name = secure_filename(str(name)) or 'user'
+        pending_prefix = f"pending_student_{student.id}_{safe_roll}"
 
         # Check if new photo is submitted via live webcam or gallery file
         if captured_base64 and captured_base64.strip().startswith('data:image'):
-            result = save_base64_image(captured_base64, roll_no, name, FACES_FOLDER)
+            # Save using an isolated pending prefix so current active photo on disk is NEVER overwritten
+            result = save_base64_image(captured_base64, pending_prefix, f"{safe_name}_{int(time.time())}", FACES_FOLDER)
             if result:
                 fname, fpath = result
                 try:
@@ -440,6 +447,7 @@ def edit_profile():
                             new_filename = fname
                             new_encoding_bytes = encs[0].tobytes()
                             new_image_data = captured_base64
+                            photo_changed = True
                         elif len(encs) == 0:
                             flash("No face detected in captured photo. Please capture a clear image of ONLY your face.", "danger")
                             if os.path.exists(fpath): os.remove(fpath)
@@ -451,12 +459,13 @@ def edit_profile():
                     else:
                         new_filename = fname
                         new_image_data = captured_base64
+                        photo_changed = True
                 except Exception as e:
                     flash(f"Facial scanning error: {e}", "danger")
                     if os.path.exists(fpath): os.remove(fpath)
                     return redirect(url_for('student.edit_profile'))
         elif student_photo and student_photo.filename:
-            res = optimize_and_save_photo(student_photo, f"edit_{roll_no}", name, FACES_FOLDER)
+            res = optimize_and_save_photo(student_photo, pending_prefix, f"{safe_name}_{int(time.time())}", FACES_FOLDER)
             if not res:
                 flash("Photo processing error. Please choose a valid image file.", "danger")
                 return redirect(url_for('student.edit_profile'))
@@ -468,6 +477,7 @@ def edit_profile():
                     if len(encs) == 1:
                         new_filename = fname
                         new_encoding_bytes = encs[0].tobytes()
+                        photo_changed = True
                     elif len(encs) == 0:
                         flash("No face detected in uploaded photo. Please upload a clear image of your face.", "danger")
                         if os.path.exists(fpath): os.remove(fpath)
@@ -478,6 +488,7 @@ def edit_profile():
                         return redirect(url_for('student.edit_profile'))
                 else:
                     new_filename = fname
+                    photo_changed = True
             except Exception as e:
                 flash(f"Photo processing error: {e}", "danger")
                 if os.path.exists(fpath): os.remove(fpath)
@@ -495,10 +506,20 @@ def edit_profile():
             pending_req.new_parent_email = parent_email or None
             pending_req.new_parent_mobile = parent_mobile or None
             pending_req.new_class_id = c_id
-            pending_req.new_image_filename = new_filename
-            pending_req.new_image_data = new_image_data
-            pending_req.new_face_encoding = new_encoding_bytes
-            flash("Your profile change request has been updated and submitted for Administrator approval.", "success")
+            if photo_changed:
+                # Remove previous pending file from disk if different from student's active image
+                if pending_req.new_image_filename and pending_req.new_image_filename != student.image_filename and pending_req.new_image_filename != new_filename:
+                    old_pending_path = os.path.join(FACES_FOLDER, pending_req.new_image_filename)
+                    if os.path.exists(old_pending_path):
+                        try:
+                            os.remove(old_pending_path)
+                        except Exception:
+                            pass
+                pending_req.new_image_filename = new_filename
+                pending_req.new_image_data = new_image_data
+                pending_req.new_face_encoding = new_encoding_bytes
+            pending_req.created_at = datetime.utcnow()
+            flash("Your profile change request has been updated and submitted for Administrator approval. Changes will NOT appear across the portal until approved.", "success")
         else:
             new_req = StudentEditRequest(
                 student_id=student.id,
@@ -511,13 +532,14 @@ def edit_profile():
                 new_parent_email=parent_email or None,
                 new_parent_mobile=parent_mobile or None,
                 new_class_id=c_id,
-                new_image_filename=new_filename,
-                new_image_data=new_image_data,
-                new_face_encoding=new_encoding_bytes,
-                status='Pending'
+                new_image_filename=new_filename if photo_changed else None,
+                new_image_data=new_image_data if photo_changed else None,
+                new_face_encoding=new_encoding_bytes if photo_changed else None,
+                status='Pending',
+                created_at=datetime.utcnow()
             )
             db.session.add(new_req)
-            flash("Profile change request submitted successfully! An administrator will review and approve your changes.", "success")
+            flash("Profile change request submitted successfully! An administrator will review and approve your changes before they appear on the portal.", "success")
 
         try:
             db.session.commit()
@@ -532,6 +554,30 @@ def edit_profile():
     pending_request = StudentEditRequest.query.filter_by(student_id=student.id, status='Pending').first()
 
     return render_template('student_profile_edit.html', student=student, classes=classes, all_departments=all_departments, pending_request=pending_request)
+
+
+@student_bp.route('/student/cancel-edit-request/<int:req_id>', methods=['POST'])
+@login_required
+@student_required
+def cancel_edit_request(req_id):
+    """Cancels a pending profile modification request and cleans up any unapproved pending photos."""
+    student = current_user.student_profile
+    if not student:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for('student.dashboard'))
+
+    req = StudentEditRequest.query.filter_by(id=req_id, student_id=student.id, status='Pending').first_or_404()
+    if req.new_image_filename and req.new_image_filename != student.image_filename:
+        photo_path = os.path.join(FACES_FOLDER, req.new_image_filename)
+        if os.path.exists(photo_path):
+            try:
+                os.remove(photo_path)
+            except Exception:
+                pass
+    db.session.delete(req)
+    db.session.commit()
+    flash("Your profile change request has been cancelled.", "info")
+    return redirect(url_for('student.edit_profile'))
 
 @student_bp.route('/student/report_discrepancy', methods=['POST'])
 @login_required

@@ -30,10 +30,17 @@
                     <i class="fa-solid fa-hourglass-half text-warning fs-5 mt-1 flex-shrink-0"></i>
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-                            <h6 class="fw-bold mb-0 text-warning">Request Pending Review</h6>
-                            <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">Submitted {{ pending_request.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                            <h6 class="fw-bold mb-0 text-warning">Request Pending Administrator Review</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">Submitted {{ pending_request.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                                <form action="{{ url_for('student.cancel_edit_request', req_id=pending_request.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel your pending profile change request?');" style="display: inline;">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                                        <i class="fa-solid fa-xmark me-1"></i>Cancel Request
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <p class="mb-0 fs-8 text-muted">You have a pending change request under review by the Administrator. You can modify any details below and click <strong>"Update Profile Request"</strong> to submit changes.</p>
+                        <p class="mb-0 fs-8 text-muted">You have a pending change request under review by the Administrator. <strong>Note:</strong> None of your requested changes or photos will take effect or show across the portal (dashboard, ID cards, attendance) until an Administrator officially approves your request.</p>
                     </div>
                 </div>
                 {% endif %}
@@ -191,18 +198,20 @@
                             </div>
 
                             <div class="col-6">
-                                <span class="fs-9 text-muted d-block mb-1.5 fw-semibold">Requested Photo</span>
-                                {% if pending_request and pending_request.new_image_data %}
+                                <span class="fs-9 text-muted d-block mb-1.5 fw-semibold">Requested Photo (Pending Approval)</span>
+                                {% if pending_request and pending_request.new_image_data and pending_request.new_image_data != student.image_data %}
                                     <img src="{% if pending_request.new_image_data.startswith('data:image/') %}{{ pending_request.new_image_data }}{% else %}data:image/jpeg;base64,{{ pending_request.new_image_data }}{% endif %}" 
                                          class="rounded-3 shadow-sm border border-warning" 
                                          style="width: 100px; height: 100px; object-fit: cover;">
+                                    <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-30 d-block mt-1 mx-auto fs-9" style="width: fit-content;">Pending Approval</span>
                                 {% elif pending_request and pending_request.new_image_filename and pending_request.new_image_filename != student.image_filename %}
                                     <img src="{{ url_for('main.uploaded_face', filename=pending_request.new_image_filename) }}" 
                                          class="rounded-3 shadow-sm border border-warning" 
                                          style="width: 100px; height: 100px; object-fit: cover;">
+                                    <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-30 d-block mt-1 mx-auto fs-9" style="width: fit-content;">Pending Approval</span>
                                 {% else %}
                                     <div class="rounded-3 border d-flex align-items-center justify-content-center mx-auto text-muted" style="width: 100px; height: 100px; font-size: 0.8rem; background: var(--surface);">
-                                        <span class="text-muted fs-9 px-2">No photo change requested</span>
+                                        <span class="text-muted fs-9 px-2">No photo change requested (Keeps active photo)</span>
                                     </div>
                                 {% endif %}
                             </div>

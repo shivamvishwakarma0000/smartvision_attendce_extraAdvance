@@ -30,7 +30,7 @@ from models import (
     TeacherAttendanceSettings, TeacherAttendanceAuditLog, UniversitySettings, TeacherEditRequest,
     TeacherFeedback, FacultyComplaint, ComplaintVote
 )
-from schedule_service import generate_daily_schedule, calculate_student_attendance
+from schedule_service import generate_daily_schedule, calculate_student_attendance, convert_to_24h
 from auth.routes import save_base64_image, optimize_and_save_photo
 from teacher_attendance.routes import recalculate_daily_status, get_or_create_settings, parse_time_str
 

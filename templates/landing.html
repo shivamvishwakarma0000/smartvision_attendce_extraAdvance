@@ -225,7 +225,61 @@
                 border-radius: 1.25rem !important;
             }
             .navbar {
-                padding: 0.75rem 1rem !important;
+                padding: 0.6rem 1rem !important;
+            }
+
+            /* Dedicated Phone Landing Hero View (No Scrolling Required to See 2026 Copyright) */
+            body.mobile-hero-active {
+                height: 100vh;
+                height: 100dvh;
+                overflow-y: hidden !important;
+            }
+            body.mobile-hero-active .landing-main-container {
+                padding-top: 0.25rem !important;
+                padding-bottom: 0.25rem !important;
+                margin-top: auto !important;
+                margin-bottom: auto !important;
+                flex: 1 1 auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            body.mobile-hero-active .mobile-landing-hero {
+                margin-bottom: 0 !important;
+            }
+            body.mobile-hero-active .mobile-hero-title {
+                font-size: clamp(1.2rem, 4.2vw, 1.55rem) !important;
+                line-height: 1.2 !important;
+                margin-bottom: 0.35rem !important;
+            }
+            body.mobile-hero-active .mobile-hero-img-container {
+                max-width: clamp(210px, 64vw, 290px) !important;
+                max-height: clamp(130px, 23vh, 185px) !important;
+                margin: 0.35rem auto !important;
+                border-radius: 16px !important;
+            }
+            body.mobile-hero-active .mobile-hero-img-container img {
+                height: clamp(130px, 23vh, 185px) !important;
+                object-fit: cover !important;
+                border-radius: 13.5px !important;
+                aspect-ratio: auto !important;
+            }
+            body.mobile-hero-active .mobile-hero-btn-wrap {
+                max-width: clamp(210px, 64vw, 290px) !important;
+                margin-top: 0.4rem !important;
+                margin-bottom: 0 !important;
+            }
+            body.mobile-hero-active .mobile-hero-btn-wrap button {
+                padding: 0.65rem 1.25rem !important;
+                font-size: 0.9rem !important;
+            }
+            body.mobile-hero-active .landing-footer {
+                padding-top: 0.25rem !important;
+                padding-bottom: 0.65rem !important;
+                margin-top: auto !important;
+            }
+            body.mobile-hero-active .landing-footer .divider-line {
+                margin-bottom: 0.3rem !important;
             }
         }
 
@@ -360,7 +414,7 @@
     </div>
 </nav>
 
-<div class="container-fluid px-3 px-lg-5 py-4 my-auto">
+<div class="container-fluid px-3 px-lg-5 py-4 my-auto landing-main-container">
     <div class="row w-100 align-items-center g-4 mx-0">
         
         <!-- LEFT COLUMN: Permanent Cosmic Dark Hero Presentation -->
@@ -418,26 +472,26 @@
             <!-- MOBILE-ONLY HERO SHOWCASE (Phone Landing View) -->
             <div class="d-block d-lg-none mb-4 mobile-landing-hero text-center" id="mobile-hero-section">
                 <!-- Top Header: Instant Face Recognition Class Attendance -->
-                <div class="mb-3">
-                    <h2 class="fw-extrabold text-white mt-1 mb-0 tracking-tight" style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; line-height: 1.25; letter-spacing: -0.5px;">
+                <div class="mb-2">
+                    <h2 class="fw-extrabold text-white mt-1 mb-0 tracking-tight mobile-hero-title" style="font-family: 'Outfit', sans-serif; font-size: 1.75rem; line-height: 1.25; letter-spacing: -0.5px;">
                         Instant Face Recognition <br>
                         <span style="background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Class Attendance</span>
                     </h2>
                 </div>
 
                 <!-- Center Classroom AI Image with 19px Rounded Glowing Border (Clean without badges) -->
-                <div class="position-relative mx-auto my-3 overflow-hidden shadow-lg mobile-hero-img-container" 
+                <div class="position-relative mx-auto my-2 overflow-hidden shadow-lg mobile-hero-img-container" 
                      style="max-width: 360px; width: 100%; border-radius: 19px; border: 2.5px solid rgba(99, 102, 241, 0.45); box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.35); background: #0f172a;">
                     <img src="{{ url_for('static', filename='images/mobile_hero_classroom.jpg') }}" 
                          alt="SmartVision AI Classroom Attendance" 
                          class="w-100 d-block" 
-                         style="border-radius: 16.5px; object-fit: cover; aspect-ratio: 1/1;">
+                         style="border-radius: 16.5px; object-fit: cover;">
                 </div>
 
                 <!-- Start Action Button Below Image (Clean without yellow bolt icon) -->
-                <div class="mx-auto mt-3 mb-2" style="max-width: 360px; width: 100%;">
+                <div class="mx-auto mt-2 mb-1 mobile-hero-btn-wrap" style="max-width: 360px; width: 100%;">
                     <button type="button" onclick="openMobileAuthForm('login')" 
-                            class="btn btn-primary-auth w-100 py-3 rounded-pill fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-lg" 
+                            class="btn btn-primary-auth w-100 py-2.5 rounded-pill fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-lg" 
                             style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.45); font-size: 0.95rem;">
                         <span>Get Started / Sign In</span> <i class="fa-solid fa-arrow-right ms-1"></i>
                     </button>
@@ -869,12 +923,12 @@
 </div>
 
 <!-- Responsive Landing Page Footer (Both Laptop & Mobile Phone) -->
-<footer class="w-100 py-3 mt-auto text-center" style="position: relative; z-index: 10;">
+<footer class="w-100 py-3 mt-auto text-center landing-footer" style="position: relative; z-index: 10;">
     <div class="container text-center">
         <!-- Subtle Divider Line Just Above The Copyright Text -->
-        <div class="mx-auto mb-2.5" style="max-width: 460px; width: 85%; height: 1px; background: linear-gradient(90deg, transparent, var(--card-border), transparent); opacity: 0.75;"></div>
+        <div class="mx-auto mb-2 divider-line" style="max-width: 460px; width: 85%; height: 1px; background: linear-gradient(90deg, transparent, var(--card-border), transparent); opacity: 0.75;"></div>
         <!-- Copyright Text -->
-        <p class="mb-0 fs-8 fw-semibold" style="color: var(--text-muted); letter-spacing: 0.4px;">
+        <p class="mb-0 fs-8 fw-semibold copyright-text" style="color: var(--text-muted); letter-spacing: 0.4px;">
             &copy; 2026 Copyright SmartVision
         </p>
     </div>
@@ -1086,6 +1140,7 @@
         if (view) showView(view);
         const heroSection = document.getElementById('mobile-hero-section');
         const authContainer = document.getElementById('auth-card-anchor');
+        document.body.classList.remove('mobile-hero-active');
         if (heroSection) {
             heroSection.classList.add('d-none');
             heroSection.classList.remove('d-block');
@@ -1106,6 +1161,9 @@
         if (heroSection) {
             heroSection.classList.remove('d-none');
             heroSection.classList.add('d-block');
+            if (window.innerWidth < 992) {
+                document.body.classList.add('mobile-hero-active');
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
@@ -1122,7 +1180,21 @@
                     heroSection.classList.add('d-none');
                     heroSection.classList.remove('d-block');
                 }
+                document.body.classList.remove('mobile-hero-active');
             }
+        } else {
+            if (window.innerWidth < 992) {
+                document.body.classList.add('mobile-hero-active');
+            }
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        const heroSection = document.getElementById('mobile-hero-section');
+        if (window.innerWidth < 992 && heroSection && !heroSection.classList.contains('d-none')) {
+            document.body.classList.add('mobile-hero-active');
+        } else {
+            document.body.classList.remove('mobile-hero-active');
         }
     });
 

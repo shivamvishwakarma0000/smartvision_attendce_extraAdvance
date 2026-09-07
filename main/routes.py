@@ -3520,7 +3520,9 @@ def manage_timetable():
             return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
 
         period_int = int(period_val) if period_val and period_val.isdigit() else 1
-        eff_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date() if eff_from_str else date.today()
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        eff_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date() if eff_from_str else tomorrow
         eff_to = datetime.strptime(eff_to_str, "%Y-%m-%d").date() if eff_to_str else None
         subj_obj = Subject.query.get(sub_id_int) if sub_id_int else None
 
@@ -3612,13 +3614,14 @@ def manage_timetable():
                 slot.linked_slot_id = slot2.id
 
             db.session.commit()
-            generate_daily_schedule(date.today())
+            generate_daily_schedule(eff_from)
 
             lab_name = subj_obj.name if subj_obj else (custom_title or 'Lab')
+            eff_note = f" (Effective from {eff_from.strftime('%d %b %Y')})" if eff_from > today else ""
             if is_lab and paired_p_no:
-                flash(f"✓ Lab session ({lab_name}) successfully created! It automatically occupies 2 consecutive periods: Period {period_int} & Period {paired_p_no}.", "success")
+                flash(f"✓ Lab session ({lab_name}) successfully created! It automatically occupies 2 consecutive periods: Period {period_int} & Period {paired_p_no}.{eff_note}", "success")
             else:
-                flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!", "success")
+                flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!{eff_note}", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"Error creating timetable slot: {e}", "danger")
@@ -3699,7 +3702,12 @@ def manage_timetable():
             db.session.rollback()
             current_app.logger.warning(f"Lab auto-heal skipped: {heal_err}")
 
-        timetable_entries = Timetable.query.filter_by(class_id=selected_class_id).order_by(Timetable.day_of_week, Timetable.start_time).all()
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        timetable_entries = Timetable.query.filter(
+            Timetable.class_id == selected_class_id,
+            (Timetable.effective_to == None) | (Timetable.effective_to >= tomorrow)
+        ).order_by(Timetable.day_of_week, Timetable.start_time).all()
     else:
         timetable_entries = []
 
@@ -3744,13 +3752,31 @@ def delete_timetable_slot(slot_id):
                 Timetable.period_no.in_([p_no + 1, p_no - 1])
             ).first()
 
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        slot_ids = [slot.id]
         if sibling_slot:
-            db.session.delete(sibling_slot)
+            slot_ids.append(sibling_slot.id)
 
-        db.session.delete(slot)
-        db.session.commit()
-        generate_daily_schedule(date.today())
-        flash("Timetable slot removed successfully. Both periods are now available.", "success")
+        # Check if attendance sessions or daily schedule exists for today or past
+        has_sessions = AttendanceSession.query.filter(AttendanceSession.timetable_id.in_(slot_ids)).first()
+        has_daily = DailySchedule.query.filter(DailySchedule.timetable_id.in_(slot_ids), DailySchedule.date <= today).first()
+
+        if has_sessions or has_daily:
+            # Preserve today and past records; retire slot effective from tomorrow
+            slot.effective_to = today
+            if sibling_slot:
+                sibling_slot.effective_to = today
+            db.session.commit()
+            generate_daily_schedule(tomorrow)
+            flash("Timetable slot retired successfully. The change takes effect starting tomorrow, preserving today's completed attendance.", "success")
+        else:
+            if sibling_slot:
+                db.session.delete(sibling_slot)
+            db.session.delete(slot)
+            db.session.commit()
+            generate_daily_schedule(tomorrow)
+            flash("Timetable slot removed successfully. Changes take effect starting tomorrow.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting timetable slot: {e}", "danger")
@@ -3840,8 +3866,8 @@ def edit_timetable_slot(slot_id):
                 sibling_slot.effective_to = slot.effective_to
         
         db.session.commit()
-        generate_daily_schedule(date.today())
-        flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) updated successfully!", "success")
+        generate_daily_schedule(date.today() + timedelta(days=1))
+        flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) updated successfully! Changes take effect starting tomorrow.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error updating timetable slot: {e}", "danger")

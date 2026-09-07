@@ -103,12 +103,11 @@ def dashboard():
             'teacher': subject.teacher.name if subject.teacher else "No Teacher"
         }
 
-    # 1. Daily Stats (Today COMPLETED Sessions for active class slots)
+    # 1. Daily Stats (will be accurately populated from today's active sessions)
     today_sessions = AttendanceSession.query.filter(
         AttendanceSession.class_id == student.class_id,
         AttendanceSession.date == today,
-        AttendanceSession.status == 'COMPLETED',
-        AttendanceSession.timetable_id != None
+        AttendanceSession.status == 'COMPLETED'
     ).all() if student.class_id else []
     today_s_ids = [s.id for s in today_sessions]
     daily_attended = AttendanceRecord.query.filter(
@@ -117,8 +116,14 @@ def dashboard():
         AttendanceRecord.status == 'PRESENT'
     ).count() if today_s_ids else 0
 
-    today_class_slots_count = Timetable.query.filter_by(class_id=student.class_id, day_of_week=today.strftime('%A'), slot_type='CLASS').count() if student.class_id else 6
-    daily_total = min(len(today_sessions), today_class_slots_count or 6) if today_sessions else (today_class_slots_count or 6)
+    today_class_slots_count = Timetable.query.filter(
+        Timetable.class_id == student.class_id,
+        Timetable.day_of_week == today.strftime('%A'),
+        Timetable.slot_type.in_(['CLASS', 'LAB']),
+        (Timetable.effective_from == None) | (Timetable.effective_from <= today),
+        (Timetable.effective_to == None) | (Timetable.effective_to >= today)
+    ).count() if student.class_id else 6
+    daily_total = len(today_sessions) if today_sessions else (today_class_slots_count or 6)
     daily_pct = round((daily_attended / daily_total * 100), 2) if daily_total > 0 else 0.0
 
     # 2. Weekly Stats (This Week COMPLETED Sessions)
@@ -172,7 +177,12 @@ def dashboard():
 
     for d_name in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']:
         d_date = days_map[d_name]
-        d_slots = [s for s in all_weekly_slots if s.day_of_week == d_name]
+        d_slots = [
+            s for s in all_weekly_slots 
+            if s.day_of_week == d_name 
+            and (s.effective_from is None or s.effective_from <= d_date)
+            and (s.effective_to is None or s.effective_to >= d_date)
+        ]
         
         for tt in d_slots:
             if tt.slot_type == 'LIBRARY':
@@ -328,6 +338,61 @@ def dashboard():
             if d_date == today:
                 daily_timetable_status.append(item_dict)
 
+    # Ensure any conducted session today for this class is included in daily_timetable_status
+    existing_session_ids = {item.get('session_id') for item in daily_timetable_status if item.get('session_id')}
+    conducted_today_sessions = AttendanceSession.query.filter_by(
+        class_id=student.class_id,
+        date=today
+    ).all() if student.class_id else []
+
+    for c_sess in conducted_today_sessions:
+        if c_sess.id not in existing_session_ids:
+            c_rec = AttendanceRecord.query.filter_by(session_id=c_sess.id, student_id=student.id).first()
+            if c_rec:
+                status_label = 'Present' if c_rec.status.upper() == 'PRESENT' else 'Absent'
+                status_class = 'success' if c_rec.status.upper() == 'PRESENT' else 'danger'
+                status_icon = 'fa-circle-check' if c_rec.status.upper() == 'PRESENT' else 'fa-circle-xmark'
+                marked_time = (c_rec.marked_at + timedelta(hours=5, minutes=30)).strftime("%I:%M %p") if c_rec.marked_at else 'Recorded'
+                subj_name = c_sess.subject.name if c_sess.subject else 'Subject'
+                tch_name = c_sess.teacher.name if c_sess.teacher else 'Faculty'
+                time_range = f"{c_sess.start_time or '09:00'} - {c_sess.end_time or '10:00'}"
+                item_dict = {
+                    'session_id': c_sess.id,
+                    'slot': c_sess.timetable,
+                    'period': (c_sess.timetable.period_no if c_sess.timetable else 1),
+                    'subject': subj_name,
+                    'teacher': tch_name,
+                    'is_proxy': False,
+                    'proxy_teacher_name': None,
+                    'is_cancelled': False,
+                    'cancellation_reason': "",
+                    'day': today.strftime('%A'),
+                    'date_str': today.strftime('%b %d'),
+                    'date': today,
+                    'time_slot': time_range,
+                    'room_number': (c_sess.timetable.room if c_sess.timetable else 'Classroom'),
+                    'status_label': status_label,
+                    'status_class': status_class,
+                    'status_icon': status_icon,
+                    'marked_time': marked_time
+                }
+                daily_timetable_status.append(item_dict)
+                existing_session_ids.add(c_sess.id)
+
+    # Calculate unified daily stats directly reflecting actual sessions conducted/attended today
+    active_lecture_slots = [c for c in daily_timetable_status if c.get('slot') is None or getattr(c.get('slot'), 'slot_type', 'CLASS') in ('CLASS', 'LAB')]
+    daily_attended = sum(1 for c in active_lecture_slots if c.get('status_label') == 'Present')
+    daily_absent = sum(1 for c in active_lecture_slots if c.get('status_label') == 'Absent')
+    
+    conducted_today = daily_attended + daily_absent
+    if conducted_today > 0:
+        daily_total = conducted_today
+    else:
+        scheduled_slots = sum(1 for c in active_lecture_slots if not c.get('is_cancelled'))
+        daily_total = scheduled_slots if scheduled_slots > 0 else 6
+    
+    daily_pct = round((daily_attended / daily_total * 100), 2) if daily_total > 0 else 0.0
+
     today_cancelled_classes = [c for c in daily_timetable_status if c.get('is_cancelled')]
 
     # Subject breakdown schedule map
@@ -345,18 +410,15 @@ def dashboard():
             'pct': st.get('percentage', 0.0)
         })
 
-    # Fetch student's attendance records history (Scoped to official timetable sessions only)
+    # Fetch student's attendance records history (Include all official sessions for student)
     raw_records = AttendanceRecord.query.join(AttendanceSession).filter(
-        AttendanceRecord.student_id == student.id,
-        AttendanceSession.timetable_id != None
-    ).order_by(AttendanceRecord.marked_at.desc()).all()
-    seen_slots = set()
+        AttendanceRecord.student_id == student.id
+    ).order_by(AttendanceRecord.marked_at.desc(), AttendanceSession.date.desc(), AttendanceSession.id.desc()).all()
+    seen_session_ids = set()
     records = []
     for r in raw_records:
-        sess = r.session
-        key = (sess.date, sess.timetable_id or sess.subject_id, sess.start_time) if sess else r.id
-        if key not in seen_slots:
-            seen_slots.add(key)
+        if r.session_id not in seen_session_ids:
+            seen_session_ids.add(r.session_id)
             records.append(r)
 
     pending_request = StudentEditRequest.query.filter_by(student_id=student.id, status='Pending').first()
@@ -875,8 +937,10 @@ def timetable():
     selected_class = student.class_assigned
     timetable_entries = []
     if student.class_id:
-        timetable_entries = Timetable.query.filter_by(
-            class_id=student.class_id
+        today = date.today()
+        timetable_entries = Timetable.query.filter(
+            Timetable.class_id == student.class_id,
+            (Timetable.effective_to == None) | (Timetable.effective_to >= today)
         ).order_by(Timetable.day_of_week, Timetable.start_time).all()
 
     from main.routes import get_or_create_period_settings

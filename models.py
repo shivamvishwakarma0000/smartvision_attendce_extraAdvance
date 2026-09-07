@@ -351,6 +351,8 @@ class Timetable(db.Model):
     effective_from = db.Column(db.Date, nullable=True, default=date.today)
     effective_to = db.Column(db.Date, nullable=True)
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    is_lab_continuation = db.Column(db.Boolean, default=False)
+    linked_slot_id = db.Column(db.Integer, nullable=True)
 
     @property
     def period(self):

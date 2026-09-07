@@ -169,7 +169,13 @@
                             <tr class="slot-row table-warning bg-warning bg-opacity-10">
                                 <!-- 1. Period & Time (Compact) -->
                                 <td class="px-2.5 py-2">
-                                    <div class="fw-bold text-dark fs-8.5">Period {{ slot.period_no or '1' }}</div>
+                                    <div class="fw-bold text-dark fs-8.5">
+                                        {% if slot.is_lab %}
+                                        <span class="badge bg-warning text-dark border border-dark border-opacity-25 me-1">🔬 LAB</span>{{ slot.lab_span_text or ('Period ' ~ slot.period_no) }}
+                                        {% else %}
+                                        Period {{ slot.period_no or '1' }}
+                                        {% endif %}
+                                    </div>
                                     <span class="text-muted fs-9 font-monospace"><i class="fa-regular fa-clock me-1"></i>{{ slot.start_time }}-{{ slot.end_time }}</span>
                                 </td>
 
@@ -189,22 +195,45 @@
                                     {% endif %}
                                 </td>
 
-                                <!-- 4. Current Status -->
+                                <!-- 4. Current Status & Cancellation Warning -->
                                 <td class="px-2.5 py-2">
-                                    <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bold fs-9 border border-warning">
-                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Unassigned
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fw-bold fs-9 border border-warning w-auto text-center">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Proxy Pending
+                                        </span>
+                                        {% if slot.cancellation_deadline_str %}
+                                        <div class="alert alert-danger p-1.5 mb-0 rounded-2 border border-danger border-opacity-40 d-flex flex-column shadow-xs" style="font-size: 0.68rem; line-height: 1.25;">
+                                            <span class="fw-bold text-danger">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i>Proxy not assigned
+                                            </span>
+                                            <span class="text-dark fw-semibold" style="font-size: 0.65rem;">
+                                                Class will be cancelled at <strong>{{ slot.cancellation_deadline_str }}</strong>
+                                            </span>
+                                            <div class="countdown-badge mt-1 badge bg-danger text-white font-monospace py-0.5 px-1 fs-9 d-inline-flex align-items-center justify-content-center"
+                                                 data-seconds="{{ slot.seconds_to_cancellation }}"
+                                                 data-deadline="{{ slot.cancellation_deadline_str }}">
+                                                ⏳ <span class="timer-display">
+                                                    {% if slot.seconds_to_cancellation > 0 %}
+                                                    {{ (slot.seconds_to_cancellation // 60) }}m {{ (slot.seconds_to_cancellation % 60) }}s left
+                                                    {% else %}
+                                                    Cancelling now...
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
                                 </td>
 
                                 <!-- 5. Proxy Assignment Dropdown (Compact) -->
                                 <td class="px-2.5 py-2">
-                                    <form method="POST" action="{{ url_for('main.assign_slot_proxy') }}" class="d-flex align-items-center gap-1.5">
+                                    <form method="POST" action="{{ url_for('main.assign_slot_proxy') }}" class="d-flex align-items-center gap-1.5 flex-wrap">
                                         <input type="hidden" name="daily_schedule_id" value="{{ slot.daily_schedule_id }}">
                                         <select name="proxy_teacher_id" class="form-select form-select-sm rounded-pill fs-9 py-1 px-2 border-primary shadow-xs" required style="max-width: 250px;">
                                             <option value="" disabled selected>-- Select Available Teacher --</option>
                                             {% for pt in slot.available_teachers %}
                                             <option value="{{ pt.id }}">
-                                                Prof. {{ pt.name }} ({{ pt.department }} • {{ pt.free_periods_count }} Free)
+                                                Prof. {{ pt.name }} ({{ pt.department }}{% if slot.is_lab %} • Free 2 Periods{% else %} • {{ pt.free_periods_count }} Free{% endif %})
                                             </option>
                                             {% endfor %}
                                             {% if not slot.available_teachers %}
@@ -215,6 +244,9 @@
                                             <i class="fa-solid fa-user-check me-1"></i> Assign
                                         </button>
                                     </form>
+                                    {% if slot.is_lab %}
+                                    <div class="text-muted fs-9 mt-0.5"><i class="fa-solid fa-circle-info text-warning me-1"></i>2-period lab: Proxy will cover both consecutive periods.</div>
+                                    {% endif %}
                                 </td>
 
                                 <!-- 6. Actions (Compact) -->
@@ -390,12 +422,21 @@
                                 <!-- 8. Manage (Compact Buttons) -->
                                 <td class="px-2.5 py-2 text-end text-nowrap">
                                     {% if item.is_cancelled %}
-                                    <form method="POST" action="{{ url_for('main.restore_class_slot') }}" class="d-inline">
-                                        <input type="hidden" name="daily_schedule_id" value="{{ item.id }}">
-                                        <button type="submit" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5 fw-bold fs-9 shadow-xs" title="Restore slot">
-                                            <i class="fa-solid fa-rotate-left me-1"></i> Restore
+                                    <div class="d-inline-flex gap-1">
+                                        <button type="button" 
+                                                class="btn btn-xs btn-primary rounded-pill px-2 py-0.5 fw-bold fs-9 shadow-xs"
+                                                onclick="prepareReopenModal('{{ item.id }}', '{{ item.timetable.class_assigned.name if item.timetable and item.timetable.class_assigned else 'Class' }}', '{{ item.timetable.subject_assigned.name if item.timetable and item.timetable.subject_assigned else (item.timetable.custom_title or 'Subject') }}', '{{ item.timetable.teacher_assigned.name if item.timetable and item.timetable.teacher_assigned else 'Faculty' }}', '{{ item.timetable.period_no or '1' }}', '{{ item.timetable.start_time }}-{{ item.timetable.end_time }}')"
+                                                data-bs-toggle="modal" data-bs-target="#reopenProxyModal"
+                                                title="Reopen cancelled class and assign proxy">
+                                            <i class="fa-solid fa-rotate me-0.5"></i> Reopen & Proxy
                                         </button>
-                                    </form>
+                                        <form method="POST" action="{{ url_for('main.restore_class_slot') }}" class="d-inline">
+                                            <input type="hidden" name="daily_schedule_id" value="{{ item.id }}">
+                                            <button type="submit" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0.5 fw-bold fs-9 shadow-xs" title="Restore to pending without proxy">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                     {% elif item.is_proxy %}
                                     <form method="POST" action="{{ url_for('main.cancel_class_slot') }}" class="d-inline" onsubmit="return confirm('Cancel this proxy class?');">
                                         <input type="hidden" name="daily_schedule_id" value="{{ item.id }}">
@@ -423,7 +464,83 @@
     </div>
 </div>
 
+<!-- REOPEN & ASSIGN PROXY MODAL -->
+<div class="modal fade" id="reopenProxyModal" tabindex="-1" aria-labelledby="reopenProxyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white p-3.5">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-solid fa-rotate text-white fs-6"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold fs-7 mb-0" id="reopenProxyModalLabel">Reopen Cancelled Class & Assign Proxy</h5>
+                        <span class="fs-9 text-white-50">Revoke cancellation and allocate substitute faculty</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.reopen_and_assign_proxy') }}">
+                <input type="hidden" name="daily_schedule_id" id="reopen_schedule_id" value="">
+                <div class="modal-body p-4">
+                    <div class="alert alert-light border rounded-3 p-2.5 mb-3 fs-8.5">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Class:</span>
+                            <span class="fw-bold text-primary" id="reopen_class_name">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Subject / Lab:</span>
+                            <span class="fw-bold text-dark" id="reopen_subject_name">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Original Faculty:</span>
+                            <span class="fw-bold text-danger" id="reopen_teacher_name">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Period & Timing:</span>
+                            <span class="fw-bold font-monospace" id="reopen_period_timing">-</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reopen_proxy_teacher" class="form-label fw-semibold fs-8 text-dark">Select Substitute Proxy Faculty <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm rounded-3 shadow-xs" id="reopen_proxy_teacher" name="proxy_teacher_id" required>
+                            <option value="" disabled selected>-- Choose Available Faculty Member --</option>
+                            {% for t in all_teachers %}
+                            <option value="{{ t.id }}">Prof. {{ t.name }} ({{ t.department }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text fs-9 text-muted">Selecting proxy will reopen the class, reactivate the attendance window, and remove the cancelled status.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reopen_notes" class="form-label fw-semibold fs-8 text-dark">Notes / Reason for Reopening</label>
+                        <input type="text" class="form-control form-control-sm rounded-3 shadow-xs" id="reopen_notes" name="notes" placeholder="e.g. Proxy confirmed, reopened before/during session" value="Reopened and assigned proxy by admin">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3 border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-xs">
+                        <i class="fa-solid fa-circle-check me-1"></i> Confirm Reopen & Assign Proxy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+// Reopen modal helper
+function prepareReopenModal(scheduleId, className, subjectName, teacherName, periodNo, timing) {
+    document.getElementById('reopen_schedule_id').value = scheduleId;
+    document.getElementById('reopen_class_name').innerText = className;
+    document.getElementById('reopen_subject_name').innerText = subjectName;
+    document.getElementById('reopen_teacher_name').innerText = teacherName;
+    document.getElementById('reopen_period_timing').innerText = 'Period ' + periodNo + ' (' + timing + ')';
+    var select = document.getElementById('reopen_proxy_teacher');
+    if (select) select.selectedIndex = 0;
+}
+
 // Filter Action Needed Slots
 function filterSlotTable() {
     var input = document.getElementById("slotSearchInput");
@@ -456,6 +573,43 @@ function filterHistoryTableLive() {
     if (countBadge) countBadge.innerText = visibleCount;
 }
 
+// Live Countdown Timer for Auto-Cancellation
+function updateCancellationCountdowns() {
+    var badges = document.querySelectorAll('.countdown-badge');
+    badges.forEach(function(badge) {
+        var seconds = parseInt(badge.getAttribute('data-seconds') || '0', 10);
+        var timerDisplay = badge.querySelector('.timer-display');
+        if (!timerDisplay) return;
+
+        if (seconds > 0) {
+            seconds -= 1;
+            badge.setAttribute('data-seconds', seconds);
+            var m = Math.floor(seconds / 60);
+            var s = seconds % 60;
+            var text = (m > 0 ? (m + 'm ') : '') + (s < 10 ? '0' : '') + s + 's left';
+            timerDisplay.innerText = text;
+        } else {
+            timerDisplay.innerText = 'Cancelling now...';
+        }
+    });
+}
+
+// Background auto-cancellation checker via JSON API
+function checkAutoCancellations() {
+    fetch('/api/check_auto_cancellations')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.cancelled_count > 0) {
+                // Classes were automatically cancelled! Reload to reflect latest state
+                console.log('Auto-cancelled ' + data.cancelled_count + ' slots. Refreshing view...');
+                window.location.reload();
+            }
+        })
+        .catch(function(err) {
+            console.warn('Auto-cancellation check failed:', err);
+        });
+}
+
 // Automatically switch tab if URL hash or parameter indicates history
 document.addEventListener("DOMContentLoaded", function() {
     var urlParams = new URLSearchParams(window.location.search);
@@ -467,6 +621,12 @@ document.addEventListener("DOMContentLoaded", function() {
             tab.show();
         }
     }
+
+    // Start 1-second interval for countdown timer
+    setInterval(updateCancellationCountdowns, 1000);
+
+    // Start 15-second background auto-cancellation polling
+    setInterval(checkAutoCancellations, 15000);
 });
 </script>
 {% endblock %}

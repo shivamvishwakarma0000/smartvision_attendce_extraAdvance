@@ -79,6 +79,8 @@ def run_migrations(db_path="smartvision.db"):
             ("timetables", "room", "VARCHAR(50)"),
             ("timetables", "effective_from", "DATE"),
             ("timetables", "effective_to", "DATE"),
+            ("timetables", "is_lab_continuation", "BOOLEAN DEFAULT 0"),
+            ("timetables", "linked_slot_id", "INTEGER"),
             ("teacher_daily_attendances", "is_admin_overridden", "BOOLEAN DEFAULT 0"),
             ("teacher_daily_attendances", "check_in_face_verified", "BOOLEAN DEFAULT 0"),
             ("teacher_daily_attendances", "check_out_face_verified", "BOOLEAN DEFAULT 0"),

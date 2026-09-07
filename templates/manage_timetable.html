@@ -232,8 +232,8 @@
                                     <div class="d-flex justify-content-between align-items-center mb-0.5">
                                         {% if ns.slot.slot_type == 'LAB' %}
                                         <span class="badge bg-warning text-dark border border-warning text-truncate fw-bold"
-                                            style="max-width: 80px; font-size: 0.65rem;"
-                                            title="{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}">
+                                            style="max-width: 85px; font-size: 0.65rem;"
+                                            title="{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }} {% if ns.slot.is_lab_continuation %}(Continuation){% else %}(2-Period Lab){% endif %}">
                                             <i class="fa-solid fa-flask me-0.5"></i>{{ ns.slot.custom_title or (ns.slot.subject_assigned.name if ns.slot.subject_assigned else 'Lab') }}
                                         </span>
                                         {% elif ns.slot.slot_type == 'LIBRARY' %}
@@ -257,8 +257,16 @@
                                         </span>
                                         {% endif %}
 
-                                        <span class="badge bg-dark bg-opacity-75 text-white font-monospace"
-                                            style="font-size: 0.58rem;">P{{ ns.slot.period_no or ps.period_no }}</span>
+                                        <span class="badge {% if ns.slot.slot_type == 'LAB' %}bg-warning text-dark border border-dark border-opacity-25{% else %}bg-dark bg-opacity-75 text-white{% endif %} font-monospace"
+                                            style="font-size: 0.58rem;">
+                                            {% if ns.slot.slot_type == 'LAB' and not ns.slot.is_lab_continuation %}
+                                            P{{ ns.slot.period_no or ps.period_no }}-{{ (ns.slot.period_no or ps.period_no) + 1 }}
+                                            {% elif ns.slot.is_lab_continuation %}
+                                            P{{ ns.slot.period_no or ps.period_no }} (Pt 2)
+                                            {% else %}
+                                            P{{ ns.slot.period_no or ps.period_no }}
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     <div class="text-dark fw-semibold text-truncate" style="max-width: 95px; font-size: 0.68rem;">
                                         <i class="fa-solid fa-chalkboard-user text-muted me-1"></i>{{
@@ -281,7 +289,7 @@
                                     </button>
                                     <form method="POST"
                                         action="{{ url_for('main.delete_timetable_slot', slot_id=ns.slot.id) }}"
-                                        class="d-inline" onsubmit="return confirm('Remove this slot?');">
+                                        class="d-inline" onsubmit="return confirm('{{ 'Remove this 2-period lab slot (both periods will be cleared)?' if ns.slot.slot_type == 'LAB' else 'Remove this slot?' }}');">
                                         <button type="submit"
                                             class="btn btn-outline-danger btn-xs rounded-circle d-flex align-items-center justify-content-center"
                                             style="width: 20px; height: 20px; padding: 0;" title="Remove Slot">
@@ -412,9 +420,9 @@
                                     <span>Subject</span>
                                 </label>
                             </div>
-                            <div class="flex-fill" style="min-width: 90px;">
+                            <div class="flex-fill" style="min-width: 90px;" id="add_lab_btn_wrapper">
                                 <input type="radio" class="btn-check" name="slot_type" id="slot_type_lab" value="LAB" onchange="toggleSlotTypeFields('add', 'LAB')">
-                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_lab">
+                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="slot_type_lab" id="add_slot_type_lab_label">
                                     <i class="fa-solid fa-flask mb-1 fs-6 text-warning"></i>
                                     <span>Lab (2 Hours)</span>
                                 </label>
@@ -550,9 +558,9 @@
                                     <span>Subject</span>
                                 </label>
                             </div>
-                            <div class="flex-fill" style="min-width: 90px;">
+                            <div class="flex-fill" style="min-width: 90px;" id="edit_lab_btn_wrapper">
                                 <input type="radio" class="btn-check" name="slot_type" id="edit_slot_type_lab" value="LAB" onchange="toggleSlotTypeFields('edit', 'LAB')">
-                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_lab">
+                                <label class="btn btn-outline-warning text-dark btn-sm w-100 py-2 px-1 rounded-3 fw-bold fs-9 text-center d-flex flex-column align-items-center justify-content-center h-100" for="edit_slot_type_lab" id="edit_slot_type_lab_label">
                                     <i class="fa-solid fa-flask mb-1 fs-6 text-warning"></i>
                                     <span>Lab (2 Hours)</span>
                                 </label>
@@ -825,6 +833,30 @@
         }
     }
 
+    function updateLabOptionAvailability(formPrefix, periodNum) {
+        const pNum = parseInt(periodNum || '1');
+        const labRadio = document.getElementById(formPrefix === 'add' ? 'slot_type_lab' : 'edit_slot_type_lab');
+        const labWrapper = document.getElementById(formPrefix === 'add' ? 'add_lab_btn_wrapper' : 'edit_lab_btn_wrapper');
+        const isPeriod6 = (pNum >= 6);
+        if (labRadio) {
+            labRadio.disabled = isPeriod6;
+        }
+        if (labWrapper) {
+            if (isPeriod6) {
+                labWrapper.classList.add('opacity-50');
+                labWrapper.setAttribute('title', 'Lab requires 2 consecutive periods (cannot start at Period 6)');
+                if (labRadio && labRadio.checked) {
+                    const classRadio = document.getElementById(formPrefix === 'add' ? 'slot_type_class' : 'edit_slot_type_class');
+                    if (classRadio) classRadio.checked = true;
+                    toggleSlotTypeFields(formPrefix, 'CLASS');
+                }
+            } else {
+                labWrapper.classList.remove('opacity-50');
+                labWrapper.removeAttribute('title');
+            }
+        }
+    }
+
     function prepareSlotModal(classId, day, startTime, endTime, periodNum) {
         if (classId) {
             document.getElementById('modal_class_id').value = classId;
@@ -835,6 +867,7 @@
         if (periodNum) {
             document.getElementById('modal_period').value = periodNum;
         }
+        updateLabOptionAvailability('add', periodNum || '1');
         document.getElementById('slot_type_class').checked = true;
         toggleSlotTypeFields('add', 'CLASS');
         document.getElementById('presetSlotSelect').value = "";
@@ -853,8 +886,12 @@
         if (periodNum) {
             document.getElementById('edit_period').value = periodNum;
         }
+        updateLabOptionAvailability('edit', periodNum || '1');
 
-        const type = slotType || 'CLASS';
+        let type = slotType || 'CLASS';
+        if (type === 'LAB' && parseInt(periodNum || '1') >= 6) {
+            type = 'CLASS';
+        }
         if (type === 'LAB') {
             const labRadio = document.getElementById('edit_slot_type_lab');
             if (labRadio) labRadio.checked = true;
@@ -877,6 +914,7 @@
             document.getElementById('modal_period').value = parts[0];
             document.getElementById('modal_start_time').value = parts[1];
             document.getElementById('modal_end_time').value = parts[2];
+            updateLabOptionAvailability('add', parts[0]);
         } else if (parts.length === 2) {
             document.getElementById('modal_start_time').value = parts[0];
             document.getElementById('modal_end_time').value = parts[1];

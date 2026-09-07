@@ -162,8 +162,15 @@ def dashboard():
     todays_classes = []
     for ds in today_schedules:
         tt = ds.timetable
+        # Skip second period continuation of Lab; primary slot represents the full combined Lab session
+        if tt.is_lab_continuation and tt.linked_slot_id:
+            continue
+
         # Today's classes on Dashboard only show the teacher's own assigned regular classes
         if tt.teacher_id == teacher.id:
+            is_lab = (tt.slot_type == 'LAB') or bool(tt.linked_slot_id)
+            linked_tt = Timetable.query.get(tt.linked_slot_id) if tt.linked_slot_id else None
+
             # Existing session for this slot today
             session_rec = AttendanceSession.query.filter(
                 (AttendanceSession.daily_schedule_id == ds.id) |
@@ -188,7 +195,7 @@ def dashboard():
             is_before_11pm = (cur_24h_chk < "23:00")
 
             can_take_attendance = (
-                tt.slot_type == 'CLASS' and 
+                tt.slot_type in ('CLASS', 'LAB') and 
                 not is_cancelled and
                 session_status not in ('COMPLETED', 'CANCELLED') and
                 is_started and
@@ -196,15 +203,21 @@ def dashboard():
                 faculty_present_chk
             )
 
+            p_display = f"Period {tt.period_no} & {linked_tt.period_no} (Lab)" if (is_lab and linked_tt) else f"Period {tt.period_no or '1'}"
+            sub_display = tt.custom_title or (f"{tt.subject_assigned.name} (Lab)" if (is_lab and tt.subject_assigned) else (tt.subject_assigned.name if tt.subject_assigned else (tt.slot_type or 'N/A')))
+            end_display = linked_tt.end_time if linked_tt else tt.end_time
+
             todays_classes.append({
                 'daily_schedule_id': ds.id,
                 'timetable_id': tt.id,
                 'class_name': tt.class_assigned.name if tt.class_assigned else 'N/A',
-                'subject_name': tt.subject_assigned.name if tt.subject_assigned else (tt.slot_type or 'N/A'),
+                'subject_name': sub_display,
+                'period_display': p_display,
                 'room_number': tt.room or 'N/A',
                 'start_time': tt.start_time,
-                'end_time': tt.end_time,
+                'end_time': end_display,
                 'slot_type': tt.slot_type,
+                'is_lab': is_lab,
                 'resolved_status': ds.resolved_status,
                 'is_substitute': False,
                 'is_proxy': False,
@@ -1189,17 +1202,27 @@ def take_attendance():
     if not session_rec and daily_schedule_id and str(daily_schedule_id).isdigit():
         ds = DailySchedule.query.get(int(daily_schedule_id))
         if ds:
+            # If this is a Lab continuation slot, resolve to the primary Lab slot
+            if ds.timetable.is_lab_continuation and ds.timetable.linked_slot_id:
+                primary_ds = DailySchedule.query.filter_by(date=today, timetable_id=ds.timetable.linked_slot_id).first()
+                if primary_ds:
+                    ds = primary_ds
+
             session_rec = AttendanceSession.query.filter_by(daily_schedule_id=ds.id).first()
-            if not session_rec and ds.timetable.slot_type == 'CLASS':
+            if not session_rec and ds.timetable.slot_type in ('CLASS', 'LAB'):
+                tt_primary = ds.timetable
+                linked_tt = Timetable.query.get(tt_primary.linked_slot_id) if tt_primary.linked_slot_id else None
+                end_t = linked_tt.end_time if (tt_primary.slot_type == 'LAB' and linked_tt) else tt_primary.end_time
+
                 session_rec = AttendanceSession(
-                    timetable_id=ds.timetable_id,
+                    timetable_id=tt_primary.id,
                     daily_schedule_id=ds.id,
                     date=today,
                     teacher_id=teacher.id,
-                    class_id=ds.timetable.class_id,
-                    subject_id=ds.timetable.subject_id,
-                    start_time=ds.timetable.start_time,
-                    end_time=ds.timetable.end_time,
+                    class_id=tt_primary.class_id,
+                    subject_id=tt_primary.subject_id,
+                    start_time=tt_primary.start_time,
+                    end_time=end_t,
                     status='ATTENDANCE_OPEN'
                 )
                 db.session.add(session_rec)
@@ -1207,10 +1230,20 @@ def take_attendance():
 
     if not session_rec and timetable_id and str(timetable_id).isdigit():
         tt = Timetable.query.get(int(timetable_id))
-        if tt and tt.slot_type == 'CLASS':
+        if tt:
+            # If this is a Lab continuation slot, resolve to primary Lab slot
+            if tt.is_lab_continuation and tt.linked_slot_id:
+                primary_tt = Timetable.query.get(tt.linked_slot_id)
+                if primary_tt:
+                    tt = primary_tt
+
+        if tt and tt.slot_type in ('CLASS', 'LAB'):
             ds_today = DailySchedule.query.filter_by(timetable_id=tt.id, date=today).first()
             session_rec = AttendanceSession.query.filter_by(timetable_id=tt.id, date=today).first()
             if not session_rec:
+                linked_tt = Timetable.query.get(tt.linked_slot_id) if tt.linked_slot_id else None
+                end_t = linked_tt.end_time if (tt.slot_type == 'LAB' and linked_tt) else tt.end_time
+
                 session_rec = AttendanceSession(
                     timetable_id=tt.id,
                     daily_schedule_id=ds_today.id if ds_today else None,
@@ -1219,7 +1252,7 @@ def take_attendance():
                     class_id=tt.class_id,
                     subject_id=tt.subject_id,
                     start_time=tt.start_time,
-                    end_time=tt.end_time,
+                    end_time=end_t,
                     status='ATTENDANCE_OPEN'
                 )
                 db.session.add(session_rec)

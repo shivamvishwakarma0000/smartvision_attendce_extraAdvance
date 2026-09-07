@@ -237,10 +237,10 @@ def compute_emergency_proxy_desk(target_date=None):
             
     absent_teacher_ids = {a['teacher'].id for a in absent_teachers}
     
-    # 3. Find all daily schedules for today
+    # 3. Find all daily schedules for today (including CLASS and LAB teaching sessions)
     day_schedules = DailySchedule.query.join(Timetable).filter(
         DailySchedule.date == target_date,
-        Timetable.slot_type == 'CLASS'
+        Timetable.slot_type.in_(['CLASS', 'LAB'])
     ).order_by(Timetable.period_no, Timetable.start_time).all()
     
     # Build schedule map for present teachers: which periods they are busy
@@ -259,23 +259,62 @@ def compute_emergency_proxy_desk(target_date=None):
         if ds.substitute_teacher_id in present_teacher_busy_slots and not ds.is_cancelled:
             present_teacher_busy_slots[ds.substitute_teacher_id].add(tt.period_no)
             
+    # Map timetables and daily schedules for fast sibling lookup
+    ds_by_tt_id = {ds.timetable_id: ds for ds in day_schedules}
+    tt_by_id = {ds.timetable_id: ds.timetable for ds in day_schedules}
+    now_24h = convert_to_24h(now.strftime('%H:%M'))
+
     # For each affected slot of absent teachers, find free present teachers
     affected_slots = []
+    processed_tt_ids = set()
+
     for ds in day_schedules:
         tt = ds.timetable
-        is_teacher_absent = tt.teacher_id in absent_teacher_ids
+        if tt.id in processed_tt_ids:
+            continue
+
+        # If this is a Lab continuation slot, skip separate processing; it's handled via primary slot
+        if tt.is_lab_continuation and tt.linked_slot_id and tt.linked_slot_id in tt_by_id:
+            continue
+
+        is_lab = (tt.slot_type == 'LAB') or bool(tt.linked_slot_id)
+        linked_tt = tt_by_id.get(tt.linked_slot_id) if tt.linked_slot_id else None
+        linked_ds = ds_by_tt_id.get(tt.linked_slot_id) if tt.linked_slot_id else None
+
+        slot1_period = tt.period_no or 1
+        slot2_period = linked_tt.period_no if linked_tt and linked_tt.period_no else (slot1_period + 1 if is_lab else None)
+        slot_periods_needed = {slot1_period}
+        if is_lab and slot2_period:
+            slot_periods_needed.add(slot2_period)
+
+        is_teacher_absent = (tt.teacher_id in absent_teacher_ids) if tt.teacher_id else False
+        slot_start_24h = convert_to_24h(tt.start_time)
+
+        # Automatic cancellation check at actual start time (Requirement 3 & 4)
+        if target_date == today and is_teacher_absent and not ds.is_proxy and not ds.is_cancelled and not ds.substitute_teacher_id:
+            if now_24h >= slot_start_24h:
+                ds.is_cancelled = True
+                ds.resolved_status = 'CANCELLED'
+                ds.cancellation_reason = f"Auto-cancelled: Absent faculty with no proxy assigned by scheduled start time ({tt.start_time})"
+                if linked_ds:
+                    linked_ds.is_cancelled = True
+                    linked_ds.resolved_status = 'CANCELLED'
+                    linked_ds.cancellation_reason = ds.cancellation_reason
+                db.session.commit()
+
         if is_teacher_absent or ds.is_cancelled or ds.is_proxy or ds.resolved_status in ('TEACHER_ON_LEAVE', 'SUBSTITUTE_ASSIGNED', 'CANCELLED'):
             orig_teacher = tt.teacher_assigned
             orig_rec = rec_by_teacher.get(tt.teacher_id) if tt.teacher_id else None
             
+            # Find teachers who are strictly available for ALL needed periods (Requirement 9 & 10)
             available_teachers = []
-            slot_period = tt.period_no or 1
-            
             for pt in present_teachers:
                 if pt.id == tt.teacher_id:
                     continue
-                is_busy = slot_period in present_teacher_busy_slots.get(pt.id, set())
-                free_period_count = len(total_slots_in_day - present_teacher_busy_slots.get(pt.id, set()))
+                busy_periods = present_teacher_busy_slots.get(pt.id, set())
+                # Teacher must have NO conflicts across any required periods (both periods for Lab)
+                is_busy = any(p in busy_periods for p in slot_periods_needed)
+                free_period_count = len(total_slots_in_day - busy_periods)
                 
                 if not is_busy:
                     available_teachers.append({
@@ -288,27 +327,58 @@ def compute_emergency_proxy_desk(target_date=None):
             
             available_teachers.sort(key=lambda x: x['free_periods_count'], reverse=True)
             
+            # Format combined time and period label for Lab sessions
+            if is_lab and linked_tt:
+                period_display = f"Period {slot1_period} & {slot2_period} (Lab)"
+                time_display = f"{tt.start_time} - {linked_tt.end_time}"
+            elif is_lab:
+                period_display = f"Period {slot1_period} & {slot1_period + 1} (Lab)"
+                time_display = f"{tt.start_time} - {tt.end_time}"
+            else:
+                period_display = f"Period {slot1_period}"
+                time_display = f"{tt.start_time} - {tt.end_time}"
+
+            # Calculate live countdown until auto-cancellation
+            is_past_start_time = (target_date < today) or (target_date == today and now_24h >= slot_start_24h)
+            try:
+                target_dt = datetime.combine(target_date, datetime.strptime(slot_start_24h, "%H:%M").time())
+                remaining_seconds = max(0, int((target_dt - now).total_seconds()))
+            except Exception:
+                remaining_seconds = 0
+
             affected_slots.append({
                 'daily_schedule_id': ds.id,
                 'timetable_id': tt.id,
-                'period_no': tt.period_no,
+                'is_lab': is_lab,
+                'period_no': slot1_period,
+                'period_display': period_display,
+                'time_display': time_display,
                 'start_time': tt.start_time,
-                'end_time': tt.end_time,
+                'end_time': linked_tt.end_time if linked_tt else tt.end_time,
+                'slot_start_24h': slot_start_24h,
+                'is_past_start_time': is_past_start_time,
+                'remaining_seconds': remaining_seconds,
+                'warning_countdown_text': f"Proxy not assigned — class will be auto-cancelled at {tt.start_time}",
                 'class_name': tt.class_assigned.name if tt.class_assigned else 'N/A',
                 'class_id': tt.class_id,
-                'subject_name': tt.subject_assigned.name if tt.subject_assigned else (tt.custom_title or 'N/A'),
+                'subject_name': tt.custom_title or (tt.subject_assigned.name if tt.subject_assigned else ('Practical Lab' if is_lab else 'N/A')),
                 'subject_code': tt.subject_assigned.code if tt.subject_assigned and tt.subject_assigned.code else '',
                 'original_teacher_id': tt.teacher_id,
                 'original_teacher_name': orig_teacher.name if orig_teacher else 'Unassigned',
                 'original_teacher_absent_status': orig_rec.late_status if orig_rec else ('Approved Leave' if tt.teacher_id in leave_teacher_ids else 'Absent'),
                 'is_uninformed': orig_rec.is_uninformed_absence if orig_rec else (tt.teacher_id not in leave_teacher_ids),
                 'is_cancelled': ds.is_cancelled or ds.resolved_status == 'CANCELLED',
+                'is_auto_cancelled': (ds.is_cancelled or ds.resolved_status == 'CANCELLED') and ('Auto-cancelled' in (ds.cancellation_reason or '')),
                 'cancellation_reason': ds.cancellation_reason,
                 'is_proxy': ds.is_proxy or ds.resolved_status == 'SUBSTITUTE_ASSIGNED',
                 'substitute_teacher_id': ds.substitute_teacher_id,
                 'substitute_teacher_name': ds.substitute_teacher.name if ds.substitute_teacher else None,
                 'available_teachers': available_teachers
             })
+
+            processed_tt_ids.add(tt.id)
+            if linked_tt:
+                processed_tt_ids.add(linked_tt.id)
             
     pending_slots = [s for s in affected_slots if not s['is_proxy'] and not s['is_cancelled']]
 
@@ -655,10 +725,41 @@ def assign_slot_proxy():
     else:
         transfer.substitute_teacher_id = proxy_teacher.id
         transfer.original_teacher_id = tt.teacher_id
+
+    # If linked Lab slot exists, assign proxy to linked period as well
+    if tt.linked_slot_id:
+        ds_linked = DailySchedule.query.filter_by(date=ds.date, timetable_id=tt.linked_slot_id).first()
+        if ds_linked:
+            ds_linked.substitute_teacher_id = proxy_teacher.id
+            ds_linked.is_proxy = True
+            ds_linked.is_cancelled = False
+            ds_linked.cancellation_reason = None
+            ds_linked.resolved_status = 'SUBSTITUTE_ASSIGNED'
+            ds_linked.proxy_assigned_by_admin_id = current_user.id
+            ds_linked.proxy_assigned_at = datetime.now()
+
+            tt_linked = ds_linked.timetable
+            tr_linked = ProxyAttendanceTransfer.query.filter_by(timetable_id=tt_linked.id, date=ds.date).first()
+            if not tr_linked:
+                tr_linked = ProxyAttendanceTransfer(
+                    substitute_teacher_id=proxy_teacher.id,
+                    original_teacher_id=tt_linked.teacher_id,
+                    timetable_id=tt_linked.id,
+                    class_id=tt_linked.class_id,
+                    subject_id=tt_linked.subject_id,
+                    date=ds.date,
+                    time_slot=f"{tt_linked.start_time} - {tt_linked.end_time}",
+                    present_rolls="",
+                    status='PENDING'
+                )
+                db.session.add(tr_linked)
+            else:
+                tr_linked.substitute_teacher_id = proxy_teacher.id
+                tr_linked.original_teacher_id = tt_linked.teacher_id
         
     db.session.commit()
     class_name = tt.class_assigned.name if tt.class_assigned else ''
-    subj_name = tt.subject_assigned.name if tt.subject_assigned else ''
+    subj_name = tt.custom_title or (tt.subject_assigned.name if tt.subject_assigned else '')
     flash(f"✓ Proxy Assigned: Prof. {proxy_teacher.name} assigned to Period {tt.period_no or ''} ({class_name} - {subj_name}).", "success")
     return redirect(request.referrer or url_for('main.dashboard'))
 
@@ -680,10 +781,20 @@ def cancel_class_slot():
     ds.resolved_status = 'CANCELLED'
     ds.substitute_teacher_id = None
     ds.is_proxy = False
+
+    # Also cancel linked Lab slot if any
+    if tt.linked_slot_id:
+        ds_linked = DailySchedule.query.filter_by(date=ds.date, timetable_id=tt.linked_slot_id).first()
+        if ds_linked:
+            ds_linked.is_cancelled = True
+            ds_linked.cancellation_reason = ds.cancellation_reason
+            ds_linked.resolved_status = 'CANCELLED'
+            ds_linked.substitute_teacher_id = None
+            ds_linked.is_proxy = False
     
     db.session.commit()
     class_name = tt.class_assigned.name if tt.class_assigned else ''
-    subj_name = tt.subject_assigned.name if tt.subject_assigned else ''
+    subj_name = tt.custom_title or (tt.subject_assigned.name if tt.subject_assigned else '')
     flash(f"🚫 Period {tt.period_no or ''} ({class_name} - {subj_name}) marked as CANCELLED. Notice is now active on the Student Dashboard.", "warning")
     return redirect(request.referrer or url_for('main.dashboard'))
 
@@ -696,16 +807,124 @@ def restore_class_slot():
     
     daily_schedule_id = request.form.get('daily_schedule_id', type=int)
     ds = DailySchedule.query.get_or_404(daily_schedule_id)
+    tt = ds.timetable
     
     ds.is_cancelled = False
     ds.cancellation_reason = None
     ds.is_proxy = False
     ds.substitute_teacher_id = None
     ds.resolved_status = 'SCHEDULED'
+
+    # Also restore linked Lab slot if any
+    if tt.linked_slot_id:
+        ds_linked = DailySchedule.query.filter_by(date=ds.date, timetable_id=tt.linked_slot_id).first()
+        if ds_linked:
+            ds_linked.is_cancelled = False
+            ds_linked.cancellation_reason = None
+            ds_linked.is_proxy = False
+            ds_linked.substitute_teacher_id = None
+            ds_linked.resolved_status = 'SCHEDULED'
     
     db.session.commit()
     flash("✓ Slot restored to standard schedule.", "info")
     return redirect(request.referrer or url_for('main.dashboard'))
+
+@main_bp.route('/admin/reopen_and_assign_proxy', methods=['POST'])
+@login_required
+def reopen_and_assign_proxy():
+    """
+    Requirement 7 & 8: Once a class reaches start time and is cancelled, admin can
+    reopen the cancellation and assign an available free faculty as proxy.
+    """
+    if current_user.role != 'admin':
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    daily_schedule_id = request.form.get('daily_schedule_id', type=int)
+    proxy_teacher_id = request.form.get('proxy_teacher_id', type=int)
+
+    ds = DailySchedule.query.get_or_404(daily_schedule_id)
+    proxy_teacher = Teacher.query.get_or_404(proxy_teacher_id)
+    tt = ds.timetable
+
+    # Uncancel and assign proxy
+    ds.is_cancelled = False
+    ds.cancellation_reason = None
+    ds.substitute_teacher_id = proxy_teacher.id
+    ds.is_proxy = True
+    ds.resolved_status = 'SUBSTITUTE_ASSIGNED'
+    ds.proxy_assigned_by_admin_id = current_user.id
+    ds.proxy_assigned_at = datetime.now()
+
+    # Sync transfer
+    transfer = ProxyAttendanceTransfer.query.filter_by(timetable_id=tt.id, date=ds.date).first()
+    if not transfer:
+        transfer = ProxyAttendanceTransfer(
+            substitute_teacher_id=proxy_teacher.id,
+            original_teacher_id=tt.teacher_id,
+            timetable_id=tt.id,
+            class_id=tt.class_id,
+            subject_id=tt.subject_id,
+            date=ds.date,
+            time_slot=f"{tt.start_time} - {tt.end_time}",
+            present_rolls="",
+            status='PENDING'
+        )
+        db.session.add(transfer)
+    else:
+        transfer.substitute_teacher_id = proxy_teacher.id
+        transfer.original_teacher_id = tt.teacher_id
+
+    # Handle linked Lab slot if any
+    if tt.linked_slot_id:
+        ds_linked = DailySchedule.query.filter_by(date=ds.date, timetable_id=tt.linked_slot_id).first()
+        if ds_linked:
+            ds_linked.is_cancelled = False
+            ds_linked.cancellation_reason = None
+            ds_linked.substitute_teacher_id = proxy_teacher.id
+            ds_linked.is_proxy = True
+            ds_linked.resolved_status = 'SUBSTITUTE_ASSIGNED'
+            ds_linked.proxy_assigned_by_admin_id = current_user.id
+            ds_linked.proxy_assigned_at = datetime.now()
+
+            tt_linked = ds_linked.timetable
+            tr_linked = ProxyAttendanceTransfer.query.filter_by(timetable_id=tt_linked.id, date=ds.date).first()
+            if not tr_linked:
+                tr_linked = ProxyAttendanceTransfer(
+                    substitute_teacher_id=proxy_teacher.id,
+                    original_teacher_id=tt_linked.teacher_id,
+                    timetable_id=tt_linked.id,
+                    class_id=tt_linked.class_id,
+                    subject_id=tt_linked.subject_id,
+                    date=ds.date,
+                    time_slot=f"{tt_linked.start_time} - {tt_linked.end_time}",
+                    present_rolls="",
+                    status='PENDING'
+                )
+                db.session.add(tr_linked)
+            else:
+                tr_linked.substitute_teacher_id = proxy_teacher.id
+                tr_linked.original_teacher_id = tt_linked.teacher_id
+
+    db.session.commit()
+    class_name = tt.class_assigned.name if tt.class_assigned else ''
+    subj_name = tt.custom_title or (tt.subject_assigned.name if tt.subject_assigned else '')
+    flash(f"✓ Reopened & Proxy Assigned: Slot restored and Prof. {proxy_teacher.name} assigned as proxy ({class_name} - {subj_name}).", "success")
+    return redirect(request.referrer or url_for('main.emergency_proxy_desk'))
+
+@main_bp.route('/api/check_auto_cancellations')
+@login_required
+def check_auto_cancellations():
+    """Real-time endpoint for polling cancellation status on the Emergency Proxy Desk."""
+    today = get_current_date()
+    generate_daily_schedule(today)
+    desk = compute_emergency_proxy_desk(today)
+    return jsonify({
+        'status': 'success',
+        'pending_count': len(desk.get('pending_slots', [])),
+        'cancelled_count': desk.get('cancelled_slots_count', 0),
+        'proxy_count': desk.get('proxy_slots_count', 0)
+    })
 
 @main_bp.route('/admin/manual_faculty_override', methods=['POST'])
 @login_required
@@ -2478,6 +2697,8 @@ def emergency_proxy_desk():
     proxy_history = history_query.order_by(DailySchedule.date.desc(), DailySchedule.id.desc()).limit(200).all()
     all_classes = get_admin_classes()
 
+    all_teachers = Teacher.query.filter_by(status='Approved').order_by(Teacher.name).all()
+
     return render_template(
         'admin_emergency_proxy_desk.html',
         emergency_desk=emergency_desk_data,
@@ -2488,7 +2709,8 @@ def emergency_proxy_desk():
         history_status=history_status,
         history_class_id=history_class_id,
         active_tab=active_tab,
-        all_classes=all_classes
+        all_classes=all_classes,
+        all_teachers=all_teachers
     )
 
 @main_bp.route('/admin/teacher_approval/<int:teacher_id>/<action>', methods=['POST'])
@@ -3078,7 +3300,7 @@ def log_attendance_action(action, attendance_id, student_id, subject_id, date_va
         print(f"Error logging attendance audit: {e}")
 
 def check_timetable_conflicts(class_id, teacher_id, day_of_week, start_time, end_time, room_number=None, exclude_slot_id=None, slot_type='CLASS'):
-    if slot_type != 'CLASS':
+    if slot_type not in ('CLASS', 'LAB'):
         return False, None
 
     def to_minutes(t_str):
@@ -3100,8 +3322,7 @@ def check_timetable_conflicts(class_id, teacher_id, day_of_week, start_time, end
     existing_slots = query.all()
 
     for slot in existing_slots:
-        if slot.slot_type != 'CLASS':
-            continue
+        # Check conflicts against all teaching or reserved slots
         s_exist = to_minutes(slot.start_time)
         e_exist = to_minutes(slot.end_time)
         if e_exist <= s_exist:
@@ -3110,8 +3331,8 @@ def check_timetable_conflicts(class_id, teacher_id, day_of_week, start_time, end
         if max(s_new, s_exist) < min(e_new, e_exist):
             if slot.class_id == class_id:
                 cls_name = slot.class_assigned.name if slot.class_assigned else f"Class #{class_id}"
-                sub_name = slot.subject_assigned.name if slot.subject_assigned else "another slot"
-                return True, f"⚠️ Class Conflict: '{cls_name}' is already assigned on {day_of_week} ({slot.start_time}–{slot.end_time})."
+                sub_name = slot.custom_title or (slot.subject_assigned.name if slot.subject_assigned else slot.slot_type)
+                return True, f"⚠️ Class Conflict: '{cls_name}' already has '{sub_name}' scheduled on {day_of_week} ({slot.start_time}–{slot.end_time})."
 
             if teacher_id and slot.teacher_id == teacher_id:
                 tch_name = slot.teacher_assigned.name if slot.teacher_assigned else f"Teacher #{teacher_id}"
@@ -3301,19 +3522,50 @@ def manage_timetable():
         period_int = int(period_val) if period_val and period_val.isdigit() else 1
         eff_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date() if eff_from_str else date.today()
         eff_to = datetime.strptime(eff_to_str, "%Y-%m-%d").date() if eff_to_str else None
-
-        # Check if selected subject is a Practical / Lab course or slot_type == 'LAB'
         subj_obj = Subject.query.get(sub_id_int) if sub_id_int else None
-        is_practical = (slot_type == 'LAB') or (subj_obj and subj_obj.subject_type == 'Practical') or (slot_type == 'CLASS' and subj_obj and 'lab' in subj_obj.name.lower())
 
-        # Validation Rule: Practical lab cannot be scheduled on Period 6 alone without preceding Period 5
-        if is_practical:
-            if period_int == 6:
-                flash("⚠️ Practical / Lab classes require 2 continuous periods (~2 hours). Period 6 cannot be a standalone practical slot. Please select Period 5 (which will automatically cover Period 5 & 6).", "danger")
+        is_lab = (slot_type == 'LAB')
+        paired_p_no = None
+        paired_ps = None
+
+        if is_lab:
+            # Timetable Rule 3: Period 6 can NEVER be selected as the starting period of a Lab
+            if period_int >= 6:
+                flash("🚫 Lab Restriction: Period 6 can NEVER be selected as the starting period of a Lab because there is no next period available. A Lab requires 2 consecutive periods (select Period 1, 2, 3, 4, or 5).", "danger")
                 return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
-            elif period_int not in [1, 3, 5]:
-                # Advise pairing for standard period blocks (1-2, 3-4, 5-6)
-                pass
+
+            paired_p_no = period_int + 1
+            paired_ps = next((s for s in period_settings if s.period_no == paired_p_no and not s.is_lunch), None)
+            if not paired_ps:
+                flash(f"🚫 Next period (Period {paired_p_no}) is not configured in institutional period settings.", "danger")
+                return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
+
+            # Timetable Rule 3: If the next period already contains another Class, Lab, Library, or other booking, do not allow the Lab to be assigned until conflict is resolved.
+            existing_next = Timetable.query.filter_by(
+                class_id=cls_id_int,
+                day_of_week=day_of_week,
+                period_no=paired_p_no
+            ).first()
+            if existing_next:
+                occ_title = existing_next.custom_title or (existing_next.subject_assigned.name if existing_next.subject_assigned else existing_next.slot_type)
+                flash(f"🚫 Next Period Conflict: Period {paired_p_no} on {day_of_week} is already occupied by '{occ_title}'. A 2-period Lab requires both Period {period_int} and Period {paired_p_no} to be free. Please resolve or clear Period {paired_p_no} first.", "danger")
+                return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
+
+            # Check next period conflicts for teacher and room
+            has_conflict_p2, err_msg_p2 = check_timetable_conflicts(
+                cls_id_int, tch_id_int, day_of_week, paired_ps.start_time, paired_ps.end_time, room_number, slot_type='LAB'
+            )
+            if has_conflict_p2:
+                flash(f"🚫 Next Period Conflict (Period {paired_p_no}): {err_msg_p2}", "danger")
+                return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
+
+        # Check schedule conflicts for primary slot
+        has_conflict, err_msg = check_timetable_conflicts(
+            cls_id_int, tch_id_int, day_of_week, start_time, end_time, room_number, slot_type=slot_type
+        )
+        if has_conflict:
+            flash(err_msg, "danger")
+            return redirect(url_for('main.manage_timetable', class_id=cls_id_int))
 
         try:
             # Create primary slot
@@ -3330,46 +3582,41 @@ def manage_timetable():
                 room=room_number or None,
                 effective_from=eff_from,
                 effective_to=eff_to,
-                admin_id=current_user.id
+                admin_id=current_user.id,
+                is_lab_continuation=False
             )
             db.session.add(slot)
+            db.session.flush()
 
-            # If Practical Lab: Automatically create or pair the consecutive second period (e.g. 1->2, 3->4, 5->6)
-            paired_p_no = None
-            if is_practical and period_int in [1, 2, 3, 4, 5]:
-                paired_p_no = period_int + 1
-                paired_ps = next((s for s in period_settings if s.period_no == paired_p_no and not s.is_lunch), None)
-                if paired_ps:
-                    # Remove any conflicting single slot on the paired period in target class
-                    Timetable.query.filter_by(
-                        class_id=cls_id_int,
-                        day_of_week=day_of_week,
-                        period_no=paired_p_no
-                    ).delete(synchronize_session=False)
-
-                    slot2 = Timetable(
-                        class_id=cls_id_int,
-                        subject_id=sub_id_int,
-                        teacher_id=tch_id_int,
-                        day_of_week=day_of_week,
-                        period_no=paired_p_no,
-                        start_time=paired_ps.start_time,
-                        end_time=paired_ps.end_time,
-                        slot_type=slot_type,
-                        custom_title=custom_title or None,
-                        room=room_number or None,
-                        effective_from=eff_from,
-                        effective_to=eff_to,
-                        admin_id=current_user.id
-                    )
-                    db.session.add(slot2)
+            # If Lab: Automatically create and link the consecutive second period (e.g. Period 2 + Period 3)
+            if is_lab and paired_p_no and paired_ps:
+                slot2 = Timetable(
+                    class_id=cls_id_int,
+                    subject_id=sub_id_int,
+                    teacher_id=tch_id_int,
+                    day_of_week=day_of_week,
+                    period_no=paired_p_no,
+                    start_time=paired_ps.start_time,
+                    end_time=paired_ps.end_time,
+                    slot_type='LAB',
+                    custom_title=custom_title or None,
+                    room=room_number or None,
+                    effective_from=eff_from,
+                    effective_to=eff_to,
+                    admin_id=current_user.id,
+                    is_lab_continuation=True,
+                    linked_slot_id=slot.id
+                )
+                db.session.add(slot2)
+                db.session.flush()
+                slot.linked_slot_id = slot2.id
 
             db.session.commit()
             generate_daily_schedule(date.today())
 
             lab_name = subj_obj.name if subj_obj else (custom_title or 'Lab')
-            if is_practical and paired_p_no:
-                flash(f"✓ Practical / Lab ({lab_name}) successfully allocated for 2 continuous class periods (Period {period_int} & Period {paired_p_no} — ~2 Hours total)!", "success")
+            if is_lab and paired_p_no:
+                flash(f"✓ Lab session ({lab_name}) successfully created! It automatically occupies 2 consecutive periods: Period {period_int} & Period {paired_p_no}.", "success")
             else:
                 flash(f"Timetable slot ({slot_type if slot_type != 'OTHER' else custom_title}) created successfully!", "success")
         except Exception as e:
@@ -3441,30 +3688,30 @@ def delete_timetable_slot(slot_id):
     slot = Timetable.query.get_or_404(slot_id)
     class_id = slot.class_id
     try:
-        # Also clean up any paired duplicate slots if this was a 2-period lab slot
-        is_lab = slot.slot_type in ['LAB', 'PRACTICAL'] or (slot.subject_assigned and slot.subject_assigned.subject_type == 'Practical')
+        # Also clean up paired sibling slot if this was a 2-period lab slot
+        is_lab = (slot.slot_type == 'LAB') or bool(slot.linked_slot_id)
         dow = slot.day_of_week
         p_no = slot.period_no
-        s_id = slot.subject_id
-        c_title = slot.custom_title
+
+        sibling_slot = None
+        if slot.linked_slot_id:
+            sibling_slot = Timetable.query.get(slot.linked_slot_id)
+        elif is_lab and p_no:
+            sibling_slot = Timetable.query.filter(
+                Timetable.class_id == class_id,
+                Timetable.day_of_week == dow,
+                Timetable.slot_type == 'LAB',
+                Timetable.id != slot.id,
+                Timetable.period_no.in_([p_no + 1, p_no - 1])
+            ).first()
+
+        if sibling_slot:
+            db.session.delete(sibling_slot)
 
         db.session.delete(slot)
-
-        # If it was part of a paired lab slot on period 1-2, 3-4, or 5-6, remove paired sibling if requested
-        if is_lab and p_no:
-            sibling_p = (p_no + 1) if p_no in [1, 3, 5] else ((p_no - 1) if p_no in [2, 4, 6] else None)
-            if sibling_p:
-                sibling_slot = Timetable.query.filter_by(
-                    class_id=class_id,
-                    day_of_week=dow,
-                    period_no=sibling_p
-                ).first()
-                if sibling_slot and (sibling_slot.slot_type in ['LAB', 'PRACTICAL'] or sibling_slot.subject_id == s_id or sibling_slot.custom_title == c_title):
-                    db.session.delete(sibling_slot)
-
         db.session.commit()
         generate_daily_schedule(date.today())
-        flash("Timetable slot removed successfully.", "success")
+        flash("Timetable slot removed successfully. Both periods are now available.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting timetable slot: {e}", "danger")
@@ -3502,6 +3749,19 @@ def edit_timetable_slot(slot_id):
     elif slot_type == 'OTHER' and not custom_title:
         custom_title = slot.custom_title or 'Custom Activity'
 
+    # Sibling lookup for Lab
+    sibling_slot = None
+    if slot.linked_slot_id:
+        sibling_slot = Timetable.query.get(slot.linked_slot_id)
+    elif slot.slot_type == 'LAB' and slot.period_no:
+        sibling_slot = Timetable.query.filter(
+            Timetable.class_id == slot.class_id,
+            Timetable.day_of_week == slot.day_of_week,
+            Timetable.slot_type == 'LAB',
+            Timetable.id != slot.id,
+            Timetable.period_no.in_([slot.period_no + 1, slot.period_no - 1])
+        ).first()
+
     # Conflict check
     has_conflict, err_msg = check_timetable_conflicts(
         c_id, t_id, dow, st, et, room_number, exclude_slot_id=slot.id, slot_type=slot_type
@@ -3526,6 +3786,19 @@ def edit_timetable_slot(slot_id):
             slot.effective_from = datetime.strptime(eff_from_str, "%Y-%m-%d").date()
         if eff_to_str:
             slot.effective_to = datetime.strptime(eff_to_str, "%Y-%m-%d").date()
+
+        # Update paired sibling if editing a Lab slot
+        if sibling_slot:
+            sibling_slot.class_id = c_id
+            sibling_slot.subject_id = s_id
+            sibling_slot.teacher_id = t_id
+            sibling_slot.day_of_week = dow
+            sibling_slot.room = room_number or None
+            sibling_slot.custom_title = custom_title or None
+            if eff_from_str:
+                sibling_slot.effective_from = slot.effective_from
+            if eff_to_str:
+                sibling_slot.effective_to = slot.effective_to
         
         db.session.commit()
         generate_daily_schedule(date.today())

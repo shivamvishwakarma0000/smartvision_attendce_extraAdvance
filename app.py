@@ -340,6 +340,18 @@ def create_app():
             print(f"Error in inject_university_settings: {e}")
             return {'university': None}
 
+    _schema_synced = False
+
+    @app.before_request
+    def ensure_database_schema_synced():
+        nonlocal _schema_synced
+        if not _schema_synced and request.endpoint and not request.endpoint.startswith('static'):
+            try:
+                ensure_postgresql_columns()
+                _schema_synced = True
+            except Exception:
+                pass
+
     @app.before_request
     def auto_lift_expired_detentions():
         """Automatically checks and releases completed student and teacher detentions across the portal."""
@@ -522,7 +534,18 @@ def ensure_postgresql_columns():
                 reviewed_at TIMESTAMP WITHOUT TIME ZONE,
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )"""
+            )""",
+            "ALTER TABLE timetables ADD COLUMN IF NOT EXISTS slot_type VARCHAR(20) DEFAULT 'CLASS'",
+            "ALTER TABLE timetables ADD COLUMN IF NOT EXISTS custom_title VARCHAR(150)",
+            "ALTER TABLE timetables ADD COLUMN IF NOT EXISTS is_lab_continuation BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE timetables ADD COLUMN IF NOT EXISTS linked_slot_id INTEGER",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS resolved_status VARCHAR(30) DEFAULT 'SCHEDULED'",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS substitute_teacher_id INTEGER",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS is_proxy BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS proxy_assigned_by_admin_id INTEGER",
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS proxy_assigned_at TIMESTAMP WITHOUT TIME ZONE"
         ]
         for stmt in statements:
             try:

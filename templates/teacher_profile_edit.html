@@ -44,7 +44,7 @@
                 {% endif %}
 
                 <!-- Profile Edit Form -->
-                <form method="POST" action="{{ url_for('teacher.edit_profile') }}" enctype="multipart/form-data" class="mt-2" onsubmit="if(window.stopCamera) window.stopCamera('teacher-edit-profile')">
+                <form method="POST" action="{{ url_for('teacher.edit_profile') }}" enctype="multipart/form-data" class="mt-2" id="form-teacher-edit-profile" onsubmit="return handleTeacherEditSubmit(event)">
                     
                     <!-- 1. ACADEMIC & BASIC INFO -->
                     <div class="p-3.5 rounded-3 mb-4" style="background: var(--surface-secondary); border: 1px solid var(--border-card);">
@@ -204,14 +204,24 @@
                         </div>
                     </div>
 
+                    <!-- Submission In-Progress Alert Banner -->
+                    <div id="teacher-edit-progress-alert" class="alert alert-info border-0 shadow-sm rounded-3 py-2.5 px-3 mb-3 d-none align-items-center gap-2.5" style="background: rgba(99, 102, 241, 0.12); border: 1.5px solid rgba(99, 102, 241, 0.35) !important; color: var(--text-primary);">
+                        <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status" style="width: 1.3rem; height: 1.3rem; border-width: 0.18em;"></div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-8 text-primary" id="teacher-edit-progress-title"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Submitting Profile Change Request...</div>
+                            <div class="fs-9 text-muted" id="teacher-edit-progress-msg">Uploading details and securing facial biometric profile. Please wait...</div>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="d-flex flex-column-reverse flex-sm-row align-items-stretch align-items-sm-center justify-content-sm-end gap-2.5 pt-3 border-top" style="border-color: var(--border-card) !important;">
-                        <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold fs-8 text-center d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('teacher.dashboard') }}" id="btn-teacher-back" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold fs-8 text-center d-flex align-items-center justify-content-center">
                             Back to Dashboard
                         </a>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            <span>{% if pending_request %}Update Profile Request{% else %}Submit Profile Change Request{% endif %}</span>
+                        <button type="submit" id="btn-submit-teacher-edit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="fa-solid fa-paper-plane" id="btn-teacher-edit-icon"></i>
+                            <span id="btn-teacher-edit-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span id="btn-teacher-edit-text">{% if pending_request %}Update Profile Request{% else %}Submit Profile Change Request{% endif %}</span>
                         </button>
                     </div>
                 </form>
@@ -221,6 +231,8 @@
 </div>
 
 <script>
+let isTeacherEditSubmitting = false;
+
 function previewTeacherSelectedFile(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -232,7 +244,7 @@ function previewTeacherSelectedFile(input) {
                 try {
                     let width = img.width;
                     let height = img.height;
-                    const maxDimension = 1000;
+                    const maxDimension = 800;
                     if (width > maxDimension || height > maxDimension) {
                         if (width > height) {
                             height = Math.round((height * maxDimension) / width);
@@ -271,6 +283,61 @@ function previewTeacherSelectedFile(input) {
         };
         reader.readAsDataURL(file);
     }
+}
+
+function handleTeacherEditSubmit(event) {
+    const form = document.getElementById('form-teacher-edit-profile');
+    if (!form) return true;
+
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+
+    if (isTeacherEditSubmitting) {
+        if (event) event.preventDefault();
+        return false;
+    }
+    isTeacherEditSubmitting = true;
+
+    if (window.stopCamera) {
+        window.stopCamera('teacher-edit-profile');
+    }
+
+    const btn = document.getElementById('btn-submit-teacher-edit');
+    const icon = document.getElementById('btn-teacher-edit-icon');
+    const spinner = document.getElementById('btn-teacher-edit-spinner');
+    const text = document.getElementById('btn-teacher-edit-text');
+    const backBtn = document.getElementById('btn-teacher-back');
+
+    if (btn) {
+        btn.setAttribute('disabled', 'disabled');
+        btn.style.opacity = '0.85';
+        btn.style.cursor = 'not-allowed';
+    }
+    if (icon) icon.classList.add('d-none');
+    if (spinner) spinner.classList.remove('d-none');
+    if (text) text.innerText = 'Submitting Request...';
+    if (backBtn) backBtn.classList.add('disabled');
+
+    const alertBox = document.getElementById('teacher-edit-progress-alert');
+    const title = document.getElementById('teacher-edit-progress-title');
+    const msg = document.getElementById('teacher-edit-progress-msg');
+
+    if (alertBox) {
+        alertBox.classList.remove('d-none');
+        alertBox.classList.add('d-flex');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    setTimeout(() => {
+        if (isTeacherEditSubmitting) {
+            if (title) title.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Still Uploading & Processing...';
+            if (msg) msg.innerText = 'Slower network detected. Your request is being securely submitted and facial scan processed. Please do not close or refresh this page.';
+        }
+    }, 3500);
+
+    return true;
 }
 </script>
 {% endblock %}

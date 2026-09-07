@@ -31,7 +31,7 @@ from models import (
     TeacherFeedback, FacultyComplaint, ComplaintVote
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
-from auth.routes import save_base64_image
+from auth.routes import save_base64_image, optimize_and_save_photo
 from teacher_attendance.routes import recalculate_daily_status, get_or_create_settings, parse_time_str
 
 main_bp = Blueprint('main', __name__)
@@ -1504,9 +1504,11 @@ def register_student():
                 flash('Invalid captured photo.', 'danger')
                 return redirect(request.url)
         elif student_photo and student_photo.filename:
-            filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
-            filepath = os.path.join(FACES_FOLDER, filename)
-            student_photo.save(filepath)
+            res = optimize_and_save_photo(student_photo, roll_no, name, FACES_FOLDER)
+            if not res:
+                flash('Invalid or unsupported photo file.', 'danger')
+                return redirect(request.url)
+            filename, filepath, _ = res
             
             try:
                 image = face_recognition.load_image_file(filepath)

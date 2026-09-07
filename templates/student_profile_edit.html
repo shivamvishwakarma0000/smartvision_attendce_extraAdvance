@@ -39,7 +39,7 @@
                 {% endif %}
 
                 <!-- Profile Edit Form -->
-                <form method="POST" action="{{ url_for('student.edit_profile') }}" enctype="multipart/form-data" class="mt-2" onsubmit="if(window.stopCamera) window.stopCamera('edit-profile')">
+                <form id="edit-profile-form" method="POST" action="{{ url_for('student.edit_profile') }}" enctype="multipart/form-data" class="mt-2" onsubmit="return handleEditProfileSubmit(event)">
                     
                     <!-- 1. ACADEMIC & BASIC INFO -->
                     <div class="p-3.5 rounded-3 mb-4" style="background: var(--surface-secondary); border: 1px solid var(--border-card);">
@@ -209,14 +209,24 @@
                         </div>
                     </div>
 
+                    <!-- Submission In-Progress Alert Banner -->
+                    <div id="submit-feedback-alert" class="alert alert-info border-0 shadow-sm rounded-3 py-2.5 px-3 mb-3 d-none align-items-center gap-2.5" style="background: rgba(99, 102, 241, 0.12); border: 1.5px solid rgba(99, 102, 241, 0.35) !important; color: var(--text-primary);">
+                        <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status" style="width: 1.3rem; height: 1.3rem; border-width: 0.18em;"></div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold fs-8 text-primary" id="submit-feedback-title"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Submitting Profile Change Request...</div>
+                            <div class="fs-9 text-muted" id="submit-feedback-msg">Uploading details and securing facial biometric profile. Please wait...</div>
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="d-flex flex-column-reverse flex-sm-row align-items-stretch align-items-sm-center justify-content-sm-end gap-2.5 pt-3 border-top" style="border-color: var(--border-card) !important;">
-                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold fs-8 text-center d-flex align-items-center justify-content-center">
+                        <a href="{{ url_for('student.dashboard') }}" id="btn-back-dashboard" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold fs-8 text-center d-flex align-items-center justify-content-center">
                             Back to Dashboard
                         </a>
-                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            <span>{% if pending_request %}Update Profile Request{% else %}Submit Profile Change Request{% endif %}</span>
+                        <button type="submit" id="btn-submit-edit-profile" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <i class="fa-solid fa-paper-plane" id="btn-submit-icon"></i>
+                            <span id="btn-submit-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <span id="btn-submit-text">{% if pending_request %}Update Profile Request{% else %}Submit Profile Change Request{% endif %}</span>
                         </button>
                     </div>
                 </form>
@@ -226,6 +236,8 @@
 </div>
 
 <script>
+let isProfileSubmitting = false;
+
 function syncEditProfileClasses() {
     const deptSelect = document.getElementById('department');
     const classSelect = document.getElementById('class_id');
@@ -252,19 +264,122 @@ function syncEditProfileClasses() {
     }
 }
 
+// Client-side image downscaler to speed up upload drastically (e.g. 15MB -> 70KB)
+function compressImage(file, maxDimension, quality, callback) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            try {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                callback(compressedDataUrl);
+            } catch (err) {
+                console.warn("Client compression fallback:", err);
+                callback(e.target.result);
+            }
+        };
+        img.onerror = function() {
+            callback(e.target.result);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 function previewSelectedFile(input) {
     if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
+        const file = input.files[0];
+        compressImage(file, 800, 0.85, function(dataUrl) {
+            // Set compressed data into hidden field for instant server transmission
+            const hiddenBase64 = document.getElementById('captured_image_base64-edit-profile');
+            if (hiddenBase64) hiddenBase64.value = dataUrl;
+
             const previewBox = document.getElementById('file-preview-box');
             const previewImg = document.getElementById('file-preview-img');
             if (previewImg && previewBox) {
-                previewImg.src = e.target.result;
+                previewImg.src = dataUrl;
                 previewBox.classList.remove('d-none');
             }
-        };
-        reader.readAsDataURL(input.files[0]);
+        });
     }
+}
+
+function handleEditProfileSubmit(event) {
+    const form = document.getElementById('edit-profile-form');
+    if (!form) return true;
+
+    // Check HTML5 validity
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+
+    // Prevent double submissions
+    if (isProfileSubmitting) {
+        if (event) event.preventDefault();
+        return false;
+    }
+    isProfileSubmitting = true;
+
+    // Stop active camera preview if open
+    if (window.stopCamera) {
+        window.stopCamera('edit-profile');
+    }
+
+    // Disable button and show spinner
+    const submitBtn = document.getElementById('btn-submit-edit-profile');
+    const submitIcon = document.getElementById('btn-submit-icon');
+    const submitSpinner = document.getElementById('btn-submit-spinner');
+    const submitText = document.getElementById('btn-submit-text');
+    const backBtn = document.getElementById('btn-back-dashboard');
+
+    if (submitBtn) {
+        submitBtn.setAttribute('disabled', 'disabled');
+        submitBtn.style.opacity = '0.85';
+        submitBtn.style.cursor = 'not-allowed';
+    }
+    if (submitIcon) submitIcon.classList.add('d-none');
+    if (submitSpinner) submitSpinner.classList.remove('d-none');
+    if (submitText) submitText.innerText = 'Submitting Request...';
+    if (backBtn) backBtn.classList.add('disabled');
+
+    // Show clear status banner
+    const feedbackAlert = document.getElementById('submit-feedback-alert');
+    const feedbackTitle = document.getElementById('submit-feedback-title');
+    const feedbackMsg = document.getElementById('submit-feedback-msg');
+
+    if (feedbackAlert) {
+        feedbackAlert.classList.remove('d-none');
+        feedbackAlert.classList.add('d-flex');
+        feedbackAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Dynamic slow-network detection message
+    setTimeout(() => {
+        if (isProfileSubmitting) {
+            if (feedbackTitle) feedbackTitle.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Still Uploading & Processing...';
+            if (feedbackMsg) feedbackMsg.innerText = 'Slower network detected. Your request is being securely submitted and facial scan processed. Please do not close or refresh this page.';
+        }
+    }, 3500);
+
+    return true;
 }
 
 // Run on page load to initialize options matching current department

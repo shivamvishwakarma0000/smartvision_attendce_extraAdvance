@@ -31,7 +31,7 @@ from models import (
     TeacherFeedback, FacultyComplaint
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
-from auth.routes import save_base64_image
+from auth.routes import save_base64_image, optimize_and_save_photo
 
 teacher_bp = Blueprint('teacher', __name__)
 
@@ -2357,25 +2357,17 @@ def edit_profile():
                     except Exception as e:
                         print(f"Face encoding error: {e}")
         elif photo_file and photo_file.filename:
-            safe_name = secure_filename(name) or 'teacher'
-            ext = photo_file.filename.rsplit('.', 1)[-1].lower() if '.' in photo_file.filename else 'jpg'
-            new_img_filename = f"pending_teacher_{teacher.id}_{safe_name}.{ext}"
-            filepath = os.path.join(FACES_FOLDER, new_img_filename)
-            os.makedirs(FACES_FOLDER, exist_ok=True)
-            photo_file.save(filepath)
-            try:
-                with open(filepath, 'rb') as f:
-                    new_img_data = base64.b64encode(f.read()).decode('utf-8')
-            except Exception:
-                pass
-            if face_recognition and os.path.exists(filepath):
-                try:
-                    img = face_recognition.load_image_file(filepath)
-                    encs = face_recognition.face_encodings(img)
-                    if encs:
-                        new_encoding = encs[0].tobytes()
-                except Exception as e:
-                    print(f"Face encoding error: {e}")
+            res = optimize_and_save_photo(photo_file, f"pending_teacher_{teacher.id}", name, FACES_FOLDER)
+            if res:
+                new_img_filename, filepath, new_img_data = res
+                if face_recognition and os.path.exists(filepath):
+                    try:
+                        img = face_recognition.load_image_file(filepath)
+                        encs = face_recognition.face_encodings(img)
+                        if encs:
+                            new_encoding = encs[0].tobytes()
+                    except Exception as e:
+                        print(f"Face encoding error: {e}")
 
         # If user already had a pending request, update it
         if pending_request:

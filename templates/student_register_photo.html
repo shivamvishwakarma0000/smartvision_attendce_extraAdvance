@@ -41,7 +41,7 @@
                 {% endif %}
             </div>
 
-            <form method="POST" action="" enctype="multipart/form-data" class="mt-4" onsubmit="window.stopCamera('profile-photo')">
+            <form method="POST" action="" enctype="multipart/form-data" class="mt-4" id="form-student-reg-photo" onsubmit="return handlePhotoRegisterSubmit(event)">
                 <input type="hidden" name="captured_image_base64" id="captured_image_base64-profile-photo">
                 
                 <!-- Toggle Selection Mode -->
@@ -57,7 +57,7 @@
                 <!-- Local File Input -->
                 <div class="mb-4" id="file-input-container-profile-photo">
                     <label for="file-input-profile-photo" class="form-label fw-semibold">Choose New Photo File</label>
-                    <input type="file" class="form-control" id="file-input-profile-photo" name="student_photo" accept="image/*" data-originally-required="true" required>
+                    <input type="file" class="form-control" id="file-input-profile-photo" name="student_photo" accept="image/*" data-originally-required="true" required onchange="previewStudentRegPhoto(this)">
                 </div>
 
                 <!-- Camera Preview Section -->
@@ -77,11 +77,114 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary w-100 py-2.5 shadow">
-                    Scan & Register New Photo
+                <!-- Submission In-Progress Alert Banner -->
+                <div id="photo-reg-progress-alert" class="alert alert-info border-0 shadow-sm rounded-3 py-2.5 px-3 mb-3 d-none align-items-center gap-2.5" style="background: rgba(99, 102, 241, 0.12); border: 1.5px solid rgba(99, 102, 241, 0.35) !important;">
+                    <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status" style="width: 1.3rem; height: 1.3rem; border-width: 0.18em;"></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold fs-8 text-primary" id="photo-reg-progress-title"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Scanning & Updating Face Profile...</div>
+                        <div class="fs-9 text-muted" id="photo-reg-progress-msg">Generating biometric face encodings and updating registration. Please wait...</div>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-submit-photo-reg" class="btn btn-primary w-100 py-2.5 shadow d-flex align-items-center justify-content-center gap-2">
+                    <span id="btn-submit-photo-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <span id="btn-submit-photo-text">Scan & Register New Photo</span>
                 </button>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+let isPhotoRegSubmitting = false;
+
+function previewStudentRegPhoto(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                try {
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 800;
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    const hiddenField = document.getElementById('captured_image_base64-profile-photo');
+                    if (hiddenField) hiddenField.value = compressedUrl;
+                } catch(err) {
+                    console.warn("Client compression fallback:", err);
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function handlePhotoRegisterSubmit(event) {
+    const form = document.getElementById('form-student-reg-photo');
+    if (!form) return true;
+
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return false;
+    }
+
+    if (isPhotoRegSubmitting) {
+        if (event) event.preventDefault();
+        return false;
+    }
+    isPhotoRegSubmitting = true;
+
+    if (window.stopCamera) {
+        window.stopCamera('profile-photo');
+    }
+
+    const btn = document.getElementById('btn-submit-photo-reg');
+    const spinner = document.getElementById('btn-submit-photo-spinner');
+    const text = document.getElementById('btn-submit-photo-text');
+
+    if (btn) {
+        btn.setAttribute('disabled', 'disabled');
+        btn.style.opacity = '0.85';
+        btn.style.cursor = 'not-allowed';
+    }
+    if (spinner) spinner.classList.remove('d-none');
+    if (text) text.innerText = 'Scanning & Updating...';
+
+    const alertBox = document.getElementById('photo-reg-progress-alert');
+    const title = document.getElementById('photo-reg-progress-title');
+    const msg = document.getElementById('photo-reg-progress-msg');
+
+    if (alertBox) {
+        alertBox.classList.remove('d-none');
+        alertBox.classList.add('d-flex');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    setTimeout(() => {
+        if (isPhotoRegSubmitting) {
+            if (title) title.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Still Processing Face Biometrics...';
+            if (msg) msg.innerText = 'Slower network connection detected. Your photo is being processed and saved securely. Please do not close or refresh this page.';
+        }
+    }, 3500);
+
+    return true;
+}
+</script>
 {% endblock %}

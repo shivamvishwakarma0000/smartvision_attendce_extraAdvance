@@ -558,7 +558,7 @@
                             </div>
                         </div>
 
-                        <form method="POST" action="{{ url_for('auth.register') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ url_for('auth.register') }}" enctype="multipart/form-data" id="form-register" onsubmit="return handleRegisterSubmit(event)">
                             <input type="hidden" name="signup_role" id="hidden_signup_role" value="student">
                             <input type="hidden" name="captured_image_base64" id="captured_image_base64">
 
@@ -743,8 +743,18 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-primary-auth w-100 mb-2">
-                                Complete Registration <i class="fa-solid fa-user-check ms-1"></i>
+                            <!-- REGISTRATION PROGRESS ALERT -->
+                            <div id="register-progress-alert" class="alert border-0 shadow-sm rounded-3 py-2.5 px-3 mb-3 d-none align-items-center gap-2.5" style="background: rgba(99, 102, 241, 0.12); border: 1.5px solid rgba(99, 102, 241, 0.35) !important; color: var(--text-main);">
+                                <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status" style="width: 1.3rem; height: 1.3rem; border-width: 0.18em;"></div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold fs-8 text-primary" id="register-progress-title"><i class="fa-solid fa-circle-notch fa-spin me-1"></i> Submitting Registration...</div>
+                                    <div class="fs-9 text-muted" id="register-progress-msg">Uploading details and securing facial biometric profile. Please wait...</div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-auth w-100 mb-2" id="btn-complete-registration">
+                                <span id="btn-complete-reg-spinner" class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
+                                <span id="btn-complete-reg-text">Complete Registration <i class="fa-solid fa-user-check ms-1"></i></span>
                             </button>
 
                             <button type="button" onclick="showView('login')" class="btn btn-outline-secondary btn-sm w-100 py-2 rounded-3 fw-semibold">
@@ -1837,21 +1847,78 @@
         }
     }
 
-    // GUARD FORM SUBMIT IF EMAIL NOT VERIFIED
-    document.addEventListener('DOMContentLoaded', function() {
-        const signupForm = document.querySelector('#auth-card form[action*="register"]');
-        if (signupForm) {
-            signupForm.addEventListener('submit', function(e) {
-                const verified = document.getElementById('reg_email_verified').value;
-                if (verified !== 'true') {
-                    e.preventDefault();
-                    alert('Please click "Get OTP" and verify your email address before completing registration.');
-                    const emailInput = document.getElementById('reg_email');
-                    if (emailInput) emailInput.focus();
-                }
-            });
+    // GUARD FORM SUBMIT & PROVIDE INSTANT FEEDBACK
+    let isRegisterSubmitting = false;
+
+    function handleRegisterSubmit(e) {
+        const signupForm = document.getElementById('form-register');
+        if (!signupForm) return true;
+
+        if (!signupForm.checkValidity()) {
+            signupForm.reportValidity();
+            return false;
         }
-    });
+
+        const verifiedInput = document.getElementById('reg_email_verified');
+        if (verifiedInput && verifiedInput.value !== 'true') {
+            if (e) e.preventDefault();
+            alert('Please click "Send OTP" and verify your email address before completing registration.');
+            const emailInput = document.getElementById('reg_email');
+            if (emailInput) emailInput.focus();
+            return false;
+        }
+
+        const capturedBase64 = document.getElementById('captured_image_base64');
+        const filePhoto = document.getElementById('file_photo');
+        const hasPhoto = (capturedBase64 && capturedBase64.value && capturedBase64.value.trim().length > 0) ||
+                         (filePhoto && filePhoto.files && filePhoto.files.length > 0);
+        if (!hasPhoto) {
+            if (e) e.preventDefault();
+            alert('Face photo is mandatory. Please capture a live photo or upload a picture from your gallery.');
+            return false;
+        }
+
+        if (isRegisterSubmitting) {
+            if (e) e.preventDefault();
+            return false;
+        }
+        isRegisterSubmitting = true;
+
+        if (typeof stopWebcam === 'function') {
+            stopWebcam();
+        }
+
+        const btn = document.getElementById('btn-complete-registration');
+        const spinner = document.getElementById('btn-complete-reg-spinner');
+        const text = document.getElementById('btn-complete-reg-text');
+
+        if (btn) {
+            btn.setAttribute('disabled', 'disabled');
+            btn.style.opacity = '0.85';
+            btn.style.cursor = 'not-allowed';
+        }
+        if (spinner) spinner.classList.remove('d-none');
+        if (text) text.innerHTML = 'Submitting Registration...';
+
+        const alertBox = document.getElementById('register-progress-alert');
+        const title = document.getElementById('register-progress-title');
+        const msg = document.getElementById('register-progress-msg');
+
+        if (alertBox) {
+            alertBox.classList.remove('d-none');
+            alertBox.classList.add('d-flex');
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        setTimeout(() => {
+            if (isRegisterSubmitting) {
+                if (title) title.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Still Processing Registration...';
+                if (msg) msg.innerText = 'Slower network connection detected. Your account and facial biometric data are being safely secured. Please do not close or refresh this page.';
+            }
+        }, 3500);
+
+        return true;
+    }
     // Service Worker Registration & PWA Install Banner Support
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {

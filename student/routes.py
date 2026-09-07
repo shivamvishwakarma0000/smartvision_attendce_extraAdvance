@@ -25,7 +25,7 @@ from models import (
     TeacherFeedback, FacultyComplaint, ComplaintVote
 )
 from schedule_service import generate_daily_schedule, calculate_student_attendance
-from auth.routes import save_base64_image
+from auth.routes import save_base64_image, optimize_and_save_photo
 
 def convert_to_24h(time_str):
     if not time_str:
@@ -456,11 +456,11 @@ def edit_profile():
                     if os.path.exists(fpath): os.remove(fpath)
                     return redirect(url_for('student.edit_profile'))
         elif student_photo and student_photo.filename:
-            import base64 as b64_mod
-            os.makedirs(FACES_FOLDER, exist_ok=True)
-            fname = secure_filename(f"edit_{roll_no}_{name}_{student_photo.filename}")
-            fpath = os.path.join(FACES_FOLDER, fname)
-            student_photo.save(fpath)
+            res = optimize_and_save_photo(student_photo, f"edit_{roll_no}", name, FACES_FOLDER)
+            if not res:
+                flash("Photo processing error. Please choose a valid image file.", "danger")
+                return redirect(url_for('student.edit_profile'))
+            fname, fpath, new_image_data = res
             try:
                 if face_recognition is not None:
                     img = face_recognition.load_image_file(fpath)
@@ -468,8 +468,6 @@ def edit_profile():
                     if len(encs) == 1:
                         new_filename = fname
                         new_encoding_bytes = encs[0].tobytes()
-                        with open(fpath, "rb") as f:
-                            new_image_data = f"data:image/jpeg;base64,{b64_mod.b64encode(f.read()).decode('utf-8')}"
                     elif len(encs) == 0:
                         flash("No face detected in uploaded photo. Please upload a clear image of your face.", "danger")
                         if os.path.exists(fpath): os.remove(fpath)
@@ -480,8 +478,6 @@ def edit_profile():
                         return redirect(url_for('student.edit_profile'))
                 else:
                     new_filename = fname
-                    with open(fpath, "rb") as f:
-                        new_image_data = f"data:image/jpeg;base64,{b64_mod.b64encode(f.read()).decode('utf-8')}"
             except Exception as e:
                 flash(f"Photo processing error: {e}", "danger")
                 if os.path.exists(fpath): os.remove(fpath)

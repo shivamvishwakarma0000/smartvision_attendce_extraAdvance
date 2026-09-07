@@ -32,8 +32,8 @@ FACES_FOLDER = os.path.join('temp_uploads', 'faces')
 
 def save_base64_image(base64_str, roll_no, name, folder):
     """
-    Decodes a base64 data URL, corrects EXIF orientation, compresses/resizes, and saves to folder.
-    Returns the saved file's secure filename or None.
+    Decodes a base64 data URL, corrects EXIF orientation, compresses/resizes to max 800px, and saves to folder.
+    Returns the saved file's secure filename and filepath or None.
     """
     if not base64_str:
         return None
@@ -59,9 +59,9 @@ def save_base64_image(base64_str, roll_no, name, folder):
             img = ImageOps.exif_transpose(img)
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            if max(img.size) > 1200:
-                img.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
-            img.save(filepath, 'JPEG', quality=88, optimize=True)
+            if max(img.size) > 800:
+                img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+            img.save(filepath, 'JPEG', quality=85, optimize=True)
         except Exception as pil_err:
             print(f"[Image Save Notice] Direct write fallback: {pil_err}")
             with open(filepath, 'wb') as f:
@@ -71,6 +71,54 @@ def save_base64_image(base64_str, roll_no, name, folder):
     except Exception as e:
         print(f"Error decoding base64 image: {e}")
         return None
+
+
+def optimize_and_save_photo(file_storage_or_bytes, prefix, name, folder, max_dim=800, quality=85):
+    """
+    Takes a FileStorage object or raw bytes, corrects EXIF orientation,
+    resizes to max_dim (preserving aspect ratio), and saves as optimized JPEG.
+    Returns (filename, filepath, base64_data_url) or None.
+    """
+    if not file_storage_or_bytes:
+        return None
+    try:
+        from PIL import Image, ImageOps
+        import io
+        if hasattr(file_storage_or_bytes, 'read'):
+            file_storage_or_bytes.seek(0)
+            raw_bytes = file_storage_or_bytes.read()
+        else:
+            raw_bytes = file_storage_or_bytes
+
+        if not raw_bytes:
+            return None
+
+        img = Image.open(io.BytesIO(raw_bytes))
+        img = ImageOps.exif_transpose(img)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
+        safe_prefix = secure_filename(str(prefix)) or 'id'
+        safe_name = secure_filename(str(name)) or 'user'
+        filename = f"{safe_prefix}_{safe_name}_{int(time.time())}.jpg"
+        filepath = os.path.join(folder, filename)
+        os.makedirs(folder, exist_ok=True)
+
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=quality, optimize=True)
+        compressed_bytes = buf.getvalue()
+
+        with open(filepath, 'wb') as f:
+            f.write(compressed_bytes)
+
+        b64_str = f"data:image/jpeg;base64,{base64.b64encode(compressed_bytes).decode('utf-8')}"
+        return filename, filepath, b64_str
+    except Exception as e:
+        print(f"Error optimizing and saving photo: {e}")
+        return None
+
 
 # Helper to check if Google credentials are configured
 def is_google_configured():
@@ -432,14 +480,11 @@ def register():
                         except Exception as e:
                             print(f"Teacher face scan error: {e}")
             elif photo and photo.filename:
-                os.makedirs(FACES_FOLDER, exist_ok=True)
-                filename = secure_filename(f"teacher_{teacher_id}_{name}_{photo.filename}")
-                filepath = os.path.join(FACES_FOLDER, filename)
-                file_bytes = photo.read()
-                image_base64_data = base64.b64encode(file_bytes).decode('utf-8')
-                with open(filepath, 'wb') as f:
-                    f.write(file_bytes)
-                image_filename = filename
+                res = optimize_and_save_photo(photo, f"teacher_{teacher_id}", name, FACES_FOLDER)
+                if not res:
+                    flash('Failed to process uploaded photo. Please try another image.', 'danger')
+                    return redirect(url_for('main.index', state='signup'))
+                image_filename, filepath, image_base64_data = res
 
                 if face_recognition:
                     try:
@@ -565,14 +610,11 @@ def register():
                                 os.remove(filepath)
                             return redirect(url_for('main.index', state='signup'))
             elif student_photo and student_photo.filename:
-                os.makedirs(FACES_FOLDER, exist_ok=True)
-                filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
-                filepath = os.path.join(FACES_FOLDER, filename)
-                file_bytes = student_photo.read()
-                image_base64_data = base64.b64encode(file_bytes).decode('utf-8')
-                with open(filepath, 'wb') as f:
-                    f.write(file_bytes)
-                image_filename = filename
+                res = optimize_and_save_photo(student_photo, roll_no or 'student', name, FACES_FOLDER)
+                if not res:
+                    flash('Failed to process uploaded photo. Please try another image.', 'danger')
+                    return redirect(url_for('main.index', state='signup'))
+                image_filename, filepath, image_base64_data = res
 
                 if face_recognition:
                     try:
@@ -934,10 +976,11 @@ def google_signup_complete():
                             os.remove(filepath)
                         return redirect(url_for('main.index', state='google-complete'))
             elif student_photo and student_photo.filename:
-                os.makedirs(FACES_FOLDER, exist_ok=True)
-                filename = secure_filename(f"{roll_no}_{name}_{student_photo.filename}")
-                filepath = os.path.join(FACES_FOLDER, filename)
-                student_photo.save(filepath)
+                res = optimize_and_save_photo(student_photo, roll_no or 'student', name, FACES_FOLDER)
+                if not res:
+                    flash('Failed to process uploaded photo. Please try another image.', 'danger')
+                    return redirect(url_for('main.index', state='google-complete'))
+                image_filename, filepath, _ = res
 
                 try:
                     image = face_recognition.load_image_file(filepath)

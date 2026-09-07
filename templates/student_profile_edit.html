@@ -26,21 +26,23 @@
 
                 {% if pending_request %}
                 <!-- Pending Alert Notice -->
-                <div class="alert alert-warning border-0 shadow-sm rounded-3 py-3 mb-4 d-flex align-items-start gap-3" style="background-color: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3) !important; color: var(--text-primary);">
+                <div class="alert alert-warning border-0 shadow-sm rounded-3 py-3 px-3 mb-4 d-flex align-items-start gap-2.5" style="background-color: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3) !important; color: var(--text-primary);">
                     <i class="fa-solid fa-hourglass-half text-warning fs-5 mt-1 flex-shrink-0"></i>
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-                            <h6 class="fw-bold mb-0 text-warning">Request Pending Administrator Review</h6>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold">Submitted {{ pending_request.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
-                                <form action="{{ url_for('student.cancel_edit_request', req_id=pending_request.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel your pending profile change request?');" style="display: inline;">
-                                    <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5 fs-9 fw-bold">
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-2">
+                            <h6 class="fw-bold mb-0 text-warning" style="word-break: break-word; font-size: 0.95rem;">Request Pending Administrator Review</h6>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fs-9 fw-bold text-nowrap">
+                                    <i class="fa-regular fa-clock me-1"></i>Submitted {{ pending_request.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                                </span>
+                                <form action="{{ url_for('student.cancel_edit_request', req_id=pending_request.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel your pending profile change request?');" class="d-inline m-0">
+                                    <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1 fs-9 fw-bold text-nowrap d-inline-flex align-items-center">
                                         <i class="fa-solid fa-xmark me-1"></i>Cancel Request
                                     </button>
                                 </form>
                             </div>
                         </div>
-                        <p class="mb-0 fs-8 text-muted">You have a pending change request under review by the Administrator. <strong>Note:</strong> None of your requested changes or photos will take effect or show across the portal (dashboard, ID cards, attendance) until an Administrator officially approves your request.</p>
+                        <p class="mb-0 fs-8 text-muted" style="word-break: break-word;">You have a pending change request under review by the Administrator. <strong>Note:</strong> None of your requested changes or photos will take effect or show across the portal (dashboard, ID cards, attendance) until an Administrator officially approves your request.</p>
                     </div>
                 </div>
                 {% endif %}

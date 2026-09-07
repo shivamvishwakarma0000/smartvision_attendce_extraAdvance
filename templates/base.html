@@ -84,16 +84,16 @@
                         <i class="fa-solid fa-chart-simple me-2"></i> Dashboard
                     </a>
                     <a href="{{ url_for('main.approvals') }}" class="nav-link {% if request.endpoint == 'main.approvals' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-user-shield me-2 text-primary"></i> Approvals</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-user-shield me-2 text-primary"></i> Approvals</span>
                         {% set a_count = (pending_approvals_count if pending_approvals_count is defined and pending_approvals_count > 0 else admin_pending_approvals_count) %}
                         {% if a_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2" style="font-size: 0.75rem; min-width: 22px;">{{ a_count }}</span>
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto flex-shrink-0" style="font-size: 0.75rem; min-width: 22px;">{{ a_count }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center text-nowrap">
-                        <span><i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Complaints</span>
+                    <a href="{{ url_for('main.feedback_management') }}" class="nav-link {% if request.endpoint == 'main.feedback_management' %}active{% endif %} d-flex justify-content-between align-items-center">
+                        <span class="text-truncate me-2"><i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Complaints</span>
                         {% if admin_threshold_complaints_count and admin_threshold_complaints_count > 0 %}
-                            <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 animate-pulse" title="Threshold Reached Complaints">{{ admin_threshold_complaints_count }}</span>
+                            <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto flex-shrink-0 animate-pulse" title="Threshold Reached Complaints">{{ admin_threshold_complaints_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('main.manage_timetable') }}" class="nav-link {% if request.endpoint == 'main.manage_timetable' %}active{% endif %}">
@@ -115,9 +115,9 @@
                         <i class="fa-solid fa-chalkboard-user me-2"></i> Enrolled Teachers
                     </a>
                     <a href="{{ url_for('main.assign_students') }}" class="nav-link {% if request.endpoint == 'main.assign_students' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-people-arrows me-2"></i> Assign Classes</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-people-arrows me-2"></i> Assign Classes</span>
                         {% if unclassified_students_count > 0 %}
-                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.75rem; min-width: 22px;">{{ unclassified_students_count }}</span>
+                            <span class="badge bg-warning text-dark rounded-pill px-2 py-1 ms-auto flex-shrink-0" style="font-size: 0.75rem; min-width: 22px;">{{ unclassified_students_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('main.retention_risk_report') }}" class="nav-link {% if request.endpoint == 'main.retention_risk_report' %}active{% endif %}">
@@ -133,9 +133,9 @@
                         <i class="fa-solid fa-id-badge me-2 text-info"></i> ID Cards Portal
                     </a>
                     <a href="{{ url_for('main.admin_suspension_requests') }}" class="nav-link {% if request.endpoint == 'main.admin_suspension_requests' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-user-lock me-2 text-danger"></i> Suspension Desk</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-user-lock me-2 text-danger"></i> Suspension Desk</span>
                         {% if pending_suspension_requests_count and pending_suspension_requests_count > 0 %}
-                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_suspension_requests_count }}</span>
+                            <span class="badge bg-danger rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto flex-shrink-0">{{ pending_suspension_requests_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('main.university_details') }}" class="nav-link {% if request.endpoint == 'main.university_details' %}active{% endif %}">
@@ -173,24 +173,24 @@
                         <i class="fa-solid fa-file-csv me-2"></i> Subject Reports
                     </a>
                     <a href="{{ url_for('teacher.proxy_classes') }}" class="nav-link {% if request.endpoint == 'teacher.proxy_classes' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-user-clock me-2 text-info"></i> Proxy Classes</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-user-clock me-2 text-info"></i> Proxy Classes</span>
                         {% if proxy_classes_count > 0 %}
-                        <span class="badge bg-info text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ proxy_classes_count }}</span>
+                        <span class="badge bg-info text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto flex-shrink-0">{{ proxy_classes_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('teacher.leave_applications') }}" class="nav-link {% if request.endpoint == 'teacher.leave_applications' %}active{% endif %}">
                         <i class="fa-solid fa-umbrella-beach me-2 text-warning"></i> Faculty Leave Portal
                     </a>
                     <a href="{{ url_for('teacher.student_modifications') }}" class="nav-link {% if request.endpoint == 'teacher.student_modifications' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-file-signature me-2 text-warning"></i> Student Modification Requests</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-file-signature me-2 text-warning"></i> Student Modification Requests</span>
                         {% if pending_discrepancies_count > 0 %}
-                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2">{{ pending_discrepancies_count }}</span>
+                        <span class="badge bg-warning text-dark rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto flex-shrink-0">{{ pending_discrepancies_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('teacher.announcements') }}" class="nav-link {% if request.endpoint == 'teacher.announcements' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-bullhorn me-2 text-warning"></i> Notice Board</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-bullhorn me-2 text-warning"></i> Notice Board</span>
                         {% if teacher_notice_count and teacher_notice_count > 0 %}
-                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 shadow-xs notice-badge">{{ teacher_notice_count }}</span>
+                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto shadow-xs notice-badge flex-shrink-0">{{ teacher_notice_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('teacher.teacher_id_card') }}" class="nav-link {% if request.endpoint == 'teacher.teacher_id_card' %}active{% endif %}">
@@ -214,9 +214,9 @@
                         <i class="fa-solid fa-star-half-stroke me-2 text-warning"></i> Feedback & Rating
                     </a>
                     <a href="{{ url_for('student.notices') }}" class="nav-link {% if request.endpoint == 'student.notices' %}active{% endif %} d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-bullhorn me-2 text-info"></i> Notice Board</span>
+                        <span class="text-truncate me-2"><i class="fa-solid fa-bullhorn me-2 text-info"></i> Notice Board</span>
                         {% if student_notice_count and student_notice_count > 0 %}
-                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-2 shadow-xs notice-badge">{{ student_notice_count }}</span>
+                        <span class="badge bg-danger text-white rounded-pill px-2 py-0.5 fs-9 fw-bold ms-auto shadow-xs notice-badge flex-shrink-0">{{ student_notice_count }}</span>
                         {% endif %}
                     </a>
                     <a href="{{ url_for('student.student_id_card') }}" class="nav-link {% if request.endpoint == 'student.student_id_card' %}active{% endif %}">

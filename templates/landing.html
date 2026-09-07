@@ -228,58 +228,67 @@
                 padding: 0.6rem 1rem !important;
             }
 
-            /* Dedicated Phone Landing Hero View (No Scrolling Required to See 2026 Copyright) */
+            /* Dedicated Phone Landing Hero View (Covers Entire Phone Screen Proportionally, No Scrolling Needed) */
             body.mobile-hero-active {
                 height: 100vh;
                 height: 100dvh;
                 overflow-y: hidden !important;
             }
             body.mobile-hero-active .landing-main-container {
-                padding-top: 0.25rem !important;
-                padding-bottom: 0.25rem !important;
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.5rem !important;
                 margin-top: auto !important;
                 margin-bottom: auto !important;
                 flex: 1 1 auto;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: space-evenly;
             }
             body.mobile-hero-active .mobile-landing-hero {
                 margin-bottom: 0 !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-evenly;
+                align-items: center;
+                flex: 1;
+                gap: 0.75rem;
             }
             body.mobile-hero-active .mobile-hero-title {
-                font-size: clamp(1.2rem, 4.2vw, 1.55rem) !important;
-                line-height: 1.2 !important;
-                margin-bottom: 0.35rem !important;
+                font-size: clamp(1.45rem, 5.2vw, 1.85rem) !important;
+                line-height: 1.25 !important;
+                margin-bottom: 0 !important;
             }
             body.mobile-hero-active .mobile-hero-img-container {
-                max-width: clamp(210px, 64vw, 290px) !important;
-                max-height: clamp(130px, 23vh, 185px) !important;
-                margin: 0.35rem auto !important;
-                border-radius: 16px !important;
+                max-width: min(90vw, 360px) !important;
+                height: clamp(185px, 28vh, 250px) !important;
+                max-height: clamp(185px, 28vh, 250px) !important;
+                margin: 0 auto !important;
+                border-radius: 19px !important;
+                box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.35) !important;
             }
             body.mobile-hero-active .mobile-hero-img-container img {
-                height: clamp(130px, 23vh, 185px) !important;
+                height: 100% !important;
+                width: 100% !important;
                 object-fit: cover !important;
-                border-radius: 13.5px !important;
+                border-radius: 16.5px !important;
                 aspect-ratio: auto !important;
             }
             body.mobile-hero-active .mobile-hero-btn-wrap {
-                max-width: clamp(210px, 64vw, 290px) !important;
-                margin-top: 0.4rem !important;
+                max-width: min(90vw, 360px) !important;
+                margin-top: 0 !important;
                 margin-bottom: 0 !important;
             }
             body.mobile-hero-active .mobile-hero-btn-wrap button {
-                padding: 0.65rem 1.25rem !important;
-                font-size: 0.9rem !important;
+                padding: 0.85rem 1.5rem !important;
+                font-size: 1rem !important;
             }
             body.mobile-hero-active .landing-footer {
-                padding-top: 0.25rem !important;
-                padding-bottom: 0.65rem !important;
+                padding-top: 0.35rem !important;
+                padding-bottom: 0.75rem !important;
                 margin-top: auto !important;
             }
             body.mobile-hero-active .landing-footer .divider-line {
-                margin-bottom: 0.3rem !important;
+                margin-bottom: 0.4rem !important;
             }
         }
 

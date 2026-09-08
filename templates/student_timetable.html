@@ -101,7 +101,7 @@
                             {% for d in days %}
                                 {% set ns = namespace(found=false, slot=None, is_continuation_span=false, parent_lab_slot=None) %}
                                 {% for entry in timetable_entries %}
-                                    {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
+                                    {% if (entry.day_of_week|trim|lower == d|trim|lower) and ((entry.period_no|string == ps.period_no|string) or (entry.start_time|trim == ps.start_time|trim) or ((entry.start_time|trim).lstrip('0') == (ps.start_time|trim).lstrip('0'))) %}
                                         {% set ns.found = true %}
                                         {% set ns.slot = entry %}
                                     {% endif %}
@@ -110,7 +110,7 @@
                                 {# Check if this period is occupied by a 2-period Lab starting in previous period #}
                                 {% if not ns.found and ps.period_no > 1 %}
                                     {% for entry in timetable_entries %}
-                                        {% if entry.day_of_week == d and entry.slot_type == 'LAB' and not entry.is_lab_continuation and (entry.period_no == (ps.period_no - 1) or (entry.start_time < ps.end_time and entry.end_time > ps.start_time)) %}
+                                        {% if (entry.day_of_week|trim|lower == d|trim|lower) and entry.slot_type == 'LAB' and not entry.is_lab_continuation and ((entry.period_no|int == (ps.period_no|int - 1)) or (entry.start_time < ps.end_time and entry.end_time > ps.start_time)) %}
                                             {% set ns.is_continuation_span = true %}
                                             {% set ns.parent_lab_slot = entry %}
                                         {% endif %}

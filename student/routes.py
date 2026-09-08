@@ -179,7 +179,7 @@ def dashboard():
         d_date = days_map[d_name]
         d_slots = [
             s for s in all_weekly_slots 
-            if s.day_of_week == d_name 
+            if s.day_of_week and s.day_of_week.strip().lower() == d_name.lower()
             and (s.effective_from is None or s.effective_from <= d_date)
             and (s.effective_to is None or s.effective_to >= d_date)
         ]

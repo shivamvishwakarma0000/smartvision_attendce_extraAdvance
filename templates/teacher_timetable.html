@@ -99,7 +99,7 @@
                             {% for d in days %}
                                 {% set ns = namespace(found=false, slot=None) %}
                                 {% for entry in timetable_entries %}
-                                    {% if entry.day_of_week == d and (entry.period_no == ps.period_no or entry.start_time == ps.start_time) %}
+                                    {% if (entry.day_of_week|trim|lower == d|trim|lower) and ((entry.period_no|string == ps.period_no|string) or (entry.start_time|trim == ps.start_time|trim) or ((entry.start_time|trim).lstrip('0') == (ps.start_time|trim).lstrip('0'))) %}
                                         {% set ns.found = true %}
                                         {% set ns.slot = entry %}
                                     {% endif %}

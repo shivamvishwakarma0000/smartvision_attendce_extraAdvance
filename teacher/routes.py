@@ -1868,7 +1868,10 @@ def timetable():
 
     query = Timetable.query
     if selected_class_id:
-        query = query.filter_by(class_id=selected_class_id)
+        query = query.filter(
+            Timetable.class_id == selected_class_id,
+            (Timetable.effective_to == None) | (Timetable.effective_to > date.today())
+        )
 
     timetable_entries = query.order_by(Timetable.day_of_week, Timetable.start_time).all()
 

@@ -650,9 +650,11 @@ def register():
                     except ValueError:
                         pass
                 
+                effective_roll = roll_no or enrollment_no
                 new_student = Student(
                     name=name,
-                    roll_no=roll_no,
+                    roll_no=effective_roll,
+                    roll_number=effective_roll,
                     enrollment_no=enrollment_no,
                     department=department or 'General',
                     mobile=mobile or None,

@@ -1554,7 +1554,9 @@
     }
 
     function setRole(role) {
-        document.getElementById('hidden_signup_role').value = role;
+        const hiddenRole = document.getElementById('hidden_signup_role');
+        if (hiddenRole) hiddenRole.value = role;
+        
         const studentFields = document.getElementById('student-fields');
         const teacherFields = document.getElementById('teacher-fields');
         
@@ -1567,24 +1569,24 @@
         const teacherId = document.getElementById('input_teacher_id');
 
         if (role === 'student') {
-            studentFields.style.display = 'block';
-            teacherFields.style.display = 'none';
+            if (studentFields) studentFields.style.display = 'block';
+            if (teacherFields) teacherFields.style.display = 'none';
             if (studentDept) studentDept.required = true;
-            rollNo.required = true;
-            enrollNo.required = true;
+            if (rollNo) rollNo.required = true;
+            if (enrollNo) enrollNo.required = true;
             if (parentName) parentName.required = true;
-            parentEmail.required = true;
-            parentMobile.required = true;
+            if (parentEmail) parentEmail.required = true;
+            if (parentMobile) parentMobile.required = true;
             if (teacherId) teacherId.required = false;
         } else {
-            studentFields.style.display = 'none';
-            teacherFields.style.display = 'block';
+            if (studentFields) studentFields.style.display = 'none';
+            if (teacherFields) teacherFields.style.display = 'block';
             if (studentDept) studentDept.required = false;
-            rollNo.required = false;
-            enrollNo.required = false;
+            if (rollNo) rollNo.required = false;
+            if (enrollNo) enrollNo.required = false;
             if (parentName) parentName.required = false;
-            parentEmail.required = false;
-            parentMobile.required = false;
+            if (parentEmail) parentEmail.required = false;
+            if (parentMobile) parentMobile.required = false;
             if (teacherId) teacherId.required = true;
         }
     }

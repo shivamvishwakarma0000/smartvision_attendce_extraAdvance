@@ -19,9 +19,7 @@ from models import (
 
 teacher_attendance_bp = Blueprint('teacher_attendance', __name__)
 
-# ==============================================================================
-# SECTION 1: GEOLOCATION & HAVERSINE MATHEMATICAL HELPERS
-# ==============================================================================
+
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
     Calculates great-circle distance between two GPS coordinates in meters

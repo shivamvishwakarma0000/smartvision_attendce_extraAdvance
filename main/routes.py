@@ -43,9 +43,6 @@ GROUP_PHOTOS_FOLDER = os.path.join(UPLOAD_FOLDER, 'group_photos')
 os.makedirs(FACES_FOLDER, exist_ok=True)
 os.makedirs(GROUP_PHOTOS_FOLDER, exist_ok=True)
 
-# ==============================================================================
-# SECTION 1: ROLE-BASED ACCESS CONTROL & ADMIN DATA SCOPING
-# ==============================================================================
 def admin_required(f):
     """Decorator to ensure only logged in admins can access admin routes."""
     @wraps(f)
@@ -1558,8 +1555,17 @@ def delete_teacher(teacher_id):
         for sub in teacher_to_delete.subjects:
             sub.teacher_id = None
 
+        from models import (
+            ProxyAttendanceTransfer, TeacherLeave, DailySchedule, Timetable, 
+            TeacherEditRequest, TeacherAssignment, AttendanceSession, 
+            TeacherDailyAttendance, TeacherAttendanceAuditLog,
+            TeacherReadNotice, TeacherDismissedNotice, TeacherFeedback,
+            FacultyComplaint, SuspensionAudit, SuspensionRemovalRequest,
+            AttendanceUnlockPermission, ClassAnnouncement, CorrectionRequest, Class,
+            IssuedTeacherID
+        )
+
         # 2. Clean up proxy transfers where teacher was original OR substitute
-        from models import ProxyAttendanceTransfer, TeacherLeave, DailySchedule, Timetable, TeacherEditRequest, TeacherAssignment, AttendanceSession, TeacherDailyAttendance, TeacherAttendanceAuditLog
         ProxyAttendanceTransfer.query.filter(
             (ProxyAttendanceTransfer.substitute_teacher_id == teacher_to_delete.id) |
             (ProxyAttendanceTransfer.original_teacher_id == teacher_to_delete.id)
@@ -1583,30 +1589,54 @@ def delete_teacher(teacher_id):
 
         # 7. Delete teacher edit requests & assignments
         TeacherEditRequest.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
-        # 8. Unlink attendance sessions & classes directed as class teacher
-        from models import Class
+        TeacherAssignment.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+
+        # 8. Notices, Feedback, Complaints, Suspensions & Permissions
+        TeacherReadNotice.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        TeacherDismissedNotice.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        TeacherFeedback.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        FacultyComplaint.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        SuspensionAudit.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        AttendanceUnlockPermission.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+        ClassAnnouncement.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
+
+        # 9. Unlink classes directed as class teacher and attendance sessions
         Class.query.filter_by(class_teacher_id=teacher_to_delete.id).update({'class_teacher_id': None})
         AttendanceSession.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
 
         # Find linked user account by user_id or email
         user_account = None
         if teacher_to_delete.user_id:
-            user_account = User.query.get(teacher_to_delete.user_id)
+            user_account = db.session.get(User, teacher_to_delete.user_id)
         if not user_account and teacher_to_delete.email:
             user_account = User.query.filter_by(email=teacher_to_delete.email.strip().lower()).first()
 
+        if user_account:
+            SuspensionRemovalRequest.query.filter(
+                (SuspensionRemovalRequest.teacher_id == teacher_to_delete.id) | 
+                (SuspensionRemovalRequest.user_id == user_account.id)
+            ).delete(synchronize_session=False)
+            CorrectionRequest.query.filter(
+                (CorrectionRequest.requested_by == user_account.id) |
+                (CorrectionRequest.reviewed_by == user_account.id)
+            ).delete(synchronize_session=False)
+        else:
+            SuspensionRemovalRequest.query.filter_by(teacher_id=teacher_to_delete.id).delete(synchronize_session=False)
+
         email_freed = user_account.email if user_account else (teacher_to_delete.email or teacher_to_delete.name)
 
-        # Free up any linked IssuedTeacherID keys so they immediately show as Vacant
+        # Free up and reset any linked IssuedTeacherID keys so they immediately show as Vacant
         try:
             issued_keys = IssuedTeacherID.query.filter(
                 (IssuedTeacherID.teacher_id == teacher_to_delete.emp_id) |
+                (IssuedTeacherID.teacher_id == teacher_to_delete.employee_code) |
                 (IssuedTeacherID.used_by_user_id == (user_account.id if user_account else -1)) |
                 (IssuedTeacherID.email == (teacher_to_delete.email.strip().lower() if teacher_to_delete.email else ''))
             ).all()
             for ik in issued_keys:
                 ik.is_used = False
                 ik.used_by_user_id = None
+                ik.email = None
                 ik.name = None
         except Exception:
             pass

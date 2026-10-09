@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SmartVision Attendance Portal - Runtime Architecture",
+    "quality_profile": "showcase",
+    "viewBox": [1080, 680],
+    "views": [
+      {
+        "id": "attendance-flow",
+        "label": "Biometric Attendance Flow",
+        "focus": ["client", "flask_gateway", "attendance_engine", "face_engine", "database"],
+        "note": "Trace real-time camera capture through Flask routing, dlib face detection, 128D vector matching, and SQL persistence."
+      },
+      {
+        "id": "ai-copilot",
+        "label": "Gemini AI Copilot",
+        "focus": ["client", "flask_gateway", "gemini_copilot", "database"],
+        "note": "Explore natural language analytics queries executed through Google Gemini 2.0 / 1.5 Flash integrations."
+      },
+      {
+        "id": "auth-and-notifications",
+        "label": "Auth & Notification Loop",
+        "focus": ["google_auth", "client", "flask_gateway", "email_service"],
+        "note": "Follow Google OAuth 2.0 Single Sign-On and automated SMTP email notifications for attendance defaulters and OTPs."
+      }
+    ]
+  },
+  "components": [
+    { "id": "google_auth", "type": "security", "label": "Google OAuth 2.0", "sublabel": "SSO & Identity", "brand": "google-cloud", "pos": [50, 90], "size": [160, 68], "tag": "OpenID Connect" },
+    { "id": "uptime_heartbeat", "type": "external", "label": "Uptime Monitoring", "sublabel": "24/7 Keep-Alive", "pos": [320, 90], "size": [160, 68], "tag": "/health Heartbeat" },
+    { "id": "gemini_copilot", "type": "backend", "label": "Gemini Copilot", "sublabel": "AI Analytics Engine", "brand": "google-gemini", "pos": [590, 90], "size": [160, 68], "tag": "Gemini 2.0 API" },
+    
+    { "id": "client", "type": "external", "label": "Web Portal Client", "sublabel": "Teacher / Student UI", "pos": [50, 290], "size": [160, 68], "tag": "HTML5 Camera" },
+    { "id": "flask_gateway", "type": "backend", "label": "Flask Application", "sublabel": "Blueprints & Sessions", "brand": "flask", "pos": [320, 290], "size": [160, 68], "tag": "Python 3.11" },
+    { "id": "attendance_engine", "type": "backend", "label": "Attendance Router", "sublabel": "Verification & Timetable", "pos": [590, 290], "size": [160, 68], "tag": "Anti-Proxy Engine" },
+    { "id": "face_engine", "type": "backend", "label": "Face Recognition", "sublabel": "128D Vector Matcher", "brand": "python", "pos": [870, 290], "size": [160, 68], "tag": "dlib + OpenCV" },
+    
+    { "id": "storage", "type": "cloud", "label": "Biometric Storage", "sublabel": "Student Photos & IDs", "pos": [50, 490], "size": [160, 68], "tag": "Static / Uploads" },
+    { "id": "email_service", "type": "external", "label": "SMTP Mailer", "sublabel": "Alerts & Defaulters", "pos": [460, 490], "size": [160, 68], "tag": "Automated Alerts" },
+    { "id": "database", "type": "database", "label": "PostgreSQL DB", "sublabel": "Attendance & Profiles", "brand": "postgresql", "pos": [870, 490], "size": [160, 68], "tag": "SQLAlchemy ORM" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "SmartVision Core Application", "wraps": ["flask_gateway", "attendance_engine", "face_engine", "database"] },
+    { "kind": "security-group", "label": "External Cloud Integrations", "wraps": ["google_auth", "gemini_copilot", "uptime_heartbeat", "email_service"] }
+  ],
+  "connections": [
+    { "id": "client-to-flask", "from": "client", "to": "flask_gateway", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "auth-to-flask", "from": "google_auth", "to": "flask_gateway", "label": "OAuth2 Token", "variant": "security", "fromSide": "bottom", "toSide": "left" },
+    { "id": "uptime-to-flask", "from": "uptime_heartbeat", "to": "flask_gateway", "label": "Ping", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
+    { "id": "flask-to-gemini", "from": "flask_gateway", "to": "gemini_copilot", "label": "Query Copilot", "fromSide": "top", "toSide": "left" },
+    { "id": "flask-to-attendance", "from": "flask_gateway", "to": "attendance_engine", "label": "Validate Slot" },
+    { "id": "attendance-to-face", "from": "attendance_engine", "to": "face_engine", "label": "Match Face" },
+    { "id": "flask-to-storage", "from": "flask_gateway", "to": "storage", "label": "Save Media", "fromSide": "bottom", "toSide": "top" },
+    { "id": "attendance-to-email", "from": "attendance_engine", "to": "email_service", "label": "Send Notice", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "face-to-db", "from": "face_engine", "to": "database", "label": "Query Encodings", "fromSide": "bottom", "toSide": "top", "labelDy": 24 },
+    { "id": "attendance-to-db", "from": "attendance_engine", "to": "database", "label": "Commit Log", "fromSide": "bottom", "toSide": "left" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Real-time Biometrics", "items": ["Client-side WebRTC stream capture", "Server-side dlib 128-dimensional Euclidean face embedding matching", "Proxy prevention with timetable and schedule verification"] },
+    { "dot": "emerald", "title": "Flask Backend & DB", "items": ["Modular Blueprint architecture (Auth, Student, Teacher, Attendance, Main)", "SQLAlchemy ORM with PostgreSQL backend & SQLite local fallback", "Automatic DB schema migrations and seeding"] },
+    { "dot": "violet", "title": "AI & External Integrations", "items": ["Google Gemini 2.0 Flash Copilot for natural language analytics", "Google OAuth 2.0 Single Sign-On and session management", "Automated SMTP email dispatch for attendance warning thresholds"] }
+  ]
+}

@@ -434,7 +434,7 @@ class AttendanceSession(db.Model):
     timetable_id = db.Column(db.Integer, db.ForeignKey('timetables.id', ondelete='SET NULL'), nullable=True)
     daily_schedule_id = db.Column(db.Integer, db.ForeignKey('daily_schedule.id', ondelete='SET NULL'), nullable=True)
     date = db.Column(db.Date, nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='SET NULL'), nullable=True)
     class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     start_time = db.Column(db.String(10), nullable=True)

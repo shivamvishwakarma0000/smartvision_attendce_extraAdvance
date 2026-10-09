@@ -38,23 +38,23 @@ def enhance_image_for_detection(img_np):
         return img_np, False, 128.0
 
     try:
-        # Convert RGB to LAB color space for luminance-specific processing
+      
         lab = cv2.cvtColor(img_np, cv2.COLOR_RGB2LAB)
         l, a, b = cv2.split(lab)
         mean_l = float(np.mean(l))
         is_low_light = mean_l < 115.0
 
         if is_low_light:
-            # Adaptive gamma correction to brighten shadows without blowing out highlights
+          
             gamma = 0.50 if mean_l < 50.0 else (0.62 if mean_l < 85.0 else 0.75)
             inv_gamma = 1.0 / gamma
             table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype('uint8')
             l = cv2.LUT(l, table)
 
-            # High-contrast CLAHE for dark/shadowed environments
+           
             clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         else:
-            # Mild CLAHE for normal lighting to balance shadows
+           
             clahe = cv2.createCLAHE(clipLimit=1.6, tileGridSize=(8, 8))
 
         l_clahe = clahe.apply(l)

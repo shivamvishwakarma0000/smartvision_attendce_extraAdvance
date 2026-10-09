@@ -246,6 +246,38 @@ def run_migrations(db_path="smartvision.db"):
                 print("[Migration] timetables table migrated successfully to allow NULL subject_id/teacher_id!")
                 break
 
+        # Check if attendance_sessions.teacher_id is NOT NULL in SQLite schema
+        cursor.execute("PRAGMA table_info(attendance_sessions)")
+        as_info = cursor.fetchall()
+        for col in as_info:
+            if col[1] == 'teacher_id' and col[3] == 1:
+                print("[Migration] Migrating attendance_sessions table to allow NULL teacher_id...")
+                cursor.execute("PRAGMA foreign_keys=OFF;")
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS attendance_sessions_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timetable_id INTEGER REFERENCES timetables(id) ON DELETE SET NULL,
+                        daily_schedule_id INTEGER REFERENCES daily_schedule(id) ON DELETE SET NULL,
+                        date DATE NOT NULL,
+                        teacher_id INTEGER REFERENCES teachers(id) ON DELETE SET NULL,
+                        class_id INTEGER NOT NULL REFERENCES classes(id),
+                        subject_id INTEGER NOT NULL REFERENCES subjects(id),
+                        start_time VARCHAR(10),
+                        end_time VARCHAR(10),
+                        status VARCHAR(20) DEFAULT 'ATTENDANCE_OPEN'
+                    );
+                """)
+                cursor.execute("""
+                    INSERT INTO attendance_sessions_new (id, timetable_id, daily_schedule_id, date, teacher_id, class_id, subject_id, start_time, end_time, status)
+                    SELECT id, timetable_id, daily_schedule_id, date, teacher_id, class_id, subject_id, start_time, end_time, status FROM attendance_sessions;
+                """)
+                cursor.execute("DROP TABLE attendance_sessions;")
+                cursor.execute("ALTER TABLE attendance_sessions_new RENAME TO attendance_sessions;")
+                cursor.execute("PRAGMA foreign_keys=ON;")
+                conn.commit()
+                print("[Migration] attendance_sessions table migrated successfully to allow NULL teacher_id!")
+                break
+
         tables_to_create = [
             ("teacher_assignments", """
                 CREATE TABLE IF NOT EXISTS teacher_assignments (

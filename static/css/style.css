@@ -148,8 +148,13 @@ body {
     color: var(--text-primary);
     font-family: var(--font-sans);
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     line-height: 1.5;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Typography Hierarchy */
@@ -284,8 +289,6 @@ hr {
 .top-bar {
     padding: 14px 20px;
     background: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-card) !important;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
@@ -294,7 +297,7 @@ hr {
     align-items: center;
     justify-content: space-between;
     position: sticky;
-    top: 15px;
+    top: max(10px, env(safe-area-inset-top, 0px));
     z-index: 1030;
 }
 

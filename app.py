@@ -545,7 +545,10 @@ def ensure_postgresql_columns():
             "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(255)",
             "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS is_proxy BOOLEAN DEFAULT FALSE",
             "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS proxy_assigned_by_admin_id INTEGER",
-            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS proxy_assigned_at TIMESTAMP WITHOUT TIME ZONE"
+            "ALTER TABLE daily_schedule ADD COLUMN IF NOT EXISTS proxy_assigned_at TIMESTAMP WITHOUT TIME ZONE",
+            "ALTER TABLE attendance_sessions ALTER COLUMN teacher_id DROP NOT NULL",
+            "ALTER TABLE timetables ALTER COLUMN teacher_id DROP NOT NULL",
+            "ALTER TABLE timetables ALTER COLUMN subject_id DROP NOT NULL"
         ]
         for stmt in statements:
             try:

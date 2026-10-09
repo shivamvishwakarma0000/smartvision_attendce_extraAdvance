@@ -1602,6 +1602,12 @@ def delete_teacher(teacher_id):
 
         # 9. Unlink classes directed as class teacher and attendance sessions
         Class.query.filter_by(class_teacher_id=teacher_to_delete.id).update({'class_teacher_id': None})
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("ALTER TABLE attendance_sessions ALTER COLUMN teacher_id DROP NOT NULL"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         AttendanceSession.query.filter_by(teacher_id=teacher_to_delete.id).update({'teacher_id': None})
 
         # Find linked user account by user_id or email

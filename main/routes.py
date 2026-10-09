@@ -67,11 +67,14 @@ def get_admin_subjects():
     return Subject.query.filter((Subject.admin_id == None) | (Subject.admin_id == current_user.id)).all()
 
 def get_admin_students():
-    # Retrieve students managed by this admin or unassigned
+    # Retrieve approved students managed by this admin or unassigned
     class_ids = [c.id for c in get_admin_classes()]
+    query = Student.query.outerjoin(User, Student.user_id == User.id).filter(
+        (User.id == None) | (User.status != 'Pending')
+    )
     if class_ids:
-        return Student.query.filter((Student.class_id.in_(class_ids)) | (Student.class_id == None)).order_by(Student.id.asc()).all()
-    return Student.query.all()
+        return query.filter((Student.class_id.in_(class_ids)) | (Student.class_id == None)).order_by(Student.id.asc()).all()
+    return query.order_by(Student.id.asc()).all()
 
 @main_bp.route('/')
 def index():
@@ -2216,12 +2219,18 @@ def view_reports():
     class_id = request.args.get('class_id', '').strip()
     
     if class_id == 'unclassified':
-        students = Student.query.filter(Student.class_id == None).all()
+        students = Student.query.outerjoin(User, Student.user_id == User.id).filter(
+            Student.class_id == None,
+            (User.id == None) | (User.status != 'Pending')
+        ).all()
         selected_class_id = 'unclassified'
     elif class_id and class_id.isdigit():
         class_id_int = int(class_id)
         if class_id_int in [c.id for c in classes]:
-            students = Student.query.filter_by(class_id=class_id_int).all()
+            students = Student.query.outerjoin(User, Student.user_id == User.id).filter(
+                Student.class_id == class_id_int,
+                (User.id == None) | (User.status != 'Pending')
+            ).all()
             selected_class_id = class_id_int
         else:
             students = []
@@ -2654,6 +2663,7 @@ def get_subjects(class_id):
 @admin_required
 def approvals():
     admin_classes = [c.id for c in get_admin_classes()]
+    classes = get_admin_classes()
     edit_requests = StudentEditRequest.query.join(Student).filter(
         Student.class_id.in_(admin_classes),
         StudentEditRequest.status == 'Pending'
@@ -2664,6 +2674,7 @@ def approvals():
     ).order_by(TeacherEditRequest.created_at.desc()).all()
     
     pending_teachers = Teacher.query.filter(Teacher.status.in_(['Pending', 'Email_Verified'])).order_by(Teacher.id.desc()).all()
+    pending_students = Student.query.join(User, Student.user_id == User.id).filter(User.status.in_(['Pending', 'Email_Verified'])).order_by(Student.id.desc()).all()
     all_teachers = get_admin_teachers()
     
     pending_leaves = TeacherLeave.query.filter_by(status='PENDING').order_by(TeacherLeave.id.desc()).all()
@@ -2676,12 +2687,72 @@ def approvals():
         requests=edit_requests,
         teacher_edit_requests=teacher_edit_requests,
         pending_teachers=pending_teachers,
+        pending_students=pending_students,
+        classes=classes,
         all_teachers=all_teachers,
         pending_leaves=pending_leaves,
         all_leaves=all_leaves,
         pending_corrections=pending_corrections,
         emergency_desk=emergency_desk
     )
+
+@main_bp.route('/admin/student_approval/<int:student_id>/<action>', methods=['POST'])
+@login_required
+@admin_required
+def handle_student_approval(student_id, action):
+    student = Student.query.get_or_404(student_id)
+    user_acc = User.query.get(student.user_id) if student.user_id else None
+
+    if action == 'approve':
+        try:
+            assigned_class_id = request.form.get('class_id')
+            if assigned_class_id and assigned_class_id.isdigit():
+                student.class_id = int(assigned_class_id)
+            
+            assigned_roll_no = request.form.get('roll_no', '').strip()
+            if assigned_roll_no:
+                student.roll_no = assigned_roll_no
+                student.roll_number = assigned_roll_no
+
+            if user_acc:
+                user_acc.status = 'Approved'
+            
+            db.session.commit()
+            flash(f"Student account for '{student.name}' approved successfully! They are now enrolled in the portal and can log in.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error approving student: {e}", "danger")
+    elif action == 'reject':
+        try:
+            # 1. Clean up student notices / records
+            try:
+                from models import StudentReadNotice, StudentDismissedNotice
+                StudentReadNotice.query.filter_by(student_id=student.id).delete()
+                StudentDismissedNotice.query.filter_by(student_id=student.id).delete()
+            except Exception:
+                pass
+            
+            # 2. Remove face photo from disk if present
+            if student.image_filename:
+                photo_path = os.path.join(FACES_FOLDER, student.image_filename)
+                if os.path.exists(photo_path):
+                    try:
+                        os.remove(photo_path)
+                    except Exception:
+                        pass
+
+            # 3. Delete Student entity and linked User account safely
+            db.session.delete(student)
+            if user_acc:
+                db.session.delete(user_acc)
+
+            db.session.commit()
+            flash(f"Student registration for '{student.name}' rejected and removed.", "info")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error rejecting student: {e}", "danger")
+
+    return redirect(url_for('main.approvals'))
 
 @main_bp.route('/admin/emergency_proxy_desk')
 @login_required

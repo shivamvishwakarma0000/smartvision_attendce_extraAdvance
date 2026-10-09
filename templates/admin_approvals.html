@@ -78,6 +78,98 @@
 </div>
 {% endif %}
 
+<!-- Section 1.5: Pending Student Registrations -->
+<div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-2">
+        <div>
+            <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-graduate me-2 text-primary"></i> Pending Student Registration Approvals</h4>
+            <p class="text-muted mb-0 fs-8">Review student self-registrations. Verify Enrollment Number, department, and face photo before granting portal access.</p>
+        </div>
+        <span class="badge bg-primary text-white py-2 px-3 fs-8 fw-bold rounded-pill text-nowrap align-self-start align-self-sm-center">
+            <i class="fa-solid fa-user-clock me-1"></i> {{ pending_students|length }} Pending
+        </span>
+    </div>
+</div>
+
+{% if pending_students %}
+<div class="row g-4 mb-5">
+    {% for student in pending_students %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white d-flex flex-column">
+            <div class="text-center mb-3 pt-2">
+                {% if student.image_filename %}
+                    <img src="{{ url_for('main.uploaded_face', filename=student.image_filename) }}" 
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ student.name|urlencode }}&background=6366f1&color=fff&size=128&bold=true';"
+                         class="rounded-circle shadow-sm border border-3 border-primary" 
+                         style="width: 100px; height: 100px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                {% endif %}
+                <h5 class="fw-bold text-dark mt-3 mb-1">{{ student.name }}</h5>
+                <span class="badge bg-warning text-dark px-3 py-1 rounded-pill">Pending Approval</span>
+            </div>
+
+            <div class="bg-light p-3 rounded-3 mb-3 fs-8">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Enrollment No:</span>
+                    <strong class="text-dark">{{ student.enrollment_no or 'N/A' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Roll No:</span>
+                    <strong class="text-dark">{{ student.roll_no or student.roll_number or 'N/A' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Department:</span>
+                    <strong class="text-dark">{{ student.department or 'N/A' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Email:</span>
+                    <strong class="text-dark text-truncate ms-2" style="max-width: 180px;">{{ student.user_account.email if student.user_account else 'N/A' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted">Mobile:</span>
+                    <strong class="text-dark">{{ student.mobile or 'N/A' }}</strong>
+                </div>
+                {% if student.parent_name or student.parent_mobile %}
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Parent:</span>
+                    <strong class="text-dark text-truncate ms-2" style="max-width: 180px;">{{ student.parent_name or '' }} {% if student.parent_mobile %}({{ student.parent_mobile }}){% endif %}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <form action="{{ url_for('main.handle_student_approval', student_id=student.id, action='approve') }}" method="POST" class="mt-auto">
+                <div class="mb-2">
+                    <label class="form-label fs-9 fw-semibold text-muted mb-1"><i class="fa-solid fa-chalkboard me-1"></i>Assign Class Section:</label>
+                    <select name="class_id" class="form-select form-select-sm fs-8 rounded-3">
+                        <option value="">-- Unassigned (Assign Later) --</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if student.class_id == c.id %}selected{% endif %}>{{ c.name }} ({{ c.department or 'General' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success flex-grow-1 fw-bold rounded-3">
+                        <i class="fa-solid fa-check me-1"></i> Approve
+                    </button>
+                    <button type="button" class="btn btn-outline-danger flex-grow-1 rounded-3" onclick="if(confirm('Are you sure you want to reject and remove this student registration?')) { document.getElementById('rejectStudentForm{{ student.id }}').submit(); }">
+                        <i class="fa-solid fa-xmark me-1"></i> Reject
+                    </button>
+                </div>
+            </form>
+            <form id="rejectStudentForm{{ student.id }}" action="{{ url_for('main.handle_student_approval', student_id=student.id, action='reject') }}" method="POST" style="display: none;"></form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-4 border-0 shadow-sm rounded-4 mb-4 text-center">
+    <p class="text-muted mb-0"><i class="fa-solid fa-circle-check text-success me-2"></i>No pending student registrations to review.</p>
+</div>
+{% endif %}
+
 <!-- Section 2: Teacher Leave Approvals Queue -->
 <div class="card p-3 p-md-4 shadow-sm border-0 mb-3 mb-md-4 fade-in">
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2.5 mb-2">

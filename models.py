@@ -282,6 +282,11 @@ class Student(db.Model):
 
     attendance_records = db.relationship('AttendanceRecord', backref='student', lazy=True, cascade="all, delete-orphan")
 
+    @property
+    def status(self):
+        """Returns student account approval status ('Pending', 'Approved', etc.)."""
+        return self.user_account.status if self.user_account else 'Approved'
+
 
 class StudentEditRequest(db.Model):
     """Student profile modification requests submitted for Admin approval."""

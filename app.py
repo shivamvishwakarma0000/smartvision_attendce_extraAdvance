@@ -307,17 +307,20 @@ def create_app():
         try:
             from flask_login import current_user
             if current_user.is_authenticated and current_user.role == 'admin':
-                from models import TeacherLeave, StudentEditRequest, TeacherEditRequest, Teacher, SuspensionRemovalRequest
+                from models import TeacherLeave, StudentEditRequest, TeacherEditRequest, Teacher, Student, User, SuspensionRemovalRequest
                 pending_leaves = TeacherLeave.query.filter_by(status='PENDING').count()
                 pending_corrections = StudentEditRequest.query.filter_by(status='Pending').count()
                 pending_teacher_edits = TeacherEditRequest.query.filter_by(status='Pending').count()
-                pending_teachers = Teacher.query.filter_by(status='Pending').count()
+                pending_teachers = Teacher.query.filter(Teacher.status.in_(['Pending', 'Email_Verified'])).count()
+                pending_students = Student.query.join(User, Student.user_id == User.id).filter(User.status.in_(['Pending', 'Email_Verified'])).count()
                 pending_suspension_requests = SuspensionRemovalRequest.query.filter_by(status='Pending').count()
                 return {
                     'admin_pending_leaves_count': pending_leaves,
                     'admin_pending_corrections_count': pending_corrections,
                     'admin_pending_teacher_edits_count': pending_teacher_edits,
-                    'admin_pending_approvals_count': pending_leaves + pending_corrections + pending_teacher_edits + pending_teachers,
+                    'admin_pending_teachers_count': pending_teachers,
+                    'admin_pending_students_count': pending_students,
+                    'admin_pending_approvals_count': pending_leaves + pending_corrections + pending_teacher_edits + pending_teachers + pending_students,
                     'pending_suspension_requests_count': pending_suspension_requests
                 }
         except Exception as e:
@@ -325,6 +328,9 @@ def create_app():
         return {
             'admin_pending_leaves_count': 0,
             'admin_pending_corrections_count': 0,
+            'admin_pending_teacher_edits_count': 0,
+            'admin_pending_teachers_count': 0,
+            'admin_pending_students_count': 0,
             'admin_pending_approvals_count': 0,
             'pending_suspension_requests_count': 0
         }

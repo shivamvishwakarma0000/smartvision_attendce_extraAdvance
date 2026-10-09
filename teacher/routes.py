@@ -50,6 +50,11 @@ def teacher_required(f):
         if not current_user.is_authenticated or current_user.role != 'teacher':
             flash("Teacher access is required to view this page.", "danger")
             return redirect(url_for('auth.login'))
+        if current_user.status == 'Pending' or (hasattr(current_user, 'teacher_profile') and current_user.teacher_profile and current_user.teacher_profile.status == 'Pending'):
+            from flask_login import logout_user
+            logout_user()
+            flash("Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.", "warning")
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 

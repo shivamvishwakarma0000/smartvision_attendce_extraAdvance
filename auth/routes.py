@@ -336,9 +336,12 @@ def login():
                 flash(f'Your account email is not verified yet. We sent a new verification link to your Gmail ({user.email}). Please check your inbox and click the link to activate your account.', 'warning')
                 return redirect(url_for('main.index', state='login'))
 
-            # Check pending approval for Teachers or Users
+            # Check pending approval for Teachers, Students, or Users
             if user.status == 'Pending' or (user.teacher_profile and user.teacher_profile.status == 'Pending'):
-                flash('Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
+                if user.role == 'student':
+                    flash('Your student account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
+                else:
+                    flash('Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
                 return redirect(url_for('main.index', state='login'))
 
             login_user(user)
@@ -576,7 +579,7 @@ def register():
             if google_data and google_data.get('email', '').strip().lower() == email.strip().lower():
                 google_id = google_data.get('google_id')
 
-            new_user = User(name=name, email=email, role='student', mobile=mobile or None, status='Approved', is_email_verified=True, google_id=google_id)
+            new_user = User(name=name, email=email, role='student', mobile=mobile or None, status='Pending', is_email_verified=True, google_id=google_id)
             new_user.set_password(password)
 
             face_encoding_bytes = None
@@ -684,14 +687,13 @@ def register():
 
                 if google_data and google_data.get('email', '').strip().lower() == email.strip().lower():
                     session.pop('google_signup_data', None)
-                    login_user(new_user)
-                    flash('Student account registered and authenticated with Google successfully! An administrator will assign your class.', 'success')
-                    return redirect(url_for('student.dashboard'))
+                    flash('Student account registered with Google successfully! Your account is now pending Administrator approval before you can access the portal.', 'info')
+                    return redirect(url_for('main.index', state='login'))
 
                 flash(
-                    'Student account registered and email verified successfully! '
-                    'An administrator will assign your class. You can now log in.',
-                    'success'
+                    'Student registration submitted successfully! '
+                    'Your account is now pending Administrator approval before you can access the portal.',
+                    'info'
                 )
                 return redirect(url_for('main.index', state='login'))
             except Exception as e:
@@ -829,6 +831,14 @@ def handle_google_callback():
             if not user.google_id:
                 user.google_id = google_id
             db.session.commit()
+
+            # Check pending approval for Teachers, Students, or Users
+            if user.status == 'Pending' or (user.teacher_profile and user.teacher_profile.status == 'Pending'):
+                if user.role == 'student':
+                    flash('Your student account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
+                else:
+                    flash('Your teacher account registration is pending administrator approval. Please wait for an administrator to approve your account.', 'warning')
+                return redirect(url_for('main.index', state='login'))
 
             login_user(user)
             flash(f'Logged in with Google as {user.name}!', 'success')
@@ -1015,6 +1025,8 @@ def google_signup_complete():
 
             try:
                 new_user.mobile = mobile or None
+                new_user.status = 'Pending'
+                new_user.is_email_verified = True
                 db.session.add(new_user)
                 db.session.flush()
 
@@ -1033,9 +1045,8 @@ def google_signup_complete():
                 db.session.commit()
 
                 session.pop('google_signup_data', None)
-                login_user(new_user)
-                flash('Student account created successfully with Google! An admin will assign your class.', 'success')
-                return redirect(url_for('student.dashboard'))
+                flash('Student registration submitted with Google! Your account is now pending Administrator approval before you can access the portal.', 'info')
+                return redirect(url_for('main.index', state='login'))
             except Exception as e:
                 db.session.rollback()
                 flash(f'Registration failed: {e}', 'danger')

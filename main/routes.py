@@ -1704,7 +1704,7 @@ def delete_subject(subject_id):
             AttendanceSession, AttendanceRecord, CorrectionRequest, 
             AttendanceDiscrepancyRequest, Timetable, DailySchedule, 
             TeacherAssignment, ProxyAttendanceTransfer, 
-            SubjectFeedback, AttendanceUnlockPermission, AttendanceAuditLog
+            TeacherFeedback, AttendanceUnlockPermission, AttendanceAuditLog
         )
         
         # 1. Nullify / Clean up AttendanceAuditLogs referencing this subject
@@ -1719,9 +1719,9 @@ def delete_subject(subject_id):
         except Exception:
             pass
 
-        # 3. Clean up Subject Feedback
+        # 3. Clean up Teacher Feedback referencing this subject
         try:
-            SubjectFeedback.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+            TeacherFeedback.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
         except Exception:
             pass
 

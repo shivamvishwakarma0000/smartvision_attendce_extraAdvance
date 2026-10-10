@@ -1703,7 +1703,7 @@ def delete_subject(subject_id):
         from models import (
             AttendanceSession, AttendanceRecord, CorrectionRequest, 
             AttendanceDiscrepancyRequest, Timetable, DailySchedule, 
-            TeacherAssignment, TeacherSubjectChoice, ProxyAttendanceTransfer, 
+            TeacherAssignment, ProxyAttendanceTransfer, 
             SubjectFeedback, AttendanceUnlockPermission, AttendanceAuditLog
         )
         
@@ -1731,9 +1731,8 @@ def delete_subject(subject_id):
         except Exception:
             pass
 
-        # 5. Clean up Teacher Subject Choices and Teacher Assignments
+        # 5. Clean up Teacher Assignments for this subject
         try:
-            TeacherSubjectChoice.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
             TeacherAssignment.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
         except Exception:
             pass
@@ -2916,7 +2915,7 @@ def handle_teacher_approval(teacher_id, action):
 
             # 3. Clean up teacher preferences / auxiliary records
             try:
-                TeacherSubjectChoice.query.filter_by(teacher_id=teacher.id).delete()
+                TeacherAssignment.query.filter_by(teacher_id=teacher.id).delete()
             except Exception:
                 pass
             try:

@@ -313,7 +313,7 @@
                     <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" id="studentSearchInput" class="form-control form-control-sm border-start-0 border-end-0 fs-8 shadow-xs" placeholder="Type student name or roll number..." onkeyup="if(event.key === 'Enter') filterStudentsDirectory()">
+                    <input type="text" id="studentSearchInput" class="form-control form-control-sm border-start-0 border-end-0 fs-8 shadow-xs" placeholder="Type student name or roll number..." oninput="filterStudentsDirectory()" onkeyup="if(event.key === 'Enter') filterStudentsDirectory()">
                     <button type="button" class="btn btn-primary btn-sm rounded-end-pill px-4 fw-bold shadow-xs" onclick="filterStudentsDirectory()">
                         <i class="fa-solid fa-magnifying-glass me-1"></i> Search
                     </button>
@@ -478,28 +478,36 @@
     <div id="facultyDirectorySection" class="d-none">
         <!-- Faculty Filter Bar -->
         <div class="row g-2 mb-4 align-items-center">
-            <div class="col-md-4 col-sm-5">
+            <div class="col-md-5 col-sm-6">
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input type="text" id="facultySearchInput" class="form-control bg-light border-start-0 rounded-end-pill fs-8" placeholder="Search faculty by name, code, email...">
+                    <input type="text" id="facultySearchInput" class="form-control bg-light border-start-0 border-end-0 fs-8 shadow-xs" placeholder="Search faculty by name, ID (e.g. 1100), email..." oninput="filterFacultyDirectory()" onkeyup="if(event.key === 'Enter') filterFacultyDirectory()">
+                    <button type="button" class="btn btn-primary btn-sm rounded-end-pill px-4 fw-bold shadow-xs" onclick="filterFacultyDirectory()">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Search
+                    </button>
                 </div>
             </div>
             <div class="col-md-3 col-sm-4">
-                <select id="facultyDeptFilter" class="form-select fs-8 rounded-pill">
-                    <option value="all">All Departments</option>
-                    {% for dept in all_departments %}
-                    <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
-                    {% endfor %}
-                </select>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 rounded-start-pill ps-3 text-muted fs-8">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </span>
+                    <select id="facultyDeptFilter" class="form-select form-select-sm rounded-end-pill px-3 fs-8 border border-start-0 shadow-xs" onchange="filterFacultyDirectory()">
+                        <option value="all">All Departments</option>
+                        {% for dept in all_departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }} - {{ dept.full_name or dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-            <div class="col-md-5 col-sm-3 d-flex justify-content-end gap-2">
-                <div class="btn-group p-1 bg-light rounded-pill border" role="group">
-                    <button type="button" class="btn btn-xs btn-white rounded-pill shadow-xs px-2.5 fw-semibold active" id="facultyCardViewBtn" onclick="setFacultyViewMode('cards')">
+            <div class="col-md-4 col-sm-2 d-flex justify-content-end gap-2">
+                <div class="btn-group p-1 bg-light rounded-pill border shadow-xs" role="group">
+                    <button type="button" class="btn btn-xs btn-white rounded-pill shadow-xs px-2.5 fw-semibold active" id="facultyCardViewBtn" onclick="switchDirectoryView('grid')">
                         <i class="fa-solid fa-grip me-1"></i> Cards
                     </button>
-                    <button type="button" class="btn btn-xs text-muted rounded-pill px-2.5 fw-semibold" id="facultyTableViewBtn" onclick="setFacultyViewMode('table')">
+                    <button type="button" class="btn btn-xs text-muted rounded-pill px-2.5 fw-semibold" id="facultyTableViewBtn" onclick="switchDirectoryView('table')">
                         <i class="fa-solid fa-table-list me-1"></i> Table
                     </button>
                 </div>
@@ -507,13 +515,14 @@
         </div>
 
         <!-- Faculty Cards Grid View -->
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="facultyCardsContainer">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4" id="facultyCardsGrid">
             {% if teachers %}
             {% for teacher in teachers %}
-            <div class="col faculty-card-col dept-{{ (teacher.department or 'general')|lower|replace(' ', '') }}" 
+            <div class="col faculty-card-col faculty-item dept-{{ (teacher.department or 'general')|lower|replace(' ', '') }}" 
                  data-name="{{ teacher.name|lower }}"
                  data-code="{{ (teacher.employee_code or teacher.emp_id or '')|lower }}"
                  data-email="{{ (teacher.email or '')|lower }}"
+                 data-mobile="{{ (teacher.mobile or '')|lower }}"
                  data-dept="{{ (teacher.department or 'general')|lower }}">
                 <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden bg-white faculty-card">
                     {% if teacher.image_filename %}
@@ -894,17 +903,19 @@ function switchDirectoryView(view) {
     currentDirectoryView = view;
     const btnGrid = document.getElementById('btn-view-grid');
     const btnTable = document.getElementById('btn-view-table');
+    const facBtnGrid = document.getElementById('facultyCardViewBtn');
+    const facBtnTable = document.getElementById('facultyTableViewBtn');
 
     if (view === 'grid') {
-        btnGrid.classList.add('btn-white', 'active');
-        btnGrid.classList.remove('text-muted');
-        btnTable.classList.remove('btn-white', 'active');
-        btnTable.classList.add('text-muted');
+        if (btnGrid) { btnGrid.classList.add('btn-white', 'active'); btnGrid.classList.remove('text-muted'); }
+        if (btnTable) { btnTable.classList.remove('btn-white', 'active'); btnTable.classList.add('text-muted'); }
+        if (facBtnGrid) { facBtnGrid.classList.add('btn-white', 'active'); facBtnGrid.classList.remove('text-muted'); }
+        if (facBtnTable) { facBtnTable.classList.remove('btn-white', 'active'); facBtnTable.classList.add('text-muted'); }
     } else {
-        btnTable.classList.add('btn-white', 'active');
-        btnTable.classList.remove('text-muted');
-        btnGrid.classList.remove('btn-white', 'active');
-        btnGrid.classList.add('text-muted');
+        if (btnTable) { btnTable.classList.add('btn-white', 'active'); btnTable.classList.remove('text-muted'); }
+        if (btnGrid) { btnGrid.classList.remove('btn-white', 'active'); btnGrid.classList.add('text-muted'); }
+        if (facBtnTable) { facBtnTable.classList.add('btn-white', 'active'); facBtnTable.classList.remove('text-muted'); }
+        if (facBtnGrid) { facBtnGrid.classList.remove('btn-white', 'active'); facBtnGrid.classList.add('text-muted'); }
     }
     applyCurrentView();
 }
@@ -912,7 +923,7 @@ function switchDirectoryView(view) {
 function applyCurrentView() {
     const sGrid = document.getElementById('studentCardsGrid');
     const sTable = document.getElementById('studentTableView');
-    const fGrid = document.getElementById('facultyCardsGrid');
+    const fGrid = document.getElementById('facultyCardsGrid') || document.getElementById('facultyCardsContainer');
     const fTable = document.getElementById('facultyTableView');
 
     if (currentDirectoryView === 'grid') {
@@ -964,16 +975,16 @@ function filterStudentsDirectory() {
     const tableRows = document.querySelectorAll('.student-table-row');
 
     function checkMatch(el) {
-        const name = el.getAttribute('data-name') || '';
-        const roll = el.getAttribute('data-roll') || '';
-        const enroll = el.getAttribute('data-enroll') || '';
+        const name = (el.getAttribute('data-name') || '').toLowerCase();
+        const roll = (el.getAttribute('data-roll') || '').toLowerCase();
+        const enroll = (el.getAttribute('data-enroll') || '').toLowerCase();
         const dept = (el.getAttribute('data-dept') || '').toLowerCase();
 
         const matchesSearch = !searchVal || name.includes(searchVal) || roll.includes(searchVal) || enroll.includes(searchVal);
         
         let matchesDept = true;
         if (deptVal !== 'all') {
-            matchesDept = (dept === deptVal);
+            matchesDept = (dept === deptVal || dept.includes(deptVal));
         }
 
         let matchesClass = true;
@@ -991,21 +1002,29 @@ function filterStudentsDirectory() {
 
 function filterFacultyDirectory() {
     const searchVal = (document.getElementById('facultySearchInput')?.value || '').toLowerCase().trim();
-    const deptVal = document.getElementById('facultyDeptFilter')?.value || 'all';
+    const deptVal = (document.getElementById('facultyDeptFilter')?.value || 'all').toLowerCase().trim();
 
-    const cardItems = document.querySelectorAll('.faculty-item');
+    const cardItems = document.querySelectorAll('.faculty-card-col, .faculty-item');
     const tableRows = document.querySelectorAll('.faculty-table-row');
 
     function checkMatch(el) {
-        const name = el.getAttribute('data-name') || '';
-        const code = el.getAttribute('data-code') || '';
-        const dept = el.getAttribute('data-dept') || '';
-        const mobile = el.getAttribute('data-mobile') || '';
+        const name = (el.getAttribute('data-name') || '').toLowerCase();
+        const code = (el.getAttribute('data-code') || '').toLowerCase();
+        const dept = (el.getAttribute('data-dept') || '').toLowerCase();
+        const mobile = (el.getAttribute('data-mobile') || '').toLowerCase();
+        const email = (el.getAttribute('data-email') || '').toLowerCase();
 
-        const matchesSearch = !searchVal || name.includes(searchVal) || code.includes(searchVal) || mobile.includes(searchVal) || dept.includes(searchVal);
+        const matchesSearch = !searchVal || 
+            name.includes(searchVal) || 
+            code.includes(searchVal) || 
+            mobile.includes(searchVal) || 
+            email.includes(searchVal) || 
+            dept.includes(searchVal);
+
         let matchesDept = true;
         if (deptVal !== 'all') {
-            matchesDept = el.classList.contains(deptVal);
+            const cleanDept = deptVal.replace(/\s+/g, '');
+            matchesDept = (dept === deptVal || dept.includes(deptVal) || el.classList.contains('dept-' + cleanDept));
         }
         return matchesSearch && matchesDept;
     }

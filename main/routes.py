@@ -1700,10 +1700,67 @@ def delete_subject(subject_id):
         return redirect(url_for('main.manage_subjects'))
 
     try:
-        Attendance.query.filter_by(subject_id=subject_id).delete()
+        from models import (
+            AttendanceSession, AttendanceRecord, CorrectionRequest, 
+            AttendanceDiscrepancyRequest, Timetable, DailySchedule, 
+            TeacherAssignment, TeacherSubjectChoice, ProxyAttendanceTransfer, 
+            SubjectFeedback, AttendanceUnlockPermission, AttendanceAuditLog
+        )
+        
+        # 1. Nullify / Clean up AttendanceAuditLogs referencing this subject
+        try:
+            AttendanceAuditLog.query.filter_by(subject_id=subject_id).update({'subject_id': None}, synchronize_session=False)
+        except Exception:
+            pass
+
+        # 2. Clean up AttendanceUnlockPermissions for this subject
+        try:
+            AttendanceUnlockPermission.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+        except Exception:
+            pass
+
+        # 3. Clean up Subject Feedback
+        try:
+            SubjectFeedback.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+        except Exception:
+            pass
+
+        # 4. Clean up Proxy Attendance Transfers referencing this subject
+        try:
+            ProxyAttendanceTransfer.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+        except Exception:
+            pass
+
+        # 5. Clean up Teacher Subject Choices and Teacher Assignments
+        try:
+            TeacherSubjectChoice.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+            TeacherAssignment.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+        except Exception:
+            pass
+
+        # 6. Clean up Attendance Sessions and their child records
+        sessions = AttendanceSession.query.filter_by(subject_id=subject_id).all()
+        session_ids = [s.id for s in sessions]
+        if session_ids:
+            AttendanceRecord.query.filter(AttendanceRecord.session_id.in_(session_ids)).delete(synchronize_session=False)
+            CorrectionRequest.query.filter(CorrectionRequest.session_id.in_(session_ids)).delete(synchronize_session=False)
+            AttendanceDiscrepancyRequest.query.filter(AttendanceDiscrepancyRequest.session_id.in_(session_ids)).delete(synchronize_session=False)
+            AttendanceSession.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+
+        # 7. Clean up Legacy Attendance records
+        Attendance.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+
+        # 8. Clean up Timetables and linked Daily Schedules
+        timetables = Timetable.query.filter_by(subject_id=subject_id).all()
+        tt_ids = [t.id for t in timetables]
+        if tt_ids:
+            DailySchedule.query.filter(DailySchedule.timetable_id.in_(tt_ids)).delete(synchronize_session=False)
+            Timetable.query.filter_by(subject_id=subject_id).delete(synchronize_session=False)
+
+        # 9. Delete the Subject itself
         db.session.delete(subject_to_delete)
         db.session.commit()
-        flash(f"Subject '{subject_to_delete.name}' deleted successfully.", 'success')
+        flash(f"Subject '{subject_to_delete.name}' and all associated timetable and attendance data have been deleted successfully.", 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting subject: {e}", 'danger')

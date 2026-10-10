@@ -555,7 +555,15 @@ def ensure_postgresql_columns():
             "ALTER TABLE attendance_sessions ALTER COLUMN teacher_id DROP NOT NULL",
             "ALTER TABLE timetables ALTER COLUMN teacher_id DROP NOT NULL",
             "ALTER TABLE timetables ALTER COLUMN subject_id DROP NOT NULL",
-            "ALTER TABLE students ALTER COLUMN roll_no DROP NOT NULL"
+            "ALTER TABLE students ALTER COLUMN roll_no DROP NOT NULL",
+            "ALTER TABLE attendance_sessions DROP CONSTRAINT IF EXISTS attendance_sessions_subject_id_fkey",
+            "ALTER TABLE attendance_sessions ADD CONSTRAINT attendance_sessions_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE",
+            "ALTER TABLE attendance DROP CONSTRAINT IF EXISTS attendance_subject_id_fkey",
+            "ALTER TABLE attendance ADD CONSTRAINT attendance_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE",
+            "ALTER TABLE teacher_assignments DROP CONSTRAINT IF EXISTS teacher_assignments_subject_id_fkey",
+            "ALTER TABLE teacher_assignments ADD CONSTRAINT teacher_assignments_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE",
+            "ALTER TABLE timetables DROP CONSTRAINT IF EXISTS timetables_subject_id_fkey",
+            "ALTER TABLE timetables ADD CONSTRAINT timetables_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE"
         ]
         for stmt in statements:
             try:

@@ -440,8 +440,8 @@ class AttendanceSession(db.Model):
     daily_schedule_id = db.Column(db.Integer, db.ForeignKey('daily_schedule.id', ondelete='SET NULL'), nullable=True)
     date = db.Column(db.Date, nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='SET NULL'), nullable=True)
-    class_id = db.Column(db.Integer, db.ForeignKey('classes.id'), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False)
     start_time = db.Column(db.String(10), nullable=True)
     end_time = db.Column(db.String(10), nullable=True)
     status = db.Column(db.String(20), default='ATTENDANCE_OPEN') # 'SCHEDULED', 'ATTENDANCE_OPEN', 'COMPLETED', 'CANCELLED'
@@ -476,12 +476,12 @@ class Attendance(db.Model):
     """Legacy compatibility model supporting direct queries and daily syncs."""
     __tablename__ = 'attendance'
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     status = db.Column(db.String(10), nullable=False) # 'Present' or 'Absent'
     time_marked = db.Column(db.String(20), nullable=True)
-    timetable_id = db.Column(db.Integer, db.ForeignKey('timetables.id'), nullable=True)
+    timetable_id = db.Column(db.Integer, db.ForeignKey('timetables.id', ondelete='SET NULL'), nullable=True)
 
     subject = db.relationship('Subject', backref='legacy_attendance_records', lazy=True)
     timetable_entry = db.relationship('Timetable', backref='legacy_attendance_records', lazy=True)
@@ -492,10 +492,10 @@ class CorrectionRequest(db.Model):
     __tablename__ = 'correction_requests'
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey('attendance_sessions.id', ondelete='CASCADE'), nullable=False)
-    requested_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    requested_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     reason = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='PENDING') # 'PENDING', 'APPROVED', 'REJECTED'
-    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     reviewed_at = db.Column(db.DateTime, nullable=True)
 
     session = db.relationship('AttendanceSession')
@@ -507,11 +507,11 @@ class AttendanceUnlockPermission(db.Model):
     """Temporary admin authorization granting faculty permission to edit past attendance."""
     __tablename__ = 'attendance_unlock_permissions'
     id = db.Column(db.Integer, primary_key=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=True)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id', ondelete='CASCADE'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='CASCADE'), nullable=True)
     date = db.Column(db.Date, nullable=False)
     unlocked_until = db.Column(db.DateTime, nullable=False)
-    granted_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    granted_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     teacher = db.relationship('Teacher')
@@ -542,8 +542,8 @@ class AttendanceAuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     attendance_id = db.Column(db.Integer, db.ForeignKey('attendance.id', ondelete='SET NULL'), nullable=True)
     action = db.Column(db.String(50), nullable=False)
-    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=True)
-    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id', ondelete='SET NULL'), nullable=True)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id', ondelete='SET NULL'), nullable=True)
     date = db.Column(db.Date, nullable=True)
     previous_status = db.Column(db.String(20), nullable=True)
     new_status = db.Column(db.String(20), nullable=True)
